@@ -45,5 +45,26 @@
             <version>${javax-servlet.version}</version>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.mirth.connect.plugins</groupId>
+            <artifactId>http-server</artifactId>
+            <version>${mirth.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mirth.connect</groupId>
+            <artifactId>donkey-model</artifactId>
+            <version>${mirth.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.13</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>

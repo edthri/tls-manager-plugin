@@ -17,9 +17,9 @@
 package com.kaurpalang.mirthpluginsample.shared;
 
 public final class MyConstants {
-    public static final String PLUGIN_POINTNAME = "Awesome Plugin";
+    public static final String PLUGIN_POINTNAME = "SSL Manager";
 
-    public static final String SETTINGS_TABNAME_MAIN = "MyPlugin Settings";
+    public static final String SETTINGS_TABNAME_MAIN = "SSL Settings";
 
     private MyConstants() {}
 }

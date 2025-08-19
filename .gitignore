@@ -5,3 +5,7 @@ target/
 *.json
 plugin.xml
 *.jar
+
+docker/certs/
+docker/custom-extensions
+docker/pgdata

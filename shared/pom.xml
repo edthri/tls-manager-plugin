@@ -49,6 +49,12 @@
             <artifactId>javax.ws.rs-api</artifactId>
             <version>${javax.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.mirth.connect.plugins</groupId>
+            <artifactId>http-shared</artifactId>
+            <version>${mirth.version}</version>
+        </dependency>
     </dependencies>
 
     <artifactId>shared</artifactId>
