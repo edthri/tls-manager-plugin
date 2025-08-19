@@ -1,0 +1,59 @@
+name: ssl-manager
+
+services:
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    ports:
+      - "9080:80/tcp"
+      - "9443:443/tcp"
+    networks:
+      default:
+        aliases:
+          - yourdomain.com
+    configs:
+      - source: caddyfile
+        target: /etc/caddy/Caddyfile
+    volumes:
+      - ./certs:/certs:ro
+
+  oie:
+    image: openintegrationengine/engine:latest
+    environment:
+      - DATABASE=postgres
+      - DATABASE_URL=jdbc:postgresql://db:5432/oie
+      - DATABASE_MAX_CONNECTIONS=20
+      - DATABASE_USERNAME=oieuser
+      - DATABASE_PASSWORD=oieuserpw
+      - KEYSTORE_STOREPASS=docker_storepass
+      - KEYSTORE_KEYPASS=docker_keypass
+    ports:
+      - "8443:8443/tcp"
+      - "5005:5005/tcp"
+    volumes:
+      - ./custom-extensions:/opt/engine/custom-extensions
+      - ./custom.vmoptions:/opt/engine/conf/custom.vmoptions:ro
+      - ./certs:/certs:ro
+    depends_on:
+      - db
+
+  db:
+    image: postgres:17-alpine
+    ports:
+      - "5432:5432/tcp"
+    environment:
+      - POSTGRES_USER=oieuser
+      - POSTGRES_PASSWORD=oieuserpw
+      - POSTGRES_DB=oie
+    volumes:
+      - ${PWD}/pgdata:/var/lib/postgresql/data
+
+configs:
+  caddyfile:
+    content: |
+      https://yourdomain.com {
+        tls /certs/yourdomain.com.crt /certs/yourdomain.com.key
+
+      	# Simple endpoint to prove it works
+      	respond "Hello from Caddy over self-signed TLS 👋" 200
+      }
