@@ -20,8 +20,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.kaurpalang</groupId>
-    <artifactId>mirthpluginsample</artifactId>
+    <groupId>org.openintegrationengine</groupId>
+    <artifactId>sslmanager</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -54,12 +54,12 @@
         <miglayout.version>3.7.4</miglayout.version>
 
         <!-- Plugin details -->
-        <mirth.plugin.author>Kaur Palang</mirth.plugin.author>
+        <mirth.plugin.author>OpenIntegrationEngine</mirth.plugin.author>
         <mirth.plugin.compatible_versions>4.5.2</mirth.plugin.compatible_versions>
-        <mirth.plugin.description>A sample Mirth plugin to showcase my Maven plugin.</mirth.plugin.description>
+        <mirth.plugin.description>SSL Management made easy</mirth.plugin.description>
         <mirth.plugin.name>SSL Manager</mirth.plugin.name>
         <mirth.plugin.path>ssl-manager</mirth.plugin.path>
-        <mirth.plugin.url>www.yourpage.com</mirth.plugin.url>
+        <mirth.plugin.url>https://openintegrationengine.com</mirth.plugin.url>
         <mirth.plugin.version>${project.version}</mirth.plugin.version>
     </properties>
 
