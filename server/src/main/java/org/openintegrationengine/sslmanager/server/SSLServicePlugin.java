@@ -14,26 +14,40 @@
  * limitations under the License.
  */
 
-package com.kaurpalang.mirthpluginsample.server;
+package org.openintegrationengine.sslmanager.server;
 
 import com.kaurpalang.mirth.annotationsplugin.annotation.MirthServerClass;
-import com.kaurpalang.mirthpluginsample.shared.MyConstants;
-import com.kaurpalang.mirthpluginsample.shared.MyPermissions;
-import com.kaurpalang.mirthpluginsample.shared.interfaces.MyServletInterface;
-import com.mirth.connect.client.core.api.util.OperationUtil;
+import lombok.Getter;
+import org.openintegrationengine.sslmanager.server.connectorconfig.TLSHttpConfiguration;
+import org.openintegrationengine.sslmanager.shared.SSLPluginConstants;
 import com.mirth.connect.model.ExtensionPermission;
 import com.mirth.connect.plugins.ServicePlugin;
+import com.mirth.connect.server.controllers.ConfigurationController;
+import com.mirth.connect.server.controllers.ControllerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
 @MirthServerClass
-public class MyServicePlugin implements ServicePlugin {
+public class SSLServicePlugin implements ServicePlugin {
+
+    private ConfigurationController configurationController;
+
+    @Getter
+    private CertificateService certificateService;
 
     @Override
     public void init(Properties properties) {
-        System.out.println("Hello world from init!");
+        this.configurationController = ControllerFactory.getFactory().createConfigurationController();
+
+        this.certificateService = new CertificateService();
+
+        configurationController.saveProperty(
+            "HTTP",
+            "httpConfigurationClass",
+            TLSHttpConfiguration.class.getCanonicalName()
+        );
     }
 
     @Override
@@ -43,19 +57,15 @@ public class MyServicePlugin implements ServicePlugin {
 
     @Override
     public Properties getDefaultProperties() {
-        return new Properties();
+        var defaultProperties = new Properties();
+        defaultProperties.setProperty(SSLPluginConstants.PROPERTY_TRUST_BACKEND, "database");
+
+        return defaultProperties;
     }
 
     @Override
     public ExtensionPermission[] getExtensionPermissions() {
-        ExtensionPermission getPermission = new ExtensionPermission (
-                MyConstants.PLUGIN_POINTNAME,
-                MyPermissions.GETSTH,
-                "Allows getting important information from our plugin",
-                OperationUtil.getOperationNamesForPermission(MyPermissions.GETSTH, MyServletInterface.class), new String[] {}
-        );
-
-        return new ExtensionPermission[] {getPermission};
+        return new ExtensionPermission[]{};
     }
 
     @Override
@@ -65,16 +75,14 @@ public class MyServicePlugin implements ServicePlugin {
 
     @Override
     public String getPluginPointName() {
-        return MyConstants.PLUGIN_POINTNAME;
+        return SSLPluginConstants.PLUGIN_POINTNAME;
     }
 
     @Override
     public void start() {
-        System.out.println("Hello world from start!");
+        this.certificateService.init();
     }
 
     @Override
-    public void stop() {
-        System.out.println("Good bye world!");
-    }
+    public void stop() { }
 }

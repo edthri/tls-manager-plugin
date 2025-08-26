@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.kaurpalang.mirthpluginsample.client;
+package org.openintegrationengine.sslmanager.client;
 
 import com.kaurpalang.mirth.annotationsplugin.annotation.MirthClientClass;
-import com.kaurpalang.mirthpluginsample.client.panel.MainSettingsPanel;
-import com.kaurpalang.mirthpluginsample.shared.MyConstants;
+import org.openintegrationengine.sslmanager.client.panel.MainSettingsPanel;
+import org.openintegrationengine.sslmanager.shared.SSLPluginConstants;
 import com.mirth.connect.client.ui.AbstractSettingsPanel;
 import com.mirth.connect.plugins.SettingsPanelPlugin;
 
@@ -38,7 +38,7 @@ public class MySettingsPlugin extends SettingsPanelPlugin {
 
     @Override
     public String getPluginPointName() {
-        return MyConstants.PLUGIN_POINTNAME;
+        return SSLPluginConstants.PLUGIN_POINTNAME;
     }
 
     @Override

@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.kaurpalang.mirthpluginsample.shared;
+package org.openintegrationengine.sslmanager.shared;
 
-public final class MyConstants {
+public final class SSLPluginConstants {
     public static final String PLUGIN_POINTNAME = "SSL Manager";
 
     public static final String SETTINGS_TABNAME_MAIN = "SSL Settings";
 
-    private MyConstants() {}
+    public static final String PROPERTY_TRUST_BACKEND = "trust.backend";
+
+    private SSLPluginConstants() {}
 }

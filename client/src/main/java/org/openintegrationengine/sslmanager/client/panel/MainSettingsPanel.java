@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.kaurpalang.mirthpluginsample.client.panel;
+package org.openintegrationengine.sslmanager.client.panel;
 
-import com.kaurpalang.mirthpluginsample.shared.MyConstants;
+import org.openintegrationengine.sslmanager.shared.SSLPluginConstants;
 import com.mirth.connect.client.ui.AbstractSettingsPanel;
 import com.mirth.connect.client.ui.components.MirthCheckBox;
 import com.mirth.connect.client.ui.components.MirthPasswordField;
@@ -45,7 +45,7 @@ public class MainSettingsPanel extends AbstractSettingsPanel {
 
     public MainSettingsPanel() {
         // The name of our tab in the Settings menu
-        super(MyConstants.SETTINGS_TABNAME_MAIN);
+        super(SSLPluginConstants.SETTINGS_TABNAME_MAIN);
         initComponents();
     }
 
