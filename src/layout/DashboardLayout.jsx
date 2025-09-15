@@ -4,6 +4,7 @@ import MenuIcon from '@mui/icons-material/Menu'
 import { Link } from 'react-router-dom'
 import logo from '../assets/oie_logo_bottom_text.svg'
 import SecurityIcon from '@mui/icons-material/Security';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 const drawerWidth = 200
 
@@ -36,6 +37,10 @@ export default function DashboardLayout({ children }) {
             <MenuIcon />
           </IconButton>
           <Box component="img" src={logo} alt="Company logo" sx={{ height: 60 }} />
+          <Box sx={{ flexGrow: 1 }} />
+          <IconButton color="black" edge="end" aria-label="account">
+            <LogoutIcon />
+          </IconButton>
         </Toolbar>
       </AppBar>
 
