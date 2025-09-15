@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { AppBar, Toolbar, Drawer, List, ListItemButton, ListItemText, IconButton, Box } from '@mui/material'
+import { AppBar, Toolbar, Drawer, List, ListItemButton, ListItemText, IconButton, Box, ListItemIcon } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import { Link } from 'react-router-dom'
 import logo from '../assets/oie_logo_bottom_text.svg'
+import SecurityIcon from '@mui/icons-material/Security';
 
 const drawerWidth = 200
 
@@ -18,7 +19,10 @@ export default function DashboardLayout({ children }) {
       <Toolbar />
       <List>
         <ListItemButton component={Link} to="/ssl">
-          <ListItemText primary="SSL management" />
+          <ListItemIcon sx={{ minWidth: 30 }}>
+            <SecurityIcon />
+          </ListItemIcon>
+          <ListItemText sx={{ fontSize: 16 }} primary="SSL management" />
         </ListItemButton>
       </List>
     </div>
