@@ -1,14 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import ProtectedRoute from './context/ProtectedRoute'
 import { useAuth } from './context/AuthContext'
-
-function LoginPlaceholder() {
-  return <div>Login Page</div>
-}
-
-function SslManagementPlaceholder() {
-  return <div>SSL management</div>
-}
+import DashboardLayout from './layout/DashboardLayout'
+import Login from './pages/Login'
+import SslManagement from './pages/SslManagement'
 
 export default function App() {
   const { isAuthenticated } = useAuth()
@@ -19,14 +14,16 @@ export default function App() {
         <Route
           path="/login"
           element={
-            isAuthenticated ? <Navigate to="/ssl" replace /> : <LoginPlaceholder />
+            isAuthenticated ? <Navigate to="/ssl" replace /> : <Login />
           }
         />
         <Route
           path="/ssl"
           element={
             <ProtectedRoute>
-              <SslManagementPlaceholder />
+              <DashboardLayout>
+                <SslManagement />
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
