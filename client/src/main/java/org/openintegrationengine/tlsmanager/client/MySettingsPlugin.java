@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Kaur Palang
+ * Copyright 2025 Kaur Palang
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.openintegrationengine.sslmanager.client;
+package org.openintegrationengine.tlsmanager.client;
 
 import com.kaurpalang.mirth.annotationsplugin.annotation.MirthClientClass;
-import org.openintegrationengine.sslmanager.client.panel.MainSettingsPanel;
-import org.openintegrationengine.sslmanager.shared.SSLPluginConstants;
+import org.openintegrationengine.tlsmanager.client.panel.MainSettingsPanel;
+import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import com.mirth.connect.client.ui.AbstractSettingsPanel;
 import com.mirth.connect.plugins.SettingsPanelPlugin;
 
@@ -38,12 +38,11 @@ public class MySettingsPlugin extends SettingsPanelPlugin {
 
     @Override
     public String getPluginPointName() {
-        return SSLPluginConstants.PLUGIN_POINTNAME;
+        return TLSPluginConstants.PLUGIN_POINTNAME;
     }
 
     @Override
     public void start() {
-        System.out.println("Hello from the other slide!");
         this.mainSettingsPanel = new MainSettingsPanel();
     }
 

@@ -1,0 +1,27 @@
+###
+GET https://localhost:8443/api/tlsmanager/importedcertificates
+Accept: application/xml
+X-Requested-With: IntelliJ
+Authorization: Basic admin admin
+
+
+###
+GET https://localhost:8443/api/tlsmanager/keystore
+Accept: application/octet-stream
+X-Requested-With: IntelliJ
+Authorization: Basic admin admin
+
+>> {{$historyFolder}}/keystore.p12
+
+###
+
+POST https://localhost:8443/api/tlsmanager/keystore
+Content-Type: application/octet-stream
+X-Requested-With: IntelliJ
+X-Keystore-Password: yohoo
+Authorization: Basic admin admin
+
+< .sdkmanrc
+
+
+

@@ -1,4 +1,4 @@
-name: ssl-manager
+name: tls-manager
 
 services:
   caddy:
@@ -30,6 +30,7 @@ services:
     ports:
       - "8443:8443/tcp"
       - "5005:5005/tcp"
+      - "6001:6001/tcp"
     volumes:
       - ./custom-extensions:/opt/engine/custom-extensions
       - ./custom.vmoptions:/opt/engine/conf/custom.vmoptions:ro

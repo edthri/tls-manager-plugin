@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright 2021 Kaur Palang
+  Copyright 2025 Kaur Palang
   
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 
     <parent>
         <groupId>org.openintegrationengine</groupId>
-        <artifactId>sslmanager</artifactId>
+        <artifactId>tlsmanager</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
@@ -35,6 +35,12 @@
         <dependency>
             <groupId>com.mirth.connect</groupId>
             <artifactId>mirth-client-core</artifactId>
+            <version>${mirth.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mirth.connect</groupId>
+            <artifactId>mirth-server</artifactId>
             <version>${mirth.version}</version>
         </dependency>
 
@@ -54,6 +60,13 @@
             <groupId>com.mirth.connect.plugins</groupId>
             <artifactId>http-shared</artifactId>
             <version>${mirth.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mirth.connect</groupId>
+            <artifactId>donkey-model</artifactId>
+            <version>${mirth.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

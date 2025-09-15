@@ -1,4 +1,4 @@
-# SSL Manager plugin for Open Integration Engine
+# TLS Manager plugin for Open Integration Engine
 
 ## Preparation
 
@@ -10,7 +10,10 @@
 
 2. Generate a self-signed certificate for a random domain name and convert it into a `.p12` keystore. We are using `yourdomain.com`.
     ```sh
-    openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes -keyout yourdomain.com.key -out yourdomain.com.crt -subj "/CN=yourdomain.com"
+    openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes \
+      -keyout yourdomain.com.key -out yourdomain.com.crt \
+      -subj "/CN=localhost" \
+      -addext "subjectAltName=DNS:localhost,DNS:yourdomain.com,IP:127.0.0.1"
     
     keytool -importcert \                                                                           
       -alias myserver \

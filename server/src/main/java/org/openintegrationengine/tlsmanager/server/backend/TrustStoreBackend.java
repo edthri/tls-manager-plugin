@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Kaur Palang
+ * Copyright 2025 Kaur Palang
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package org.openintegrationengine.sslmanager.shared;
+package org.openintegrationengine.tlsmanager.server.backend;
 
-public final class SSLPluginConstants {
-    public static final String PLUGIN_POINTNAME = "SSL Manager";
+public interface TrustStoreBackend {
+    boolean persist(byte[] keystore);
 
-    public static final String SETTINGS_TABNAME_MAIN = "SSL Settings";
+    byte[] load();
 
-    public static final String PROPERTY_TRUST_BACKEND = "trust.backend";
-
-    private SSLPluginConstants() {}
+    char[] loadPassword();
 }

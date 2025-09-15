@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Kaur Palang
+ * Copyright 2025 Kaur Palang
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-package org.openintegrationengine.sslmanager.client.panel;
+package org.openintegrationengine.tlsmanager.client.panel;
 
-import org.openintegrationengine.sslmanager.shared.SSLPluginConstants;
+import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import com.mirth.connect.client.ui.AbstractSettingsPanel;
 import com.mirth.connect.client.ui.components.MirthCheckBox;
 import com.mirth.connect.client.ui.components.MirthPasswordField;
 import com.mirth.connect.client.ui.components.MirthTextField;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.border.TitledBorder;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
 
 public class MainSettingsPanel extends AbstractSettingsPanel {
 
@@ -45,7 +49,7 @@ public class MainSettingsPanel extends AbstractSettingsPanel {
 
     public MainSettingsPanel() {
         // The name of our tab in the Settings menu
-        super(SSLPluginConstants.SETTINGS_TABNAME_MAIN);
+        super(TLSPluginConstants.SETTINGS_TABNAME_MAIN);
         initComponents();
     }
 
@@ -70,7 +74,7 @@ public class MainSettingsPanel extends AbstractSettingsPanel {
 
         testRemoteButton = new JButton("Do a thing button");
 
-        /**
+        /*
          * Create the base container for our components
          */
         JPanel deetsPanel = new JPanel();
@@ -86,7 +90,7 @@ public class MainSettingsPanel extends AbstractSettingsPanel {
                 )
         );
 
-        /**
+        /*
          * Add our components to the base container
          */
         deetsPanel.add(forcefulLabel, "right");
