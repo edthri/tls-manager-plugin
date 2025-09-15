@@ -5,11 +5,14 @@ import { Link } from 'react-router-dom'
 import logo from '../assets/oie_logo_bottom_text.svg'
 import SecurityIcon from '@mui/icons-material/Security';
 import LogoutIcon from '@mui/icons-material/Logout';
+import { useAuth } from '../context/AuthContext';
 
 const drawerWidth = 200
 
 export default function DashboardLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  const { logout } = useAuth()
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -38,7 +41,7 @@ export default function DashboardLayout({ children }) {
           </IconButton>
           <Box component="img" src={logo} alt="Company logo" sx={{ height: 60 }} />
           <Box sx={{ flexGrow: 1 }} />
-          <IconButton color="black" edge="end" aria-label="account">
+          <IconButton color="black" edge="end" aria-label="account" onClick={logout}>
             <LogoutIcon />
           </IconButton>
         </Toolbar>
