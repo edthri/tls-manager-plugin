@@ -22,11 +22,9 @@ import com.mirth.connect.client.ui.RefreshTableModel;
 import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.client.ui.components.MirthTable;
 import com.mirth.connect.client.ui.components.MirthTriStateCheckBox;
-import lombok.Getter;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.lang3.StringUtils;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
-import org.openintegrationengine.tlsmanager.shared.models.DefaultableList;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
@@ -55,7 +53,9 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EventObject;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.prefs.Preferences;
 
 public class ItemPickerDialog extends MirthDialog {
@@ -78,19 +78,28 @@ public class ItemPickerDialog extends MirthDialog {
     private static final int CERTIFICATES_NAME_COLUMN = 1;
     private static final int CERTIFICATES_ID_COLUMN = 2;
 
-    private ItemPickerState initialState;
+    private final List<String> allOptions;
+    private List<String> selectedOptions;
+    private boolean isDefaultSelected;
+    private String defaultValue;
 
-    @Getter
-    private boolean saved;
+    private BiConsumer<Boolean, List<String>> onSaveConsumer;
 
     public ItemPickerDialog(
         Window owner,
-        ItemPickerState initialState
+        String windowTitle,
+        List<String> allOptions,
+        List<String> selectedOptions,
+        boolean isDefaultSelected,
+        String defaultValue,
+        BiConsumer<Boolean, List<String>> onSaveConsumer
     ) {
-        super(owner, "Certificate Picker", true);
-
-        this.saved = false;
-        this.initialState = initialState;
+        super(owner, windowTitle, true);
+        this.allOptions = allOptions;
+        this.selectedOptions = selectedOptions;
+        this.isDefaultSelected = isDefaultSelected;
+        this.defaultValue = defaultValue;
+        this.onSaveConsumer = onSaveConsumer;
 
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         initComponents();
@@ -225,7 +234,8 @@ public class ItemPickerDialog extends MirthDialog {
 
         okButton = new JButton("OK");
         okButton.addActionListener(evt -> {
-            this.saved = true;
+            processTableState();
+            onSaveConsumer.accept(isDefaultSelected, selectedOptions);
             dispose();
         });
 
@@ -255,42 +265,37 @@ public class ItemPickerDialog extends MirthDialog {
 
     private void setProperties() {
 
-        var data = new Object[initialState.defaults().nonDefaultOptions().size() + 1][2];
+        var data = new Object[allOptions.size() + 1][2];
 
         // 0 is CHECKED and 1 is UNCHECKED
-        data[0][CERTIFICATES_SELECTED_COLUMN] = initialState.defaults().isDefaultChosen() ? 0 : 1;
-        data[0][CERTIFICATES_NAME_COLUMN] = initialState.defaultName();
+        data[0][CERTIFICATES_SELECTED_COLUMN] = isDefaultSelected ? 0 : 1;
+        data[0][CERTIFICATES_NAME_COLUMN] = defaultValue;
 
         int i = 1;
-        for (String alias : initialState.defaults().nonDefaultOptions()) {
-            data[i][CERTIFICATES_SELECTED_COLUMN] = initialState.currentlySelectedItems().contains(alias) ? 0 : 1;
-            data[i][CERTIFICATES_NAME_COLUMN] = alias;
+        for (String item : allOptions) {
+            data[i][CERTIFICATES_SELECTED_COLUMN] = selectedOptions.contains(item) ? 0 : 1;
+            data[i][CERTIFICATES_NAME_COLUMN] = item;
             i++;
         }
         ((RefreshTableModel) certificateTable.getModel()).refreshDataVector(data);
     }
 
-    public DefaultableList getResults() {
-        var selectedCerts = new ArrayList<String>();
-        var isDefaultSelected = false;
+    private void processTableState() {
+        var localSelectedOptions = new ArrayList<String>();
 
         for (int row = 0; row < certificateTable.getModel().getRowCount(); row++) {
-            int state = (int) certificateTable.getModel().getValueAt(row, CERTIFICATES_SELECTED_COLUMN);
-            String certificateAlias = (String) certificateTable.getModel().getValueAt(row, CERTIFICATES_NAME_COLUMN);
+            var state = (int) certificateTable.getModel().getValueAt(row, CERTIFICATES_SELECTED_COLUMN);
+            var certificateAlias = (String) certificateTable.getModel().getValueAt(row, CERTIFICATES_NAME_COLUMN);
 
-            if (state == 0) { // Checked
-                if (certificateAlias.equals(initialState.defaultName())) {
-                    isDefaultSelected = true;
-                } else {
-                    selectedCerts.add(certificateAlias);
-                }
+            if (certificateAlias.equals(defaultValue)) {
+                // State 0 is CHECKED
+                isDefaultSelected = state == 0;
+            } else if (state == 0) {
+                localSelectedOptions.add(certificateAlias);
             }
         }
 
-        return new DefaultableList(
-            isDefaultSelected,
-            selectedCerts
-        );
+        selectedOptions = localSelectedOptions;
     }
 
     // Proper copyright
