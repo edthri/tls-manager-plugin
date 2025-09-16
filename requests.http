@@ -1,18 +1,18 @@
 @base_address = https://localhost:8443
-@admin_auth = "Basic admin admin"
+@username = admin
+@password = admin
 
 ###
 GET {{base_address}}/api/tlsmanager/importedcertificates
 Accept: application/json
 X-Requested-With: IntelliJ
-Authorization: {{admin_auth}}
-
+Authorization: Basic {{username}} {{password}}
 
 ###
 GET {{base_address}}/api/tlsmanager/keystore
 Accept: application/octet-stream
 X-Requested-With: IntelliJ
-Authorization: {{admin_auth}}
+Authorization: Basic {{username}} {{password}}
 
 >> {{$historyFolder}}/keystore.p12
 
@@ -22,7 +22,7 @@ POST {{base_address}}/api/tlsmanager/keystore
 Content-Type: application/octet-stream
 X-Requested-With: IntelliJ
 X-Keystore-Password: yohoo
-Authorization: {{admin_auth}}
+Authorization: Basic {{username}} {{password}}
 
 < .sdkmanrc
 
