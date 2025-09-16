@@ -1,12 +1,113 @@
-# React + Vite
+# Settings Dashboard (TLS / Certificates)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React + Vite + MUI + Tailwind v4 dashboard for managing certificate stores and PKI-related settings.
 
-Currently, two official plugins are available:
+## Stack
+- React 18+ with functional components and hooks
+- Vite 7
+- MUI (Material UI) + Tailwind CSS v4 (via layers)
+- React Router DOM v6/7
+- Node >= 20
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Quick start
+```bash
+# Install dependencies
+npm install
 
-## Expanding the ESLint configuration
+# Start dev server (http://localhost:5173/dashboard)
+npm run dev
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Lint
+npm run lint
+
+# Build static assets (output in ./dashboard)
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## Routing & Auth
+- BrowserRouter `basename` is `/dashboard`.
+- Routes:
+  - `/login` (public)
+  - `/ssl` (protected)
+- `AuthContext` provides `login()` and `logout()`; `ProtectedRoute` guards private routes.
+- Unauthenticated users are redirected to `/login`.
+
+## Layout
+- `DashboardLayout` uses a top AppBar only (no drawer). The app content renders beneath it.
+
+## SSL Manager UI
+- Page: `src/pages/SslManagement.jsx`
+- Features a tabbed interface with 3 stores and count chips:
+  1. Native Java Certificate Store (read-only)
+  2. Additional Trusted Certificates
+  3. Private Key Store
+- Selected tab persists in the URL via `?tab=<native|trusted|private>`.
+- Search input filters the visible list for the active store.
+- Cards: certificates are displayed as cards (not a table) showing:
+  - Name/alias, type (Root/Intermediate/End-entity)
+  - Subject, Issuer
+  - Valid From/To
+  - Fingerprint (SHA‑1)
+  - Status pill: Valid / Expiring soon (30 days) / Expired
+  - Actions: View Details, Export (placeholder)
+
+### Reusable components
+- `TabsWithCounts` — Tabs with icon + label + count, full width
+- `TabPanel` — Conditional content wrapper for tabs
+- `StoreToolbar` — Title, optional warning, action buttons
+- `SearchInput` — Debounced search with icon
+- `StatusPill` — Validity indicator (30-day threshold)
+- `CertificateCard` — Presentational card for a certificate
+- `CertificateList` — Responsive grid of cards
+- Hook: `useCertificates` — fetches once, returns counts and per-store filtered lists
+
+## Data & Services
+- Mock service: `src/services/sslService.js`
+  - Returns a mixed list across stores with fields: `alias`, `name`, `type`, `subject`, `issuer`, `validFrom`, `validTo`, `fingerprintSha1`, `hasPrivateKey`, `store` (`native|trusted|private`).
+- Replace with a real API by switching the implementation in `sslService.js` to use Axios.
+
+## Environment
+- Vite base path is `/dashboard/` (see `vite.config.js`).
+- To configure API endpoints, add an `.env` file and read via `import.meta.env` in a centralized `src/services/api.ts`/`api.js` (to be introduced with a real backend).
+
+## Build & Deploy
+- `vite build` outputs to `./dashboard`.
+- Serve the folder under a path matching `/dashboard/` (e.g., Nginx location or app server context path).
+- If reverse proxying, ensure the base path is preserved for static assets.
+
+## Security & PKCS#12 handling (design notes)
+- PKCS#12 bundles (.p12/.pfx) typically contain certificates and private keys protected by a password.
+- Recommended flow:
+  - Parse on the server (Java KeyStore, OpenSSL, Python cryptography, or Node/OpenSSL) and return safe JSON (subjects, issuers, validity, fingerprints, chain, aliases). Do not return private key material to the client.
+  - Client displays the parsed items using the existing card components.
+- Optional client-side parsing (prototype only): use a pure JS library (e.g., node-forge) to parse in-memory after prompting for the password; never upload the password; do not persist or log sensitive data.
+- Error cases to handle: wrong password, empty/unsupported bags, multiple key entries, duplicated aliases.
+
+## Conventions
+- Functional components, hooks, and one component per file
+- Tailwind utilities for layout spacing; MUI `sx` for component overrides
+- Avoid inline styles for static styling
+- Keep files short (<300 lines) and split into subcomponents when needed
+
+## Project structure (key folders)
+```
+src/
+  components/     # Reusable UI components
+  context/        # Auth context + ProtectedRoute
+  layout/         # Dashboard layout (AppBar)
+  pages/          # Route pages (Login, SslManagement)
+  services/       # Data fetching (mock service for now)
+  hooks/          # Custom hooks (useCertificates)
+```
+
+## Development tips
+- Use `console.debug` for quick diagnostics.
+- When swapping to real APIs, centralize Axios setup (base URL, interceptors) and error handling.
+- Keep secrets out of logs and never send private keys to the frontend.
+
+---
+Maintainers: update this README when adding routes, API contracts, or new modules.
+
