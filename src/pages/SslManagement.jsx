@@ -56,6 +56,7 @@ export default function SslManagement() {
 
   return (
     <Box>
+      <Typography variant="h4" sx={{ mb: 2, fontWeight: 'bold' }}>Certificate store manager</Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'flex-end' }}>
         <input ref={fileInputRef} type="file" hidden onChange={handleFileSelected} />
         <Button variant="contained" onClick={handleImportClick} disabled={importing}>
