@@ -27,13 +27,18 @@ import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.model.Connector;
 import net.miginfocom.swing.MigLayout;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
-import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerState;
-import org.openintegrationengine.tlsmanager.shared.models.DefaultableList;
 import org.openintegrationengine.tlsmanager.shared.properties.HttpConnectorProperties;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.ButtonGroup;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import java.awt.Color;
+import java.awt.Component;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropertiesPanel {
 
@@ -65,77 +70,26 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     private JButton ciphersButton;
     private JLabel ciphersText;
 
-    private DefaultableList certPickerResult;
+    private HttpConnectorProperties properties;
 
     public HTTPSenderConnectorPropertiesPanel() {
+        this.properties = new HttpConnectorProperties();
+
         initComponents();
         initLayout();
     }
 
     @Override
     public HttpConnectorProperties getProperties() {
-        var props = new HttpConnectorProperties();
-
-        props.setTlsManagerEnabled(managerEnabledRadioYes.isSelected());
-        props.setServerCertificateValidationEnabled(serverCertificateValidationRadioYes.isSelected());
-        props.setHostnameVerificationEnabled(hostnameValidationRadioYes.isSelected());
-
-        return props;
+        return properties.clone();
     }
 
     @Override
     public void setProperties(ConnectorProperties connectorProperties, ConnectorPluginProperties connectorPluginProperties, Connector.Mode mode, String s) {
         if (connectorPluginProperties instanceof HttpConnectorProperties httpConnectorProperties) {
-            certPickerResult = httpConnectorProperties.getServerCertificateConfiguration();
-
-            if (httpConnectorProperties.isTlsManagerEnabled()) {
-                managerEnabledRadioYes.setSelected(true);
-            } else {
-                managerEnabledRadioNo.setSelected(true);
-            }
-
-            if (httpConnectorProperties.isServerCertificateValidationEnabled()) {
-                serverCertificateValidationRadioYes.setSelected(true);
-            } else {
-                serverCertificateValidationRadioNo.setSelected(true);
-            }
-
-            if (httpConnectorProperties.isHostnameVerificationEnabled()) {
-                hostnameValidationRadioYes.setSelected(true);
-            } else {
-                hostnameValidationRadioNo.setSelected(true);
-            }
-
-            clientCertText.setText(httpConnectorProperties.getClientCertificateAlias());
-
+            this.properties = httpConnectorProperties;
+            redrawState();
             handleManagerEnabledButton(httpConnectorProperties.isTlsManagerEnabled());
-            /*
-            final String workingId = PlatformUI.MIRTH_FRAME.startWorking("Fetching TLS settings...");
-            var worker = new SwingWorker<Void, Void>() {
-                public Void doInBackground() {
-                    var tlsServlet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class);
-
-                    var importedCertificates = tlsServlet.getImportedCertificates();
-
-                    itemPickerState = new ItemPickerState(
-                        List.of("GoDaddy", "Some other CA"),
-                        List.of("java"),
-                        "[JVM Truststore]",
-                        false
-                    );
-
-                    return null;
-                }
-
-                @Override
-                public void done() {
-                    PlatformUI.MIRTH_FRAME.setSaveEnabled(false);
-                    PlatformUI.MIRTH_FRAME.stopWorking(workingId);
-                }
-            };
-
-            worker.execute();
-             */
         }
     }
 
@@ -191,29 +145,34 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         serverCertificateValidationRadioYes = new MirthRadioButton();
         serverCertificateValidationRadioYes.setBackground(new Color(255, 255, 255));
         serverCertificateValidationRadioYes.setText("Enabled");
+        serverCertificateValidationRadioYes.addActionListener(e -> properties.setServerCertificateValidationEnabled(true));
         serverCertificateValidationButtonGroup.add(serverCertificateValidationRadioYes);
 
         serverCertificateValidationRadioNo = new MirthRadioButton();
         serverCertificateValidationRadioNo.setBackground(new Color(255, 255, 255));
         serverCertificateValidationRadioNo.setText("Disabled");
+        serverCertificateValidationRadioNo.addActionListener(e -> properties.setServerCertificateValidationEnabled(false));
         serverCertificateValidationButtonGroup.add(serverCertificateValidationRadioNo);
 
         trustedServerCertsLabel = new JLabel("Trusted Server Certificates:");
         trustedServerCertsButton = new JButton(wrenchIcon);
         trustedServerCertsButton.addActionListener(e -> {
-
-            var itemPickerState = new ItemPickerState(
-                certPickerResult,
-                List.of("GoDaddy", "Some other CA"),
-                "[JVM Truststore]"
-            );
-
-            var itemPicker = new ItemPickerDialog(PlatformUI.MIRTH_FRAME, itemPickerState);
-
-            if (itemPicker.isSaved()) {
-                certPickerResult = itemPicker.getResults();
+            BiConsumer<Boolean, List<String>> completionConsumer = (isTrustSystemTrustStoreEnabled, selectedCerts) -> {
+                properties.setTrustSystemTruststore(isTrustSystemTrustStoreEnabled);
+                properties.setTrustedServerCertificates(selectedCerts);
+                redrawState();
                 PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
-            }
+            };
+
+            new ItemPickerDialog(
+                PlatformUI.MIRTH_FRAME,
+                "Certificate Picker",
+                List.of("GoDaddy", "Some other CA"),
+                properties.getTrustedServerCertificates(),
+                properties.isTrustSystemTruststore(),
+                "[JVM Truststore]",
+                completionConsumer
+            );
         });
 
         trustedServerCertsText = new JLabel("Trusting some certs as a placeholder");
@@ -224,11 +183,13 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         hostnameValidationRadioYes = new MirthRadioButton();
         hostnameValidationRadioYes.setBackground(new Color(255, 255, 255));
         hostnameValidationRadioYes.setText("Enabled");
+        hostnameValidationRadioYes.addActionListener(e -> properties.setHostnameVerificationEnabled(true));
         hostnameValidationButtonGroup.add(hostnameValidationRadioYes);
 
         hostnameValidationRadioNo = new MirthRadioButton();
         hostnameValidationRadioNo.setBackground(new Color(255, 255, 255));
         hostnameValidationRadioNo.setText("Disabled");
+        hostnameValidationRadioNo.addActionListener(e -> properties.setHostnameVerificationEnabled(false));
         hostnameValidationButtonGroup.add(hostnameValidationRadioNo);
 
         clientCertLabel = new JLabel("Client Certificate:");
@@ -238,12 +199,56 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
 
         protocolsLabel = new JLabel("Enabled Protocols:");
         protocolsButton = new JButton(wrenchIcon);
-        protocolsButton.addActionListener(e -> System.out.println("protocols button"));
+        protocolsButton.addActionListener(e -> {
+            BiConsumer<Boolean, List<String>> completionConsumer = (trustDefaultProtocols, selectedProtocols) -> {
+                properties.setUseServerDefaultProtocols(trustDefaultProtocols);
+                if (trustDefaultProtocols) {
+                    properties.setUsedProtocols(Collections.emptyList());
+                } else {
+                    properties.setUsedProtocols(selectedProtocols);
+                }
+
+                redrawState();
+                PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
+            };
+
+            new ItemPickerDialog(
+                PlatformUI.MIRTH_FRAME,
+                "Protocols Picker",
+                List.of(PlatformUI.HTTPS_PROTOCOLS),
+                properties.getUsedProtocols(),
+                properties.isUseServerDefaultProtocols(),
+                "[Server default]",
+                completionConsumer
+            );
+        });
         protocolsText = new JLabel("Server default: TLSv4.6");
 
         ciphersLabel = new JLabel("Enabled Ciphers:");
         ciphersButton = new JButton(wrenchIcon);
-        ciphersButton.addActionListener(e -> System.out.println("ciphers button"));
+        ciphersButton.addActionListener(e -> {
+            BiConsumer<Boolean, List<String>> completionConsumer = (trustDefaultCiphers, selectedCiphers) -> {
+                properties.setUseServerDefaultCiphers(trustDefaultCiphers);
+                if (trustDefaultCiphers) {
+                    properties.setUsedCiphers(Collections.emptyList());
+                } else {
+                    properties.setUsedCiphers(selectedCiphers);
+                }
+
+                redrawState();
+                PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
+            };
+
+            new ItemPickerDialog(
+                PlatformUI.MIRTH_FRAME,
+                "Ciphers Picker",
+                List.of(PlatformUI.HTTPS_CIPHER_SUITES),
+                properties.getUsedCiphers(),
+                properties.isUseServerDefaultCiphers(),
+                "[Server default]",
+                completionConsumer
+            );
+        });
         ciphersText = new JLabel("Server default: 22 enabled");
     }
 
@@ -280,6 +285,8 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     }
 
     private void handleManagerEnabledButton(boolean managerEnabled) {
+        properties.setTlsManagerEnabled(managerEnabled);
+
         serverCertificateValidationLabel.setEnabled(managerEnabled);
         serverCertificateValidationRadioYes.setEnabled(managerEnabled);
         serverCertificateValidationRadioNo.setEnabled(managerEnabled);
@@ -306,6 +313,47 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     }
 
     private void redrawState() {
+        if (properties.isTlsManagerEnabled()) {
+            managerEnabledRadioYes.setSelected(true);
+        } else {
+            managerEnabledRadioNo.setSelected(true);
+        }
 
+        if (properties.isServerCertificateValidationEnabled()) {
+            serverCertificateValidationRadioYes.setSelected(true);
+        } else {
+            serverCertificateValidationRadioNo.setSelected(true);
+        }
+
+        var count = properties.getTrustedServerCertificates().size();
+        var plural = (count == 1) ? "" : "s";
+
+        var serverCertificatesText = "Trusting %d cert%s%s".formatted(
+            count,
+            plural,
+            properties.isTrustSystemTruststore() ? " and System Truststore" : ""
+        );
+
+        trustedServerCertsText.setText(serverCertificatesText);
+
+        if (properties.isHostnameVerificationEnabled()) {
+            hostnameValidationRadioYes.setSelected(true);
+        } else {
+            hostnameValidationRadioNo.setSelected(true);
+        }
+
+        clientCertText.setText(properties.getClientCertificateAlias());
+
+        var protocolsString = properties.isUseServerDefaultProtocols()
+            ? "Server default: %s".formatted(Arrays.toString(PlatformUI.HTTPS_PROTOCOLS))
+            : "%d selected".formatted(properties.getUsedProtocols().size());
+
+        protocolsText.setText(protocolsString);
+
+        var ciphersString = properties.isUseServerDefaultCiphers()
+            ? "Server default: %d selected".formatted(PlatformUI.HTTPS_CIPHER_SUITES.length)
+            : "%d selected".formatted(properties.getUsedCiphers().size());
+
+        ciphersText.setText(ciphersString);
     }
 }

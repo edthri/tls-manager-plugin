@@ -21,9 +21,9 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
-import org.openintegrationengine.tlsmanager.shared.models.DefaultableList;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -34,21 +34,17 @@ public class HttpConnectorProperties extends ConnectorPluginProperties {
     private boolean isTlsManagerEnabled;
     private boolean isServerCertificateValidationEnabled;
 
-    private DefaultableList serverCertificateConfiguration;
-    private DefaultableList protocolsConfiguration;
-    private DefaultableList ciphersConfiguration;
-
     // Public certificates
-    //private boolean trustSystemTruststore;
-    //private List<String> trustedServerCertificates;
+    private boolean trustSystemTruststore;
+    private List<String> trustedServerCertificates;
 
     // Protocols
-    //private boolean isUseServerDefaultProtocols;
-    //private List<String> usedProtocols;
+    private boolean isUseServerDefaultProtocols;
+    private List<String> usedProtocols;
 
     // Ciphers
-    //private boolean isUseServerDefaultCiphers;
-    //private List<String> usedCiphers;
+    private boolean isUseServerDefaultCiphers;
+    private List<String> usedCiphers;
 
     private boolean isHostnameVerificationEnabled;
     private String clientCertificateAlias;
@@ -57,29 +53,14 @@ public class HttpConnectorProperties extends ConnectorPluginProperties {
         isTlsManagerEnabled = false;
         isServerCertificateValidationEnabled = false;
 
-        serverCertificateConfiguration = new DefaultableList(
-            true,
-            Collections.emptyList()
-        );
+        trustSystemTruststore = true;
+        trustedServerCertificates = Collections.emptyList();
 
-        protocolsConfiguration = new DefaultableList(
-            true,
-            Collections.emptyList()
-        );
+        isUseServerDefaultProtocols = true;
+        usedProtocols = Collections.emptyList();
 
-        ciphersConfiguration = new DefaultableList(
-            true,
-            Collections.emptyList()
-        );
-
-        //trustSystemTruststore = true;
-        //trustedServerCertificates = Collections.emptyList()
-//
-        //isUseServerDefaultProtocols = true;
-        //usedProtocols = Collections.emptyList();
-//
-        //isUseServerDefaultCiphers = true;
-        //usedCiphers = Collections.emptyList();
+        isUseServerDefaultCiphers = true;
+        usedCiphers = Collections.emptyList();
 
         isHostnameVerificationEnabled = true;
         clientCertificateAlias = "";
@@ -89,11 +70,14 @@ public class HttpConnectorProperties extends ConnectorPluginProperties {
         isTlsManagerEnabled = props.isTlsManagerEnabled();
         isServerCertificateValidationEnabled = props.isServerCertificateValidationEnabled();
 
-        serverCertificateConfiguration = props.getServerCertificateConfiguration();
+        trustSystemTruststore = props.isTrustSystemTruststore();
+        trustedServerCertificates = props.getTrustedServerCertificates();
 
-        protocolsConfiguration = props.getProtocolsConfiguration();
+        isUseServerDefaultProtocols = props.isUseServerDefaultProtocols();
+        usedProtocols = props.getUsedProtocols();
 
-        ciphersConfiguration = props.getCiphersConfiguration();
+        isUseServerDefaultCiphers = props.isUseServerDefaultCiphers();
+        usedCiphers = props.getUsedCiphers();
 
         isHostnameVerificationEnabled = props.isHostnameVerificationEnabled();
         clientCertificateAlias = props.getClientCertificateAlias();
