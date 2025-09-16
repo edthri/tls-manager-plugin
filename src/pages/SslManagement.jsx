@@ -1,106 +1,116 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress, Alert, Button } from '@mui/material'
-import { fetchCertificates } from '../services/sslService'
+import React, { useMemo, useRef, useState } from 'react'
+import { Box, Paper, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
+import { useSearchParams } from 'react-router-dom'
+import TabsWithCounts from '../components/TabsWithCounts'
+import TabPanel from '../components/TabPanel'
+import StoreToolbar from '../components/StoreToolbar'
+import SearchInput from '../components/SearchInput'
+import CertificateList from '../components/CertificateList'
+import useCertificates from '../hooks/useCertificates'
+import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
+import VpnKeyIcon from '@mui/icons-material/VpnKey'
 
 export default function SslManagement() {
-  const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [importing, setImporting] = useState(false)
+  const { counts, filterBy, loading, error } = useCertificates()
+  const [params, setParams] = useSearchParams()
+  const tabKeys = ['native', 'trusted', 'private']
+  const initialKey = params.get('tab') && tabKeys.includes(params.get('tab')) ? params.get('tab') : 'native'
+  const [tabKey, setTabKey] = useState(initialKey)
+  const [search, setSearch] = useState('')
+
   const fileInputRef = useRef(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogTitle, setDialogTitle] = useState('')
+  const [dialogContent, setDialogContent] = useState('')
 
-  useEffect(() => {
-    let cancelled = false
-
-    async function load() {
-      setLoading(true)
-      setError('')
-      try {
-        const data = await fetchCertificates()
-        if (!cancelled) {
-          setRows(data)
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setError('Failed to load certificates')
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    load()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const hasData = useMemo(() => rows && rows.length > 0, [rows])
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click()
+  const openDialog = (title, content) => {
+    setDialogTitle(title)
+    setDialogContent(content)
+    setDialogOpen(true)
   }
 
-  const handleFileSelected = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setImporting(true)
-    // Placeholder: hook API upload here later
-    console.debug('Selected certificate file:', file.name, file.type, file.size)
-    setTimeout(() => {
-      setImporting(false)
-      // Clear the input so selecting the same file again triggers onChange
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }, 600)
+  const onTabChange = (_e, newIndex) => {
+    const newKey = tabKeys[newIndex]
+    setTabKey(newKey)
+    setSearch('')
+    setParams((prev) => {
+      const p = new URLSearchParams(prev)
+      p.set('tab', newKey)
+      return p
+    }, { replace: true })
+  }
+
+  const tabIndex = useMemo(() => Math.max(0, tabKeys.indexOf(tabKey)), [tabKey])
+  const visibleRows = useMemo(() => filterBy(tabKey, search), [filterBy, tabKey, search])
+
+  const tabs = [
+    { key: 'native', label: 'Native Java Certificate Store', count: counts.native, icon: <ShieldOutlinedIcon fontSize="small" /> },
+    { key: 'trusted', label: 'Additional Trusted Certificates', count: counts.trusted, icon: <CheckCircleOutlineIcon fontSize="small" /> },
+    { key: 'private', label: 'Private Key Store', count: counts.private, icon: <VpnKeyIcon fontSize="small" /> },
+  ]
+
+  const toolbarByTab = {
+    native: {
+      title: 'Native Java Certificate Store',
+      warning: 'Read-only system store',
+      actions: [],
+    },
+    trusted: {
+      title: 'Additional Trusted Certificates',
+      actions: [
+        { key: 'import', label: 'Import Certificate', color: 'info', onClick: () => openDialog('Import Certificate', 'Placeholder dialog for importing a certificate.') },
+        { key: 'add', label: 'Add New', variant: 'contained', color: 'success', onClick: () => openDialog('Add New Certificate', 'Placeholder dialog for adding a new certificate.') },
+      ],
+    },
+    private: {
+      title: 'Private Key Store',
+      actions: [
+        { key: 'show-keys', label: 'Show Private Keys', color: 'secondary', onClick: () => openDialog('Show Private Keys', 'Placeholder dialog for showing private keys.') },
+        { key: 'import-cert', label: 'Import Certificate', color: 'info', onClick: () => openDialog('Import Certificate', 'Placeholder dialog for importing a certificate.') },
+        { key: 'import-pkcs12', label: 'Import PKCS#12', color: 'warning', onClick: () => openDialog('Import PKCS#12', 'Placeholder dialog for importing PKCS#12.') },
+        { key: 'add-new', label: 'Add New', variant: 'contained', color: 'success', onClick: () => openDialog('Add New Private Key', 'Placeholder dialog for adding a new private key certificate.') },
+      ],
+    },
   }
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 2, fontWeight: 'bold' }}>Certificate store manager</Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'flex-end' }}>
-        <input ref={fileInputRef} type="file" hidden onChange={handleFileSelected} />
-        <Button variant="contained" onClick={handleImportClick} disabled={importing}>
-          {importing ? 'Importing…' : 'Import'}
-        </Button>
-      </Box>
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <TabsWithCounts value={tabIndex} onChange={onTabChange} tabs={tabs} />
+      </Paper>
 
-      {loading ? (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CircularProgress size={20} />
-          <Typography variant="body2">Loading certificates…</Typography>
+      <TabPanel value={tabIndex} index={0} sx={{ mt: 2 }}>
+        <StoreToolbar title={toolbarByTab.native.title} warning={toolbarByTab.native.warning} actions={toolbarByTab.native.actions} />
+        <SearchInput value={search} onChange={setSearch} />
+        <Box sx={{ mt: 2 }}>
+          <CertificateList rows={visibleRows} loading={loading} error={error} />
         </Box>
-      ) : error ? (
-        <Alert severity="error">{error}</Alert>
-      ) : (
-        <TableContainer component={Paper}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Alias</TableCell>
-                <TableCell>Subject CN</TableCell>
-                <TableCell>Issuer CN</TableCell>
-                <TableCell>Valid Until</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {hasData ? rows.map((row) => (
-                <TableRow key={row.alias} hover>
-                  <TableCell>{row.alias}</TableCell>
-                  <TableCell>{row.subjectCn}</TableCell>
-                  <TableCell>{row.issuerCn}</TableCell>
-                  <TableCell>{row.validUntil}</TableCell>
-                </TableRow>
-              )) : (
-                <TableRow>
-                  <TableCell colSpan={4}>
-                    <Typography variant="body2" color="text.secondary">No certificates found.</Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+      </TabPanel>
+
+      <TabPanel value={tabIndex} index={1} sx={{ mt: 2 }}>
+        <StoreToolbar title={toolbarByTab.trusted.title} actions={toolbarByTab.trusted.actions} />
+        <SearchInput value={search} onChange={setSearch} />
+        <Box sx={{ mt: 2 }}>
+          <CertificateList rows={visibleRows} loading={loading} error={error} />
+        </Box>
+      </TabPanel>
+
+      <TabPanel value={tabIndex} index={2} sx={{ mt: 2 }}>
+        <StoreToolbar title={toolbarByTab.private.title} actions={toolbarByTab.private.actions} />
+        <SearchInput value={search} onChange={setSearch} />
+        <Box sx={{ mt: 2 }}>
+          <CertificateList rows={visibleRows} loading={loading} error={error} />
+        </Box>
+      </TabPanel>
+
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+        <DialogTitle>{dialogTitle}</DialogTitle>
+        <DialogContent>{dialogContent}</DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
