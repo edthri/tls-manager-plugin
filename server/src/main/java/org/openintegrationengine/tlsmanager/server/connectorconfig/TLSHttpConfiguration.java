@@ -21,13 +21,13 @@ import com.mirth.connect.connectors.http.HttpDispatcher;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
 import com.mirth.connect.connectors.http.HttpReceiver;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
+import com.mirth.connect.donkey.server.channel.Connector;
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.util.MirthSSLUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.ssl.SSLContexts;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.DetectorConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -36,46 +36,34 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.openintegrationengine.tlsmanager.server.CertificateService;
+import org.openintegrationengine.tlsmanager.server.SocketFactoryService;
 import org.openintegrationengine.tlsmanager.shared.properties.HttpConnectorProperties;
 
+@Slf4j
 public class TLSHttpConfiguration extends DefaultHttpConfiguration {
 
     private final CertificateService certificateService;
+    private final SocketFactoryService socketFactoryService;
     private final ConfigurationController configurationController;
 
     public TLSHttpConfiguration() {
         this.configurationController = ControllerFactory.getFactory().createConfigurationController();
         this.certificateService = CertificateService.getInstance();
+        this.socketFactoryService = SocketFactoryService.getInstance();
+    }
+
+    @Override
+    public void configureConnectorDeploy(Connector connector) throws Exception {
+        if (connector instanceof HttpDispatcher httpDispatcher) {
+            configureSocketFactory(httpDispatcher);
+        }
     }
 
     @Override
     public void configureDispatcher(HttpDispatcher connector, HttpDispatcherProperties connectorProperties) {}
 
     @Override
-    public void configureSocketFactoryRegistry(ConnectorPluginProperties properties, RegistryBuilder<ConnectionSocketFactory> registry) throws Exception {
-        /*
-        if (properties instanceof HttpConnectorProperties httpConnectorProperties) {
-            var truststore = httpConnectorProperties.isTrustSystemTruststore()
-                ? certificateService.getSystemTrustStore()
-                : certificateService.getMergedTruststore();
-
-            var sslContext = SSLContexts
-                .custom()
-                .loadTrustMaterial(truststore, null)
-                .build();
-
-            var sslSocketFactory = new SSLConnectionSocketFactory(
-                sslContext,
-                httpConnectorProperties.getUsedProtocols().toArray(new String[0]),
-                httpConnectorProperties.getUsedCiphers().toArray(new String[0]),
-                SSLConnectionSocketFactory.getDefaultHostnameVerifier()
-            );
-
-            registry.register("https", sslSocketFactory);
-        }
-
-         */
-    }
+    public void configureSocketFactoryRegistry(ConnectorPluginProperties properties, RegistryBuilder<ConnectionSocketFactory> registry) {}
 
     @Override
     public void configureReceiver(HttpReceiver connector) {
@@ -105,5 +93,35 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
         listener.setPort(connector.getPort());
         listener.setIdleTimeout(connector.getTimeout());
         connector.getServer().addConnector(listener);
+    }
+
+    private void configureSocketFactory(HttpDispatcher connector) {
+        var oTlsPluginProperties = connector.getConnectorProperties().getPluginProperties()
+            .stream()
+            .filter(HttpConnectorProperties.class::isInstance)
+            .findFirst();
+
+        // TODO Fix repetition
+        if (oTlsPluginProperties.isEmpty()) {
+            try {
+                super.configureSocketFactoryRegistry(null, connector.getSocketFactoryRegistry());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            return;
+        }
+
+        var properties = (HttpConnectorProperties) oTlsPluginProperties.get();
+        if (!properties.isTlsManagerEnabled()) {
+            try {
+                super.configureSocketFactoryRegistry(null, connector.getSocketFactoryRegistry());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            return;
+        }
+
+        var sslSocketFactory = socketFactoryService.getChannelSocketFactory("kala", properties);
+        connector.getSocketFactoryRegistry().register("https", sslSocketFactory);
     }
 }
