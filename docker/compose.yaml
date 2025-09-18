@@ -33,6 +33,7 @@ services:
       - "6001:6001/tcp"
     volumes:
       - ./custom-extensions:/opt/engine/custom-extensions
+      - ./conf/log4j2.properties:/opt/engine/conf/log4j2.properties:ro
       - ./custom.vmoptions:/opt/engine/conf/custom.vmoptions:ro
       - ./certs:/certs:ro
     depends_on:
