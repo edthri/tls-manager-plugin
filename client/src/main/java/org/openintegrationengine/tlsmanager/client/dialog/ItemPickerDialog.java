@@ -81,9 +81,9 @@ public class ItemPickerDialog extends MirthDialog {
     private final List<String> allOptions;
     private List<String> selectedOptions;
     private boolean isDefaultSelected;
-    private String defaultValue;
+    private final String defaultValue;
 
-    private BiConsumer<Boolean, List<String>> onSaveConsumer;
+    private final BiConsumer<Boolean, List<String>> onSaveConsumer;
 
     public ItemPickerDialog(
         Window owner,

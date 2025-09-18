@@ -90,7 +90,7 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
         ssl.setIncludeProtocols(enabledProtocols);
         ssl.setIncludeCipherSuites(cipherSuites);
 
-        ssl.setKeyStore(certificateService.getAdditionalTrustStore());
+        ssl.setKeyStore(certificateService.getTruststore());
         ssl.setKeyStorePassword("changeit");
         ssl.setKeyManagerPassword("changeit");
 

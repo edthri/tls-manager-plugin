@@ -37,7 +37,10 @@ public final class CertificateService {
     private KeyStore systemTrustStore;
 
     @Getter
-    private KeyStore additionalTrustStore;
+    private KeyStore truststore;
+
+    @Getter
+    private KeyStore keystore;
 
     @Getter
     private KeyStore mergedTruststore;
@@ -46,22 +49,21 @@ public final class CertificateService {
         var systemTruststore = new SystemTrustStoreBackend();
         var additionalTruststore = new FileTrustStoreBackend("/certs/truststore.p12");
 
-
         byte[] cacerts = systemTruststore.load();
         byte[] additional = additionalTruststore.load();
 
         try {
             systemTrustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            additionalTrustStore = KeyStore.getInstance("PKCS12");
+            truststore = KeyStore.getInstance("PKCS12");
         } catch (KeyStoreException e) {
             throw new RuntimeException(e);
         }
 
         loadKeyStore(systemTrustStore, cacerts, systemTruststore.loadPassword());
-        loadKeyStore(additionalTrustStore, additional, "changeit".toCharArray());
+        loadKeyStore(truststore, additional, "changeit".toCharArray());
 
         try {
-            mergedTruststore = mergeKeystores(systemTrustStore, additionalTrustStore);
+            mergedTruststore = mergeKeystores(systemTrustStore, truststore);
         } catch (KeyStoreException e) {
             throw new RuntimeException(e);
         }

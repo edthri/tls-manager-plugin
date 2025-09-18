@@ -46,7 +46,7 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
 
     @Override
     public List<String> getImportedCertificates() {
-        var additionalTruststore = CertificateService.getInstance().getAdditionalTrustStore();
+        var additionalTruststore = CertificateService.getInstance().getTruststore();
 
         Enumeration<String> aliasEnumeration;
         try {
@@ -67,7 +67,7 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
 
     @Override
     public byte[] getKeystore() {
-        var keystore = CertificateService.getInstance().getAdditionalTrustStore();
+        var keystore = CertificateService.getInstance().getTruststore();
 
         try (var baos = new ByteArrayOutputStream()) {
             keystore.store(baos, "changeit".toCharArray());
