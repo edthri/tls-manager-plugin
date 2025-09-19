@@ -21,6 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
+import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +34,10 @@ public class HttpConnectorProperties extends ConnectorPluginProperties {
 
     private boolean isTlsManagerEnabled;
     private boolean isServerCertificateValidationEnabled;
+
+    // Certificate revocation modes
+    private RevocationMode crlMode;
+    private RevocationMode oscpMode;
 
     // Public certificates
     private boolean trustSystemTruststore;
@@ -53,6 +58,9 @@ public class HttpConnectorProperties extends ConnectorPluginProperties {
         isTlsManagerEnabled = false;
         isServerCertificateValidationEnabled = false;
 
+        crlMode = RevocationMode.HARD_FAIL;
+        oscpMode = RevocationMode.HARD_FAIL;
+
         trustSystemTruststore = true;
         trustedServerCertificates = Collections.emptyList();
 
@@ -69,6 +77,9 @@ public class HttpConnectorProperties extends ConnectorPluginProperties {
     public HttpConnectorProperties(HttpConnectorProperties props) {
         isTlsManagerEnabled = props.isTlsManagerEnabled();
         isServerCertificateValidationEnabled = props.isServerCertificateValidationEnabled();
+
+        crlMode = props.getCrlMode();
+        oscpMode = props.getOscpMode();
 
         trustSystemTruststore = props.isTrustSystemTruststore();
         trustedServerCertificates = props.getTrustedServerCertificates();

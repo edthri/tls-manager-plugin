@@ -21,15 +21,19 @@ import com.mirth.connect.client.ui.ConnectorTypeDecoration;
 import com.mirth.connect.client.ui.Frame;
 import com.mirth.connect.client.ui.PlatformUI;
 import com.mirth.connect.client.ui.UIConstants;
+import com.mirth.connect.client.ui.components.MirthComboBox;
 import com.mirth.connect.client.ui.components.MirthRadioButton;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.model.Connector;
 import net.miginfocom.swing.MigLayout;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
+import org.openintegrationengine.tlsmanager.client.misc.RevocationModeComboBoxRenderer;
+import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.properties.HttpConnectorProperties;
 
 import javax.swing.ButtonGroup;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -57,6 +61,12 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     private JLabel hostnameValidationLabel;
     private MirthRadioButton hostnameValidationRadioYes;
     private MirthRadioButton hostnameValidationRadioNo;
+
+    private JLabel crlModeLabel;
+    private MirthComboBox<RevocationMode> crlModeComboBox;
+
+    private JLabel oscpModeLabel;
+    private MirthComboBox<RevocationMode> oscpModeComboBox;
 
     private JLabel clientCertLabel;
     private JButton clientCertButton;
@@ -192,6 +202,25 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         hostnameValidationRadioNo.addActionListener(e -> properties.setHostnameVerificationEnabled(false));
         hostnameValidationButtonGroup.add(hostnameValidationRadioNo);
 
+        var comboBoxRenderer = new RevocationModeComboBoxRenderer();
+        var revocationModeModel = new RevocationMode[]{
+            RevocationMode.DISABLED,
+            RevocationMode.SOFT_FAIL,
+            RevocationMode.HARD_FAIL
+        };
+
+        crlModeLabel = new JLabel("CRL Mode:");
+        crlModeComboBox = new MirthComboBox<>();
+        crlModeComboBox.setRenderer(comboBoxRenderer);
+        crlModeComboBox.setModel(new DefaultComboBoxModel<>(revocationModeModel));
+        crlModeComboBox.addActionListener(evt -> handleCrlModeChange());
+
+        oscpModeLabel = new JLabel("OSCP Mode:");
+        oscpModeComboBox = new MirthComboBox<>();
+        oscpModeComboBox.setRenderer(comboBoxRenderer);
+        oscpModeComboBox.setModel(new DefaultComboBoxModel<>(revocationModeModel));
+        oscpModeComboBox.addActionListener(evt -> handleOscpModeChange());
+
         clientCertLabel = new JLabel("Client Certificate:");
         clientCertButton = new JButton(wrenchIcon);
         clientCertButton.addActionListener(e -> System.out.println("client button"));
@@ -263,6 +292,12 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         add(serverCertificateValidationRadioYes, "split");
         add(serverCertificateValidationRadioNo);
 
+        add(crlModeLabel, "newline, right");
+        add(crlModeComboBox);
+
+        add(oscpModeLabel, "newline, right");
+        add(oscpModeComboBox);
+
         add(trustedServerCertsLabel, "newline, right");
         add(trustedServerCertsButton, "h 22!, w 22!, split");
         add(trustedServerCertsText);
@@ -282,6 +317,18 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         add(ciphersLabel, "newline, right");
         add(ciphersButton, "h 22!, w 22!, split");
         add(ciphersText);
+    }
+
+    private void handleCrlModeChange() {
+        if (crlModeComboBox.getSelectedItem() instanceof RevocationMode revocationMode) {
+            properties.setCrlMode(revocationMode);
+        }
+    }
+
+    private void handleOscpModeChange() {
+        if (oscpModeComboBox.getSelectedItem() instanceof RevocationMode revocationMode) {
+            properties.setOscpMode(revocationMode);
+        }
     }
 
     private void handleManagerEnabledButton(boolean managerEnabled) {
@@ -324,6 +371,9 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         } else {
             serverCertificateValidationRadioNo.setSelected(true);
         }
+
+        crlModeComboBox.setSelectedItem(properties.getCrlMode());
+        oscpModeComboBox.setSelectedItem(properties.getOscpMode());
 
         var count = properties.getTrustedServerCertificates().size();
         var plural = (count == 1) ? "" : "s";
