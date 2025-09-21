@@ -21,6 +21,7 @@ import com.kaurpalang.mirth.annotationsplugin.type.ApiProviderType;
 import com.mirth.connect.server.api.MirthServlet;
 import lombok.extern.slf4j.Slf4j;
 import org.openintegrationengine.tlsmanager.server.CertificateService;
+import org.openintegrationengine.tlsmanager.server.TLSServicePlugin;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
@@ -40,13 +41,27 @@ import java.util.List;
 @MirthApiProvider(type = ApiProviderType.SERVER_CLASS)
 public class TLSServlet extends MirthServlet implements TLSServletInterface {
 
+    private CertificateService certificateService;
+
     public TLSServlet(@Context HttpServletRequest request, @Context SecurityContext sc) {
         super(request, sc, TLSPluginConstants.PLUGIN_POINTNAME);
+
+        this.certificateService = TLSServicePlugin.getPluginInstance().getCertificateService();
+    }
+
+    public TLSServlet(
+        @Context HttpServletRequest request,
+        @Context SecurityContext sc,
+        CertificateService certificateService
+    ) {
+        super(request, sc, TLSPluginConstants.PLUGIN_POINTNAME);
+
+        this.certificateService = certificateService;
     }
 
     @Override
     public List<String> getImportedCertificates() {
-        var additionalTruststore = CertificateService.getInstance().getTruststore();
+        var additionalTruststore = certificateService.getTruststore();
 
         Enumeration<String> aliasEnumeration;
         try {
@@ -67,7 +82,7 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
 
     @Override
     public byte[] getKeystore() {
-        var keystore = CertificateService.getInstance().getTruststore();
+        var keystore = certificateService.getTruststore();
 
         try (var baos = new ByteArrayOutputStream()) {
             keystore.store(baos, "changeit".toCharArray());

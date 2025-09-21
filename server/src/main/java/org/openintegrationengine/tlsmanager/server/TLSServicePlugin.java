@@ -22,7 +22,6 @@ import org.openintegrationengine.tlsmanager.server.connectorconfig.TLSHttpConfig
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import com.mirth.connect.model.ExtensionPermission;
 import com.mirth.connect.plugins.ServicePlugin;
-import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.server.controllers.ControllerFactory;
 import org.openintegrationengine.tlsmanager.shared.SerializationController;
 
@@ -33,16 +32,21 @@ import java.util.Properties;
 @MirthServerClass
 public class TLSServicePlugin implements ServicePlugin {
 
-    private ConfigurationController configurationController;
-
     @Getter
     private CertificateService certificateService;
 
+    @Getter
+    private SocketFactoryService socketFactoryService;
+
     @Override
     public void init(Properties properties) {
-        this.configurationController = ControllerFactory.getFactory().createConfigurationController();
+        var configurationController = ControllerFactory.getFactory().createConfigurationController();
 
-        this.certificateService = CertificateService.getInstance();
+        this.certificateService = new CertificateService();
+        this.socketFactoryService = new SocketFactoryService(
+            configurationController,
+            certificateService
+        );
 
         configurationController.saveProperty(
             "HTTP",
@@ -88,4 +92,23 @@ public class TLSServicePlugin implements ServicePlugin {
 
     @Override
     public void stop() { }
+
+    public static TLSServicePlugin getPluginInstance() {
+        var servicePlugin = ControllerFactory.getFactory()
+            .createExtensionController()
+            .getServicePlugins()
+            .get(TLSPluginConstants.PLUGIN_POINTNAME);
+
+        if (servicePlugin instanceof TLSServicePlugin tlsServicePlugin) {
+            return tlsServicePlugin;
+        } else {
+            // well we shouldn't really get here
+            throw new RuntimeException(
+                "Plugin pointname '%s' does not point to an instance of %s class".formatted(
+                    TLSPluginConstants.PLUGIN_POINTNAME,
+                    TLSServicePlugin.class.getCanonicalName()
+                )
+            );
+        }
+    }
 }

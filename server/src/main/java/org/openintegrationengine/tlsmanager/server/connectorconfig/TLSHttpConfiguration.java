@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.openintegrationengine.tlsmanager.server.CertificateService;
 import org.openintegrationengine.tlsmanager.server.SocketFactoryService;
+import org.openintegrationengine.tlsmanager.server.TLSServicePlugin;
 import org.openintegrationengine.tlsmanager.shared.properties.HttpConnectorProperties;
 
 @Slf4j
@@ -48,8 +49,20 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
 
     public TLSHttpConfiguration() {
         this.configurationController = ControllerFactory.getFactory().createConfigurationController();
-        this.certificateService = CertificateService.getInstance();
-        this.socketFactoryService = SocketFactoryService.getInstance();
+
+        var tlsServicePlugin = TLSServicePlugin.getPluginInstance();
+        this.certificateService = tlsServicePlugin.getCertificateService();
+        this.socketFactoryService = tlsServicePlugin.getSocketFactoryService();
+    }
+
+    public TLSHttpConfiguration(
+        ConfigurationController configurationController,
+        CertificateService certificateService,
+        SocketFactoryService socketFactoryService
+    ) {
+        this.configurationController = configurationController;
+        this.certificateService = certificateService;
+        this.socketFactoryService = socketFactoryService;
     }
 
     @Override

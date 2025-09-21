@@ -1,9 +1,7 @@
 package org.openintegrationengine.tlsmanager.server;
 
 import com.mirth.connect.server.controllers.ConfigurationController;
-import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.util.MirthSSLUtil;
-import lombok.Getter;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.ssl.SSLContexts;
@@ -16,12 +14,18 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class SocketFactoryService {
 
-    @Getter
-    private static final SocketFactoryService instance = new SocketFactoryService();
-
     private final ConfigurationController configurationController;
     private final CertificateService certificateService;
-    private final ConcurrentHashMap<String, SSLConnectionSocketFactory> socketFactories = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, SSLConnectionSocketFactory> socketFactories;
+
+    public SocketFactoryService(
+        ConfigurationController configurationController,
+        CertificateService certificateService
+    ) {
+        this.socketFactories = new ConcurrentHashMap<>();
+        this.certificateService = certificateService;
+        this.configurationController = configurationController;
+    }
 
     public SSLConnectionSocketFactory getChannelSocketFactory(String connectorId, HttpConnectorProperties properties) {
         var socketFactory = buildSocketFactory(properties);
@@ -61,12 +65,5 @@ public class SocketFactoryService {
         } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException e) {
             throw new RuntimeException(e);
         }
-
-    }
-
-    // Disallow direct instantiation. We want singletons only.
-    private SocketFactoryService() {
-        this.certificateService = CertificateService.getInstance();
-        this.configurationController = ControllerFactory.getFactory().createConfigurationController();
     }
 }

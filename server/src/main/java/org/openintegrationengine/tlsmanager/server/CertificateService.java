@@ -31,9 +31,6 @@ import java.util.Collections;
 public final class CertificateService {
 
     @Getter
-    private static final CertificateService instance = new CertificateService();
-
-    @Getter
     private KeyStore systemTrustStore;
 
     @Getter
@@ -44,6 +41,9 @@ public final class CertificateService {
 
     @Getter
     private KeyStore mergedTruststore;
+
+    public CertificateService() {
+    }
 
     void init() {
         var systemTruststore = new SystemTrustStoreBackend();
@@ -117,7 +117,4 @@ public final class CertificateService {
 
         return mergedKeystore;
     }
-
-    // Disallow direct instantiation. We want singletons only.
-    private CertificateService() {}
 }
