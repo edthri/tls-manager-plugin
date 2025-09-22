@@ -9,3 +9,5 @@ plugin.xml
 docker/certs/
 docker/custom-extensions
 docker/pgdata
+
+tools/cert-revocation/mini-ca

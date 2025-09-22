@@ -10,12 +10,14 @@ services:
     networks:
       default:
         aliases:
-          - yourdomain.com
+          - valid.crl.caddy
+          - revoked.crl.caddy
     configs:
       - source: caddyfile
         target: /etc/caddy/Caddyfile
     volumes:
       - ./certs:/certs:ro
+      - ../tools/cert-revocation/mini-ca:/opt/certs/crl
 
   oie:
     image: openintegrationengine/engine:latest
@@ -53,9 +55,14 @@ services:
 configs:
   caddyfile:
     content: |
-      https://yourdomain.com {
-        tls /certs/yourdomain.com.crt /certs/yourdomain.com.key
+      https://valid.crl.caddy {
+        tls /opt/certs/crl/server1.crt /opt/certs/crl/server1.key
 
-      	# Simple endpoint to prove it works
-      	respond "Hello from Caddy over self-signed TLS 👋" 200
+      	respond "Hai with valid cert" 200
+      }
+
+      https://revoked.crl.caddy {
+        tls /opt/certs/crl/server2.crt /opt/certs/crl/server2.key
+
+      	respond "Hai with revoked cert" 200
       }
