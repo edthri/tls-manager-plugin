@@ -81,6 +81,53 @@ public final class CertificateService {
         loadKeyStore(truststore, extraTrustStore, "changeit".toCharArray());
     }
 
+    KeyStore getTrustStoreFromProperties(boolean isTrustSystem, Set<String> aliasSet) {
+        try {
+            KeyStore finalTrustStore;
+
+            if (isTrustSystem) {
+                finalTrustStore = clone(systemTrustStore);
+            } else {
+                finalTrustStore = KeyStore.getInstance("PKCS12");
+                finalTrustStore.load(null, "supabase".toCharArray());
+            }
+
+            var presentInSystem = new HashSet<String>();
+            var unknownAliases = new HashSet<String>();
+            for (String alias : aliasSet) {
+                try {
+                    if (systemTrustStore.containsAlias(alias)) {
+                        presentInSystem.add(alias);
+                        continue;
+                    }
+
+                    if (!truststore.containsAlias(alias)) {
+                        unknownAliases.add(alias);
+                        continue;
+                    }
+
+                    var publicCertificate = truststore.getCertificate(alias);
+                    finalTrustStore.setCertificateEntry(alias, publicCertificate);
+                } catch (KeyStoreException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            // TODO Connector data
+            if (!presentInSystem.isEmpty()) {
+                log.warn("Generating effective TrustStore for connector {}. Found and ignored aliases present in system truststore: {}", "connectorId", presentInSystem);
+            }
+
+            if (!unknownAliases.isEmpty()) {
+                log.warn("Generating effective TrustStore for connector {}. Found aliases not present in additional truststore: {}", "connectorId", unknownAliases);
+            }
+
+            return finalTrustStore;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void loadKeyStore(KeyStore keystore, byte[] bytes, char[] password) {
         try {
             try (var bais = new ByteArrayInputStream(bytes)) {

@@ -48,11 +48,12 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
     private final ConfigurationController configurationController;
 
     public TLSHttpConfiguration() {
-        this.configurationController = ControllerFactory.getFactory().createConfigurationController();
-
-        var tlsServicePlugin = TLSServicePlugin.getPluginInstance();
-        this.certificateService = tlsServicePlugin.getCertificateService();
-        this.socketFactoryService = tlsServicePlugin.getSocketFactoryService();
+        // This looks ugly, I know
+        this(
+            ControllerFactory.getFactory().createConfigurationController(),
+            TLSServicePlugin.getPluginInstance().getCertificateService(),
+            TLSServicePlugin.getPluginInstance().getSocketFactoryService()
+        );
     }
 
     public TLSHttpConfiguration(
@@ -135,6 +136,9 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
         }
 
         var sslSocketFactory = socketFactoryService.getChannelSocketFactory("kala", properties);
-        connector.getSocketFactoryRegistry().register("https", sslSocketFactory);
+        if (sslSocketFactory != null) {
+            // FIXME
+            connector.getSocketFactoryRegistry().register("https", sslSocketFactory);
+        }
     }
 }

@@ -16,8 +16,7 @@ services:
       - source: caddyfile
         target: /etc/caddy/Caddyfile
     volumes:
-      - ./certs:/certs:ro
-      - ../tools/cert-revocation/mini-ca:/opt/certs/crl
+      - ../tools/cert-revocation/mini-ca:/opt/certs/crl:ro
 
   oie:
     image: openintegrationengine/engine:latest

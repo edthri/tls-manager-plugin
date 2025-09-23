@@ -7,9 +7,20 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.properties.HttpConnectorProperties;
 
+import javax.net.ssl.CertPathTrustManagerParameters;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertPathBuilder;
+import java.security.cert.CertStore;
+import java.security.cert.CollectionCertStoreParameters;
+import java.security.cert.PKIXBuilderParameters;
+import java.security.cert.PKIXRevocationChecker;
+import java.security.cert.X509CertSelector;
+import java.util.EnumSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SocketFactoryService {
@@ -29,20 +40,55 @@ public class SocketFactoryService {
 
     public SSLConnectionSocketFactory getChannelSocketFactory(String connectorId, HttpConnectorProperties properties) {
         var socketFactory = buildSocketFactory(properties);
-        socketFactories.put(connectorId, socketFactory);
+        //socketFactories.put(connectorId, socketFactory);
         return socketFactory;
     }
 
     private SSLConnectionSocketFactory buildSocketFactory(HttpConnectorProperties properties) {
         try {
-            var truststore = properties.isTrustSystemTruststore()
-                ? certificateService.getSystemTrustStore()
-                : certificateService.getMergedTruststore();
+            var truststore = certificateService.getTrustStoreFromProperties(
+                properties.isTrustSystemTruststore(),
+                properties.getTrustedServerCertificates()
+            );
 
-            var sslContext = SSLContexts
-                .custom()
-                .loadTrustMaterial(truststore, null)
-                .build();
+            // Exit early if truststore is empty
+            if (!truststore.aliases().hasMoreElements()) {
+                return null;
+            }
+
+            var pkixBuilderParameters = new PKIXBuilderParameters(truststore, new X509CertSelector());
+            pkixBuilderParameters.setRevocationEnabled(false); // FIXME
+
+            var crlStore = CertStore.getInstance(
+                "Collection",
+                new CollectionCertStoreParameters()
+            );
+            pkixBuilderParameters.addCertStore(crlStore);
+
+            if (properties.getCrlMode() != RevocationMode.DISABLED) {
+                // Prefer CRLs and avoid falling back to OCSP (adjust to your policy)
+                // TODO investigate OCSP
+                var revocationChecker = (PKIXRevocationChecker) CertPathBuilder.getInstance("PKIX").getRevocationChecker();
+
+                var revocationOptions = EnumSet.of(
+                    PKIXRevocationChecker.Option.PREFER_CRLS,
+                    PKIXRevocationChecker.Option.NO_FALLBACK
+                );
+
+                if (properties.getCrlMode() == RevocationMode.SOFT_FAIL) {
+                    // This options sets from the default of HARD_FAIL to SOFT_FAIL
+                    revocationOptions.add(PKIXRevocationChecker.Option.SOFT_FAIL);
+                }
+
+                revocationChecker.setOptions(revocationOptions);
+                pkixBuilderParameters.addCertPathChecker(revocationChecker);
+            }
+
+            var trustManagerFactory = TrustManagerFactory.getInstance("PKIX");
+            trustManagerFactory.init(new CertPathTrustManagerParameters(pkixBuilderParameters));
+
+            var sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 
             var protocolArray = properties.isUseServerDefaultProtocols()
                 ? MirthSSLUtil.getEnabledHttpsProtocols(configurationController.getHttpsServerProtocols())
@@ -62,7 +108,7 @@ public class SocketFactoryService {
                 cipherArray,
                 hostnameVerificationStrategy
             );
-        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException e) {
+        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | InvalidAlgorithmParameterException e) {
             throw new RuntimeException(e);
         }
     }

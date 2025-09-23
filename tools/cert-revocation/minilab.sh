@@ -120,7 +120,7 @@ openssl verify -crl_check -CAfile demoCA/certs/ca.crt -CRLfile demoCA/crl/ca.crl
 keytool -importcert -noprompt -trustcacerts \
   -file demoCA/certs/ca.crt \
   -alias test-root-ca \
-  -keystore truststore.jks -storepass changeit
+  -keystore truststore.p12 -storepass changeit
 
 popd >/dev/null
 
