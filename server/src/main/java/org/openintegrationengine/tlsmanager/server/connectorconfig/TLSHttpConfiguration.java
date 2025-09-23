@@ -80,7 +80,9 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
     public void configureSocketFactoryRegistry(ConnectorPluginProperties properties, RegistryBuilder<ConnectionSocketFactory> registry) {}
 
     @Override
-    public void configureReceiver(HttpReceiver connector) {
+    public void configureReceiver(HttpReceiver connector) throws Exception {
+        super.configureReceiver(connector);
+        /*
         String[] enabledProtocols = MirthSSLUtil.getEnabledHttpsProtocols(configurationController.getHttpsServerProtocols());
         String[] cipherSuites = MirthSSLUtil.getEnabledHttpsProtocols(configurationController.getHttpsCipherSuites());
 
@@ -107,6 +109,7 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
         listener.setPort(connector.getPort());
         listener.setIdleTimeout(connector.getTimeout());
         connector.getServer().addConnector(listener);
+         */
     }
 
     private void configureSocketFactory(HttpDispatcher connector) {
