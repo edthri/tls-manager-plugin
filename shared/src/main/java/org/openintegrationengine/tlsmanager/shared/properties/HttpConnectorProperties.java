@@ -24,8 +24,8 @@ import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -41,15 +41,15 @@ public class HttpConnectorProperties extends ConnectorPluginProperties {
 
     // Public certificates
     private boolean trustSystemTruststore;
-    private List<String> trustedServerCertificates;
+    private Set<String> trustedServerCertificates;
 
     // Protocols
     private boolean isUseServerDefaultProtocols;
-    private List<String> usedProtocols;
+    private Set<String> usedProtocols;
 
     // Ciphers
     private boolean isUseServerDefaultCiphers;
-    private List<String> usedCiphers;
+    private Set<String> usedCiphers;
 
     private boolean isHostnameVerificationEnabled;
     private String clientCertificateAlias;
@@ -62,13 +62,13 @@ public class HttpConnectorProperties extends ConnectorPluginProperties {
         oscpMode = RevocationMode.HARD_FAIL;
 
         trustSystemTruststore = true;
-        trustedServerCertificates = Collections.emptyList();
+        trustedServerCertificates = Collections.emptySet();
 
         isUseServerDefaultProtocols = true;
-        usedProtocols = Collections.emptyList();
+        usedProtocols = Collections.emptySet();
 
         isUseServerDefaultCiphers = true;
-        usedCiphers = Collections.emptyList();
+        usedCiphers = Collections.emptySet();
 
         isHostnameVerificationEnabled = true;
         clientCertificateAlias = "";

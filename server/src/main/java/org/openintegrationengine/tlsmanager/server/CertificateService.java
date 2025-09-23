@@ -27,6 +27,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class CertificateService {
 
@@ -75,6 +77,14 @@ public final class CertificateService {
                 keystore.load(bais, password);
             }
         } catch (IOException | NoSuchAlgorithmException | CertificateException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Set<String> getLoadedAliases() {
+        try {
+            return new HashSet<>(Collections.list(truststore.aliases()));
+        } catch (KeyStoreException e) {
             throw new RuntimeException(e);
         }
     }

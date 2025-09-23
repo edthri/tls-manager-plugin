@@ -31,17 +31,21 @@ import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
 import org.openintegrationengine.tlsmanager.client.misc.RevocationModeComboBoxRenderer;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.properties.HttpConnectorProperties;
+import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.SwingWorker;
 import java.awt.Color;
 import java.awt.Component;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropertiesPanel {
@@ -81,12 +85,15 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     private JLabel ciphersText;
 
     private HttpConnectorProperties properties;
+    private Set<String> importedAliases;
 
     public HTTPSenderConnectorPropertiesPanel() {
         this.properties = new HttpConnectorProperties();
+        this.importedAliases = new HashSet<>();
 
         initComponents();
         initLayout();
+        fetchData();
     }
 
     @Override
@@ -167,7 +174,7 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         trustedServerCertsLabel = new JLabel("Trusted Server Certificates:");
         trustedServerCertsButton = new JButton(wrenchIcon);
         trustedServerCertsButton.addActionListener(e -> {
-            BiConsumer<Boolean, List<String>> completionConsumer = (isTrustSystemTrustStoreEnabled, selectedCerts) -> {
+            BiConsumer<Boolean, Set<String>> completionConsumer = (isTrustSystemTrustStoreEnabled, selectedCerts) -> {
                 properties.setTrustSystemTruststore(isTrustSystemTrustStoreEnabled);
                 properties.setTrustedServerCertificates(selectedCerts);
                 redrawState();
@@ -177,7 +184,7 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
             new ItemPickerDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Certificate Picker",
-                List.of("GoDaddy", "Some other CA"),
+                importedAliases,
                 properties.getTrustedServerCertificates(),
                 properties.isTrustSystemTruststore(),
                 "[JVM Truststore]",
@@ -229,10 +236,10 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         protocolsLabel = new JLabel("Enabled Protocols:");
         protocolsButton = new JButton(wrenchIcon);
         protocolsButton.addActionListener(e -> {
-            BiConsumer<Boolean, List<String>> completionConsumer = (trustDefaultProtocols, selectedProtocols) -> {
+            BiConsumer<Boolean, Set<String>> completionConsumer = (trustDefaultProtocols, selectedProtocols) -> {
                 properties.setUseServerDefaultProtocols(trustDefaultProtocols);
                 if (trustDefaultProtocols) {
-                    properties.setUsedProtocols(Collections.emptyList());
+                    properties.setUsedProtocols(Collections.emptySet());
                 } else {
                     properties.setUsedProtocols(selectedProtocols);
                 }
@@ -244,7 +251,7 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
             new ItemPickerDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Protocols Picker",
-                List.of(PlatformUI.HTTPS_PROTOCOLS),
+                Set.of(PlatformUI.HTTPS_PROTOCOLS),
                 properties.getUsedProtocols(),
                 properties.isUseServerDefaultProtocols(),
                 "[Server default]",
@@ -256,10 +263,10 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         ciphersLabel = new JLabel("Enabled Ciphers:");
         ciphersButton = new JButton(wrenchIcon);
         ciphersButton.addActionListener(e -> {
-            BiConsumer<Boolean, List<String>> completionConsumer = (trustDefaultCiphers, selectedCiphers) -> {
+            BiConsumer<Boolean, Set<String>> completionConsumer = (trustDefaultCiphers, selectedCiphers) -> {
                 properties.setUseServerDefaultCiphers(trustDefaultCiphers);
                 if (trustDefaultCiphers) {
-                    properties.setUsedCiphers(Collections.emptyList());
+                    properties.setUsedCiphers(Collections.emptySet());
                 } else {
                     properties.setUsedCiphers(selectedCiphers);
                 }
@@ -271,7 +278,7 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
             new ItemPickerDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Ciphers Picker",
-                List.of(PlatformUI.HTTPS_CIPHER_SUITES),
+                Set.of(PlatformUI.HTTPS_CIPHER_SUITES),
                 properties.getUsedCiphers(),
                 properties.isUseServerDefaultCiphers(),
                 "[Server default]",
@@ -375,15 +382,23 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         crlModeComboBox.setSelectedItem(properties.getCrlMode());
         oscpModeComboBox.setSelectedItem(properties.getOscpMode());
 
-        var count = properties.getTrustedServerCertificates().size();
-        var plural = (count == 1) ? "" : "s";
 
-        var serverCertificatesText = "Trusting %d cert%s%s".formatted(
-            count,
-            plural,
-            properties.isTrustSystemTruststore() ? " and System Truststore" : ""
+        var thingsToTrust = new ArrayList<String>();
+        if (properties.isTrustSystemTruststore()) {
+            thingsToTrust.add("System Truststore");
+        }
+
+        if (!properties.getTrustedServerCertificates().isEmpty()) {
+            var count = properties.getTrustedServerCertificates().size();
+            var plural = (count == 1) ? "" : "s";
+            thingsToTrust.add("%d certificate%s".formatted(count, plural));
+        }
+
+        var serverCertificatesText = "Trusting %s".formatted(
+            thingsToTrust.isEmpty()
+                ? "no one >:C"
+                : String.join(" and ", thingsToTrust)
         );
-
         trustedServerCertsText.setText(serverCertificatesText);
 
         if (properties.isHostnameVerificationEnabled()) {
@@ -405,5 +420,32 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
             : "%d selected".formatted(properties.getUsedCiphers().size());
 
         ciphersText.setText(ciphersString);
+    }
+
+    private void fetchData() {
+        final var workingId = PlatformUI.MIRTH_FRAME.startWorking("Fetching imported certificates...");
+
+        var worker = new SwingWorker<Void, Void>() {
+            private String errorMessage = "";
+
+            private Set<String> aliasSet;
+
+            public Void doInBackground() {
+                try {
+                    aliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getImportedCertificates();
+                } catch (Exception e) {
+                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported certificates failed");
+                }
+
+                return null;
+            }
+
+            public void done() {
+                importedAliases = aliasSet;
+                PlatformUI.MIRTH_FRAME.stopWorking(workingId);
+            }
+        };
+
+        worker.execute();
     }
 }

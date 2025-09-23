@@ -50,11 +50,11 @@ import java.awt.Font;
 import java.awt.Window;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EventObject;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.prefs.Preferences;
 
@@ -78,21 +78,21 @@ public class ItemPickerDialog extends MirthDialog {
     private static final int CERTIFICATES_NAME_COLUMN = 1;
     private static final int CERTIFICATES_ID_COLUMN = 2;
 
-    private final List<String> allOptions;
-    private List<String> selectedOptions;
+    private final Set<String> allOptions;
+    private Set<String> selectedOptions;
     private boolean isDefaultSelected;
     private final String defaultValue;
 
-    private final BiConsumer<Boolean, List<String>> onSaveConsumer;
+    private final BiConsumer<Boolean, Set<String>> onSaveConsumer;
 
     public ItemPickerDialog(
         Window owner,
         String windowTitle,
-        List<String> allOptions,
-        List<String> selectedOptions,
+        Set<String> allOptions,
+        Set<String> selectedOptions,
         boolean isDefaultSelected,
         String defaultValue,
-        BiConsumer<Boolean, List<String>> onSaveConsumer
+        BiConsumer<Boolean, Set<String>> onSaveConsumer
     ) {
         super(owner, windowTitle, true);
         this.allOptions = allOptions;
@@ -281,7 +281,7 @@ public class ItemPickerDialog extends MirthDialog {
     }
 
     private void processTableState() {
-        var localSelectedOptions = new ArrayList<String>();
+        var localSelectedOptions = new HashSet<String>();
 
         for (int row = 0; row < certificateTable.getModel().getRowCount(); row++) {
             var state = (int) certificateTable.getModel().getValueAt(row, CERTIFICATES_SELECTED_COLUMN);

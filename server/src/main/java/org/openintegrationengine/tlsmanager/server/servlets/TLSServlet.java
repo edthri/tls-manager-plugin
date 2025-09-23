@@ -33,9 +33,7 @@ import java.io.IOException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @MirthApiProvider(type = ApiProviderType.SERVER_CLASS)
@@ -60,24 +58,8 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
     }
 
     @Override
-    public List<String> getImportedCertificates() {
-        var additionalTruststore = certificateService.getTruststore();
-
-        Enumeration<String> aliasEnumeration;
-        try {
-            aliasEnumeration = additionalTruststore.aliases();
-        } catch (KeyStoreException e) {
-            throw new RuntimeException(e);
-        }
-
-        var aliasList = new ArrayList<String>();
-        while (aliasEnumeration.hasMoreElements()) {
-            var alias = aliasEnumeration.nextElement();
-
-            aliasList.add(alias);
-        }
-
-        return aliasList;
+    public Set<String> getImportedCertificates() {
+        return certificateService.getLoadedAliases();
     }
 
     @Override

@@ -35,6 +35,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.List;
+import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
@@ -61,7 +62,7 @@ public interface TLSServletInterface extends BaseServletInterface {
         display = "Get list of imported certificates",
         type = Operation.ExecuteType.ASYNC
     )
-    List<String> getImportedCertificates();
+    Set<String> getImportedCertificates();
 
     @GET
     @Path("/keystore")
