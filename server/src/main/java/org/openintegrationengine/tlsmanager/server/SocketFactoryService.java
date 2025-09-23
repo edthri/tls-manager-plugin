@@ -4,7 +4,7 @@ import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.util.MirthSSLUtil;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.ssl.SSLContexts;
+import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.properties.HttpConnectorProperties;
 
 import java.security.KeyManagementException;

@@ -17,10 +17,15 @@
 package org.openintegrationengine.tlsmanager.server;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.openintegrationengine.tlsmanager.server.backend.DatabaseTrustStoreBackend;
 import org.openintegrationengine.tlsmanager.server.backend.FileTrustStoreBackend;
 import org.openintegrationengine.tlsmanager.server.backend.SystemTrustStoreBackend;
+import org.openintegrationengine.tlsmanager.server.backend.TrustStoreBackend;
+import org.openintegrationengine.tlsmanager.shared.PersistenceMode;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -30,6 +35,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+@Slf4j
 public final class CertificateService {
 
     @Getter
@@ -41,18 +47,28 @@ public final class CertificateService {
     @Getter
     private KeyStore keystore;
 
-    @Getter
-    private KeyStore mergedTruststore;
+    private TrustStoreBackend systemTrustStoreBackend;
+    private TrustStoreBackend extraTrustStoreBackend;
 
     public CertificateService() {
     }
 
     void init() {
-        var systemTruststore = new SystemTrustStoreBackend();
-        var additionalTruststore = new FileTrustStoreBackend("/certs/truststore.p12");
+        systemTrustStoreBackend = new SystemTrustStoreBackend();
 
-        byte[] cacerts = systemTruststore.load();
-        byte[] additional = additionalTruststore.load();
+        var persistenceMode = getPersistenceMode();
+
+        if (persistenceMode == PersistenceMode.DATABASE) {
+            extraTrustStoreBackend = new DatabaseTrustStoreBackend();
+        } else if (persistenceMode == PersistenceMode.FILESYSTEM) {
+            extraTrustStoreBackend = new FileTrustStoreBackend("/certs/truststore.p12");
+        } else {
+            // Should not get here
+            throw new RuntimeException("Unsupported persistence mode: " + persistenceMode);
+        }
+
+        byte[] cacerts = systemTrustStoreBackend.load();
+        byte[] extraTrustStore = extraTrustStoreBackend.load();
 
         try {
             systemTrustStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -61,14 +77,8 @@ public final class CertificateService {
             throw new RuntimeException(e);
         }
 
-        loadKeyStore(systemTrustStore, cacerts, systemTruststore.loadPassword());
-        loadKeyStore(truststore, additional, "changeit".toCharArray());
-
-        try {
-            mergedTruststore = mergeKeystores(systemTrustStore, truststore);
-        } catch (KeyStoreException e) {
-            throw new RuntimeException(e);
-        }
+        loadKeyStore(systemTrustStore, cacerts, systemTrustStoreBackend.loadPassword());
+        loadKeyStore(truststore, extraTrustStore, "changeit".toCharArray());
     }
 
     private void loadKeyStore(KeyStore keystore, byte[] bytes, char[] password) {
@@ -89,42 +99,39 @@ public final class CertificateService {
         }
     }
 
-    private KeyStore mergeKeystores(KeyStore base, KeyStore toMerge) throws KeyStoreException {
-        var mergedKeystore = KeyStore.getInstance("PKCS12");
-        try {
-            mergedKeystore.load(null, null);
-        } catch (IOException | NoSuchAlgorithmException | CertificateException e) {
-            // TODO Fix exception handling
-            throw new RuntimeException(e);
+    private PersistenceMode getPersistenceMode() {
+        var persistenceModeFromEnv = System.getenv("OIE_TLS_PLUGIN_PERSISTENCE_BACKEND");
+
+        if (persistenceModeFromEnv == null) {
+            throw new RuntimeException("OIE_TLS_PLUGIN_PERSISTENCE_BACKEND is not set");
         }
 
-        Collections
-            .list(base.aliases())
-            .forEach(alias -> {
-                try {
-                    if (base.isCertificateEntry(alias)) {
-                        mergedKeystore.setCertificateEntry(alias, base.getCertificate(alias));
-                    }
-                } catch (KeyStoreException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+        var persistenceMode = PersistenceMode.valueOf(persistenceModeFromEnv.toUpperCase());
 
-        Collections
-            .list(toMerge.aliases())
-            .forEach(alias -> {
-                try {
-                    if (toMerge.isCertificateEntry(alias)) {
-                        mergedKeystore.setCertificateEntry(
-                            "merged-%s".formatted(alias),
-                            toMerge.getCertificate(alias)
-                        );
-                    }
-                } catch (KeyStoreException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+        log.info("Using persistence mode {}", persistenceMode);
 
-        return mergedKeystore;
+        return persistenceMode;
+    }
+
+    /**
+     * Perform a byte-level clone of a KeyStore object
+     *
+     * @param keystore The KeyStore object to be cloned
+     * @return Byte-level clone of the provided KeyStore
+     */
+    private KeyStore clone(KeyStore keystore) {
+        try (var outStream = new ByteArrayOutputStream()) {
+            var finalTrustStore = KeyStore.getInstance("PKCS12");
+
+            keystore.store(outStream, "sup3rS3cr1t!".toCharArray());
+
+            try (var inStream = new ByteArrayInputStream(outStream.toByteArray())) {
+                finalTrustStore.load(inStream, "sup3rS3cr1t!".toCharArray());
+            }
+
+            return finalTrustStore;
+        } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
