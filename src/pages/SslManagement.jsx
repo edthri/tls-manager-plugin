@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Box, Paper, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
 import { useSearchParams } from 'react-router-dom'
 import TabsWithCounts from '../components/TabsWithCounts'
@@ -10,6 +10,7 @@ import useCertificates from '../hooks/useCertificates'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import VpnKeyIcon from '@mui/icons-material/VpnKey'
+import ImportCertificateDialogContent from '../components/ImportCertificateDialogContent'
 
 export default function SslManagement() {
   const { counts, filterBy, loading, error } = useCertificates()
@@ -19,15 +20,28 @@ export default function SslManagement() {
   const [tabKey, setTabKey] = useState(initialKey)
   const [search, setSearch] = useState('')
 
-  const fileInputRef = useRef(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogTitle, setDialogTitle] = useState('')
-  const [dialogContent, setDialogContent] = useState('')
+  const [dialogType, setDialogType] = useState(null) // 'text' | 'import-certificate' | null
+  const [dialogProps, setDialogProps] = useState({})
 
-  const openDialog = (title, content) => {
+  const openDialog = ({ type, title, props = {} }) => {
     setDialogTitle(title)
-    setDialogContent(content)
+    setDialogType(type)
+    setDialogProps(props)
     setDialogOpen(true)
+  }
+
+  const closeDialog = () => {
+    setDialogOpen(false)
+    setDialogType(null)
+    setDialogProps({})
+  }
+
+  const openImportDialog = (presetFormat) => {
+    const defaultFormat = presetFormat || 'PEM'
+    const targetStore = tabKey === 'trusted' ? 'trusted' : 'private'
+    openDialog({ type: 'import-certificate', title: presetFormat === 'PKCS12' ? 'Import PKCS#12' : 'Import Certificate', props: { defaultFormat, targetStore } })
   }
 
   const onTabChange = (_e, newIndex) => {
@@ -59,17 +73,17 @@ export default function SslManagement() {
     trusted: {
       title: 'Additional Trusted Certificates',
       actions: [
-        { key: 'import', label: 'Import Certificate', color: 'info', onClick: () => openDialog('Import Certificate', 'Placeholder dialog for importing a certificate.') },
-        { key: 'add', label: 'Add New', variant: 'contained', color: 'success', onClick: () => openDialog('Add New Certificate', 'Placeholder dialog for adding a new certificate.') },
+        { key: 'import', label: 'Import Certificate', color: 'info', onClick: () => openImportDialog() },
+        { key: 'add', label: 'Add New', variant: 'contained', color: 'success', onClick: () => openDialog({ type: 'text', title: 'Add New Certificate', props: { text: 'Placeholder dialog for adding a new certificate.' } }) },
       ],
     },
     private: {
       title: 'Private Key Store',
       actions: [
-        { key: 'show-keys', label: 'Show Private Keys', color: 'secondary', onClick: () => openDialog('Show Private Keys', 'Placeholder dialog for showing private keys.') },
-        { key: 'import-cert', label: 'Import Certificate', color: 'info', onClick: () => openDialog('Import Certificate', 'Placeholder dialog for importing a certificate.') },
-        { key: 'import-pkcs12', label: 'Import PKCS#12', color: 'warning', onClick: () => openDialog('Import PKCS#12', 'Placeholder dialog for importing PKCS#12.') },
-        { key: 'add-new', label: 'Add New', variant: 'contained', color: 'success', onClick: () => openDialog('Add New Private Key', 'Placeholder dialog for adding a new private key certificate.') },
+        { key: 'show-keys', label: 'Show Private Keys', color: 'secondary', onClick: () => openDialog({ type: 'text', title: 'Show Private Keys', props: { text: 'Placeholder dialog for showing private keys.' } }) },
+        { key: 'import-cert', label: 'Import Certificate', color: 'info', onClick: () => openImportDialog() },
+        { key: 'import-pkcs12', label: 'Import PKCS#12', color: 'warning', onClick: () => openImportDialog('PKCS12') },
+        { key: 'add-new', label: 'Add New', variant: 'contained', color: 'success', onClick: () => openDialog({ type: 'text', title: 'Add New Private Key', props: { text: 'Placeholder dialog for adding a new private key certificate.' } }) },
       ],
     },
   }
@@ -104,12 +118,26 @@ export default function SslManagement() {
         </Box>
       </TabPanel>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+      <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="sm">
         <DialogTitle>{dialogTitle}</DialogTitle>
-        <DialogContent>{dialogContent}</DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Close</Button>
-        </DialogActions>
+        <DialogContent>
+          {dialogType === 'import-certificate' && (
+            <ImportCertificateDialogContent
+              defaultFormat={dialogProps.defaultFormat}
+              targetStore={dialogProps.targetStore}
+              onCancel={closeDialog}
+              onSubmit={() => closeDialog()}
+            />
+          )}
+          {dialogType === 'text' && (
+            <Box sx={{ pt: 0.5 }}>{dialogProps.text}</Box>
+          )}
+        </DialogContent>
+        {dialogType === 'text' && (
+          <DialogActions>
+            <Button onClick={closeDialog}>Close</Button>
+          </DialogActions>
+        )}
       </Dialog>
     </Box>
   )
