@@ -57,7 +57,11 @@ public class SocketFactoryService {
             }
 
             var pkixBuilderParameters = new PKIXBuilderParameters(truststore, new X509CertSelector());
-            pkixBuilderParameters.setRevocationEnabled(false); // FIXME
+
+            pkixBuilderParameters.setRevocationEnabled(
+                properties.getCrlMode() != RevocationMode.DISABLED
+                || properties.getOscpMode() != RevocationMode.DISABLED
+            );
 
             var crlStore = CertStore.getInstance(
                 "Collection",

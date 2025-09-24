@@ -28,7 +28,7 @@ services:
       - DATABASE_PASSWORD=oieuserpw
       - KEYSTORE_STOREPASS=docker_storepass
       - KEYSTORE_KEYPASS=docker_keypass
-      - OIE_TLS_PLUGIN_PERSISTENCE_BACKEND=database
+      - OIE_TLS_PLUGIN_PERSISTENCE_BACKEND=filesystem
     ports:
       - "8443:8443/tcp"
       - "5005:5005/tcp"
