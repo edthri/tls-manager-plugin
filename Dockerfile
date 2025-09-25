@@ -14,4 +14,4 @@ RUN npm install -g serve
 
 EXPOSE 3000
 
-CMD ["serve", "-l", "3000"]
+CMD ["serve", "-s", "dashboard", "-l", "3000"]
