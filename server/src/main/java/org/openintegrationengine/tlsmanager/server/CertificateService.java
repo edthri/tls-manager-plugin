@@ -16,6 +16,8 @@
 
 package org.openintegrationengine.tlsmanager.server;
 
+import com.mirth.connect.donkey.server.channel.DestinationConnector;
+import com.mirth.connect.server.util.TemplateValueReplacer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.openintegrationengine.tlsmanager.server.backend.DatabaseTrustStoreBackend;
@@ -23,6 +25,7 @@ import org.openintegrationengine.tlsmanager.server.backend.FileTrustStoreBackend
 import org.openintegrationengine.tlsmanager.server.backend.SystemTrustStoreBackend;
 import org.openintegrationengine.tlsmanager.server.backend.TrustStoreBackend;
 import org.openintegrationengine.tlsmanager.shared.PersistenceMode;
+import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -35,6 +38,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.openintegrationengine.tlsmanager.shared.TLSPluginConstants.PKCS12;
+
 @Slf4j
 public final class CertificateService {
 
@@ -42,7 +47,7 @@ public final class CertificateService {
     private KeyStore systemTrustStore;
 
     @Getter
-    private KeyStore truststore;
+    private KeyStore extraTrustStore;
 
     @Getter
     private KeyStore keystore;
@@ -50,7 +55,18 @@ public final class CertificateService {
     private TrustStoreBackend systemTrustStoreBackend;
     private TrustStoreBackend extraTrustStoreBackend;
 
+    private TemplateValueReplacer templateValueReplacer;
+
     public CertificateService() {
+        this(
+            new TemplateValueReplacer()
+        );
+    }
+
+    public CertificateService(
+        TemplateValueReplacer templateValueReplacer
+    ) {
+        this.templateValueReplacer = templateValueReplacer;
     }
 
     void init() {
@@ -61,35 +77,38 @@ public final class CertificateService {
         if (persistenceMode == PersistenceMode.DATABASE) {
             extraTrustStoreBackend = new DatabaseTrustStoreBackend();
         } else if (persistenceMode == PersistenceMode.FILESYSTEM) {
-            extraTrustStoreBackend = new FileTrustStoreBackend("/certs/truststore.p12");
+            var truststorePath = System.getenv(TLSPluginConstants.ENV_PERSISTENCE_FS_STOREPATH);
+            extraTrustStoreBackend = new FileTrustStoreBackend(truststorePath);
         } else {
             // Should not get here
             throw new RuntimeException("Unsupported persistence mode: " + persistenceMode);
         }
 
-        byte[] cacerts = systemTrustStoreBackend.load();
-        byte[] extraTrustStore = extraTrustStoreBackend.load();
+        extraTrustStoreBackend.init();
+
+        byte[] cacertsBytes = systemTrustStoreBackend.load();
+        byte[] extraTrustStoreBytes = extraTrustStoreBackend.load();
 
         try {
             systemTrustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            truststore = KeyStore.getInstance("PKCS12");
+            extraTrustStore = KeyStore.getInstance(PKCS12);
         } catch (KeyStoreException e) {
             log.error("Error initializing CetificateService", e);
             throw new RuntimeException(e);
         }
 
-        loadKeyStore(systemTrustStore, cacerts, systemTrustStoreBackend.loadPassword());
-        loadKeyStore(truststore, extraTrustStore, "changeit".toCharArray());
+        loadKeyStore(systemTrustStore, cacertsBytes, systemTrustStoreBackend.loadPassword());
+        loadKeyStore(extraTrustStore, extraTrustStoreBytes, extraTrustStoreBackend.loadPassword());
     }
 
-    KeyStore getTrustStoreFromProperties(boolean isTrustSystem, Set<String> aliasSet) {
+    KeyStore getTrustStoreFromProperties(boolean isTrustSystem, Set<String> aliasSet, DestinationConnector connector) {
         try {
             KeyStore finalTrustStore;
 
             if (isTrustSystem) {
                 finalTrustStore = clone(systemTrustStore);
             } else {
-                finalTrustStore = KeyStore.getInstance("PKCS12");
+                finalTrustStore = KeyStore.getInstance(PKCS12);
                 finalTrustStore.load(null, "supabase".toCharArray());
             }
 
@@ -102,12 +121,12 @@ public final class CertificateService {
                         continue;
                     }
 
-                    if (!truststore.containsAlias(alias)) {
+                    if (!extraTrustStore.containsAlias(alias)) {
                         unknownAliases.add(alias);
                         continue;
                     }
 
-                    var publicCertificate = truststore.getCertificate(alias);
+                    var publicCertificate = extraTrustStore.getCertificate(alias);
                     finalTrustStore.setCertificateEntry(alias, publicCertificate);
                 } catch (KeyStoreException e) {
                     throw new RuntimeException(e);
@@ -140,19 +159,27 @@ public final class CertificateService {
     }
 
     private void loadKeyStore(KeyStore keystore, byte[] bytes, char[] password) {
-        try {
-            try (var bais = new ByteArrayInputStream(bytes)) {
-                keystore.load(bais, password);
-            }
+        try (var bais = new ByteArrayInputStream(bytes)) {
+            keystore.load(bais, password);
         } catch (IOException | NoSuchAlgorithmException | CertificateException e) {
             log.error("Error loading keystore into memory", e);
             throw new RuntimeException(e);
         }
     }
 
+    public void storeExtraTrustStore(byte[] keystoreBytes, char[] password) {
+        try (var bais = new ByteArrayInputStream(keystoreBytes)) {
+            extraTrustStore.load(bais, password);
+            extraTrustStoreBackend.persist(keystoreBytes);
+        } catch (CertificateException | IOException | NoSuchAlgorithmException e) {
+            log.error("Error overwriting truststore", e);
+            throw new RuntimeException(e);
+        }
+    }
+
     public Set<String> getLoadedAliases() {
         try {
-            return new HashSet<>(Collections.list(truststore.aliases()));
+            return new HashSet<>(Collections.list(extraTrustStore.aliases()));
         } catch (KeyStoreException e) {
             log.error("Error reading alias list from loaded truststore", e);
             throw new RuntimeException(e);
@@ -160,10 +187,10 @@ public final class CertificateService {
     }
 
     private PersistenceMode getPersistenceMode() {
-        var persistenceModeFromEnv = System.getenv("OIE_TLS_PLUGIN_PERSISTENCE_BACKEND");
+        var persistenceModeFromEnv = System.getenv(TLSPluginConstants.ENV_PERSISTENCE_BACKEND);
 
         if (persistenceModeFromEnv == null) {
-            throw new RuntimeException("OIE_TLS_PLUGIN_PERSISTENCE_BACKEND is not set");
+            throw new IllegalStateException("%s is not set".formatted(TLSPluginConstants.ENV_PERSISTENCE_BACKEND));
         }
 
         var persistenceMode = PersistenceMode.valueOf(persistenceModeFromEnv.toUpperCase());
@@ -180,13 +207,16 @@ public final class CertificateService {
      * @return Byte-level clone of the provided KeyStore
      */
     private KeyStore clone(KeyStore keystore) {
-        try (var outStream = new ByteArrayOutputStream()) {
-            var finalTrustStore = KeyStore.getInstance("PKCS12");
+        // This doesn't have to be secret. It is just here because a keystore password cannot be null
+        final var password = "sup3rS3cr1t!".toCharArray();
 
-            keystore.store(outStream, "sup3rS3cr1t!".toCharArray());
+        try (var outStream = new ByteArrayOutputStream()) {
+            var finalTrustStore = KeyStore.getInstance(PKCS12);
+
+            keystore.store(outStream, password);
 
             try (var inStream = new ByteArrayInputStream(outStream.toByteArray())) {
-                finalTrustStore.load(inStream, "sup3rS3cr1t!".toCharArray());
+                finalTrustStore.load(inStream, password);
             }
 
             return finalTrustStore;

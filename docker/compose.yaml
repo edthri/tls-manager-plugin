@@ -29,6 +29,8 @@ services:
       - KEYSTORE_STOREPASS=docker_storepass
       - KEYSTORE_KEYPASS=docker_keypass
       - OIE_TLS_PLUGIN_PERSISTENCE_BACKEND=filesystem
+      - OIE_TLS_PLUGIN_FS_STOREPATH=/certs/truststore.p12
+      - OIE_TLS_PLUGIN_FS_STOREPASS=changeit
     ports:
       - "8443:8443/tcp"
       - "5005:5005/tcp"
@@ -37,7 +39,7 @@ services:
       - ./custom-extensions:/opt/engine/custom-extensions
       - ./conf/log4j2.properties:/opt/engine/conf/log4j2.properties:ro
       - ./custom.vmoptions:/opt/engine/conf/custom.vmoptions:ro
-      - ./certs:/certs:ro
+      - ./certs:/certs
     depends_on:
       - db
 

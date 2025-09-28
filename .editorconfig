@@ -12,5 +12,5 @@ max_line_length = 200
 ij_continuation_indent_size = 4
 ij_java_class_count_to_use_import_on_demand = 100
 
-[{*.yml,*.yaml}]
+[{*.yml,*.yaml,*.sh}]
 indent_size = 2

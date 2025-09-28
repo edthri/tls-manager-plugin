@@ -18,29 +18,32 @@ package org.openintegrationengine.tlsmanager.shared.servlet;
 
 import com.kaurpalang.mirth.annotationsplugin.annotation.MirthApiProvider;
 import com.kaurpalang.mirth.annotationsplugin.type.ApiProviderType;
+import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
+import com.mirth.connect.client.core.api.Param;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.MediaType.APPLICATION_XML;
-import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
 @Path("/tlsmanager")
 @Tag(name = TLSPluginConstants.PLUGIN_POINTNAME)
@@ -81,21 +84,29 @@ public interface TLSServletInterface extends BaseServletInterface {
     byte[] getKeystore();
 
     @POST
-    @Path("/keystore")
-    @Consumes({ APPLICATION_OCTET_STREAM })
-    @ApiResponse(
-        responseCode = "200",
-        description = "Write the additional keystore from the given byte array",
-        content = {
-            @Content(mediaType = TEXT_PLAIN, schema = @Schema(implementation = String.class)),
-        })
+    @Path("/truststore")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @io.swagger.v3.oas.annotations.Operation(
+        summary = "Overwrite the in use truststore"
+    )
     @MirthOperation(
         name = "setTlsKeystore",
-        display = "Write the additional keystore from the given byte array",
+        display = "Write the additional truststore from the given byte array",
         type = Operation.ExecuteType.ASYNC
     )
-    void setKeystore(
-        @RequestBody byte[] fileBytes,
-        @HeaderParam("X-Keystore-Password") String password
-    );
+    String setTruststore(
+        @Param("inputStream")
+        @Parameter(
+            description = "The truststore file to upload.",
+            schema = @Schema(description = "The truststore file to upload.", type = "string", format = "binary")
+        )
+        @FormDataParam("file") InputStream inputStream,
+
+        @Param("password")
+        @Parameter(description = "Truststore password")
+        @Schema(description = "Truststore password", type = "string")
+        @FormDataParam("password")
+        String password
+    ) throws ClientException;
+
 }
