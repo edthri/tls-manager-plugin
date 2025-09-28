@@ -1,5 +1,6 @@
 package org.openintegrationengine.tlsmanager.server;
 
+import com.mirth.connect.donkey.server.channel.DestinationConnector;
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.util.MirthSSLUtil;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
@@ -38,17 +39,12 @@ public class SocketFactoryService {
         this.configurationController = configurationController;
     }
 
-    public SSLConnectionSocketFactory getChannelSocketFactory(String connectorId, HttpConnectorProperties properties) {
-        var socketFactory = buildSocketFactory(properties);
-        //socketFactories.put(connectorId, socketFactory);
-        return socketFactory;
-    }
-
-    private SSLConnectionSocketFactory buildSocketFactory(HttpConnectorProperties properties) {
+    public SSLConnectionSocketFactory getChannelSocketFactory(DestinationConnector connector, HttpConnectorProperties properties) {
         try {
             var truststore = certificateService.getTrustStoreFromProperties(
                 properties.isTrustSystemTruststore(),
-                properties.getTrustedServerCertificates()
+                properties.getTrustedServerCertificates(),
+                connector
             );
 
             // Exit early if truststore is empty

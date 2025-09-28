@@ -115,11 +115,21 @@ public final class CertificateService {
 
             // TODO Connector data
             if (!presentInSystem.isEmpty()) {
-                log.warn("Generating effective TrustStore for connector {}. Found and ignored aliases present in system truststore: {}", "connectorId", presentInSystem);
+                log.warn(
+                    "Generating effective TrustStore for connector ({}) in channel ({}). Found and ignored aliases present in system truststore: {}",
+                    connector.getDestinationName(),
+                    connector.getChannel().getName(),
+                    presentInSystem
+                );
             }
 
             if (!unknownAliases.isEmpty()) {
-                log.warn("Generating effective TrustStore for connector {}. Found aliases not present in additional truststore: {}", "connectorId", unknownAliases);
+                log.warn(
+                    "Generating effective TrustStore for connector ({}) in channel ({}). Found aliases not present in additional truststore: {}",
+                    connector.getDestinationName(),
+                    connector.getChannel().getName(),
+                    presentInSystem
+                );
             }
 
             return finalTrustStore;
