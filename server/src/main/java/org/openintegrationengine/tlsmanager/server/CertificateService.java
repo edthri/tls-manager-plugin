@@ -74,6 +74,7 @@ public final class CertificateService {
             systemTrustStore = KeyStore.getInstance(KeyStore.getDefaultType());
             truststore = KeyStore.getInstance("PKCS12");
         } catch (KeyStoreException e) {
+            log.error("Error initializing CetificateService", e);
             throw new RuntimeException(e);
         }
 
@@ -144,6 +145,7 @@ public final class CertificateService {
                 keystore.load(bais, password);
             }
         } catch (IOException | NoSuchAlgorithmException | CertificateException e) {
+            log.error("Error loading keystore into memory", e);
             throw new RuntimeException(e);
         }
     }
@@ -152,6 +154,7 @@ public final class CertificateService {
         try {
             return new HashSet<>(Collections.list(truststore.aliases()));
         } catch (KeyStoreException e) {
+            log.error("Error reading alias list from loaded truststore", e);
             throw new RuntimeException(e);
         }
     }

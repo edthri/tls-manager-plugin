@@ -16,6 +16,7 @@
 
 package org.openintegrationengine.tlsmanager.server.backend;
 
+import lombok.extern.slf4j.Slf4j;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 
 import java.io.ByteArrayOutputStream;
@@ -30,6 +31,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 
+@Slf4j
 public class FileTrustStoreBackend implements TrustStoreBackend {
 
     private final Path keystorePath;
@@ -51,6 +53,7 @@ public class FileTrustStoreBackend implements TrustStoreBackend {
             Files.write(keystorePath, keystore, openOptions);
             return true;
         } catch (IOException e) {
+            log.error("Error persisting keystore to file", e);
             throw new RuntimeException(e);
         }
     }
@@ -89,6 +92,7 @@ public class FileTrustStoreBackend implements TrustStoreBackend {
         try {
             return Files.readAllBytes(keystorePath);
         } catch (IOException e) {
+            log.error("Error reading keystore at {}", keystorePath, e);
             throw new RuntimeException(e);
         }
     }
