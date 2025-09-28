@@ -41,6 +41,11 @@ public class DatabaseTrustStoreBackend implements TrustStoreBackend {
     }
 
     @Override
+    public void init() {
+        // TODO
+    }
+
+    @Override
     public byte[] load() {
         var decoder = Base64.getDecoder();
         var keystoreBytes = configurationController.getProperty(TLSPluginConstants.PLUGIN_POINTNAME, TRUSTSTORE_KEY);

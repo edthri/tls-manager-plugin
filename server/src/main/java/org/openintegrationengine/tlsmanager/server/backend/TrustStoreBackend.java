@@ -19,6 +19,8 @@ package org.openintegrationengine.tlsmanager.server.backend;
 public interface TrustStoreBackend {
     boolean persist(byte[] keystore);
 
+    void init();
+
     byte[] load();
 
     char[] loadPassword();

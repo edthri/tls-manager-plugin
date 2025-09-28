@@ -29,6 +29,11 @@ public final class SystemTrustStoreBackend implements TrustStoreBackend {
     }
 
     @Override
+    public void init() {
+        // Do nothing
+    }
+
+    @Override
     public byte[] load() {
         try {
             return Files.readAllBytes(resolveTrustStorePath());

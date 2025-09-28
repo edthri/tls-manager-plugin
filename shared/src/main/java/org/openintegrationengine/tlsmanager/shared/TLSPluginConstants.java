@@ -23,5 +23,11 @@ public final class TLSPluginConstants {
 
     public static final String PROPERTY_TRUST_BACKEND = "trust.backend";
 
+    public static final String ENV_PERSISTENCE_BACKEND = "OIE_TLS_PLUGIN_PERSISTENCE_BACKEND";
+    public static final String ENV_PERSISTENCE_FS_STOREPASS = "OIE_TLS_PLUGIN_FS_STOREPASS";
+    public static final String ENV_PERSISTENCE_FS_STOREPATH = "OIE_TLS_PLUGIN_FS_STOREPATH";
+
+    public static final String PKCS12 = "PKCS12";
+
     private TLSPluginConstants() {}
 }
