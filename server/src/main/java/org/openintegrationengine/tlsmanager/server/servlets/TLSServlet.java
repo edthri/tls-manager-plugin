@@ -46,9 +46,11 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
     private CertificateService certificateService;
 
     public TLSServlet(@Context HttpServletRequest request, @Context SecurityContext sc) {
-        super(request, sc, TLSPluginConstants.PLUGIN_POINTNAME);
-
-        this.certificateService = TLSServicePlugin.getPluginInstance().getCertificateService();
+        this(
+            request,
+            sc,
+            TLSServicePlugin.getPluginInstance().getCertificateService()
+        );
     }
 
     public TLSServlet(
