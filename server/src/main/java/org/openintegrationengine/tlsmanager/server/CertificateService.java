@@ -200,6 +200,31 @@ public final class CertificateService {
         return persistenceMode;
     }
 
+    /*
+    TODO
+    public void testConnection(
+        String channelId,
+        String channelName,
+        HttpConnectorProperties tlsProperties,
+        HttpDispatcherProperties dispatcherProperties
+    ) {
+        try {
+            var url = new URL(
+                templateValueReplacer.replaceValues(dispatcherProperties.getHost(),
+                    channelId,
+                    channelName
+                )
+            );
+
+            int port = url.getPort();
+            // If no port was provided, default to port 80 or 443.
+            return ConnectorUtil.testConnection(url.getHost(), (port == -1) ? (StringUtils.equalsIgnoreCase(url.getProtocol(), "https") ? 443 : 80) : port, TIMEOUT);
+        } catch (Exception e) {
+            throw new MirthApiException(e);
+        }
+    }
+     */
+
     /**
      * Perform a byte-level clone of a KeyStore object
      *
