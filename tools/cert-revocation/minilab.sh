@@ -92,7 +92,7 @@ for n in 1 2; do
   openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out server${n}.key
   openssl req -new -key server${n}.key \
     -subj "/C=EE/O=Test Org/CN=localhost" \
-    -addext "subjectAltName=DNS:localhost,DNS:valid.crl.caddy,DNS:revoked.crl.caddy,IP:127.0.0.1" \
+    -addext "subjectAltName=DNS:localhost,DNS:valid.crl.caddy,DNS:revoked.crl.caddy,DNS:mtls.caddy,IP:127.0.0.1" \
     -config openssl.cnf -out server${n}.csr
 done
 

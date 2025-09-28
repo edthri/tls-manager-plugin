@@ -69,3 +69,13 @@ configs:
 
       	respond "Hai with revoked cert" 200
       }
+      
+      https://mtls.caddy {
+        tls /opt/certs/crl/server1.crt /opt/certs/crl/server1.key {
+          client_auth {
+            mode require
+          }
+        }
+
+      	respond "Hai from mtls" 200
+      }
