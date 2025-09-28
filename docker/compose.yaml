@@ -36,6 +36,7 @@ services:
       - "5005:5005/tcp"
       - "6001:6001/tcp"
     volumes:
+      - ./appdata:/opt/engine/appdata
       - ./custom-extensions:/opt/engine/custom-extensions
       - ./conf/log4j2.properties:/opt/engine/conf/log4j2.properties:ro
       - ./custom.vmoptions:/opt/engine/conf/custom.vmoptions:ro
