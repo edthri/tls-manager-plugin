@@ -1,53 +1,25 @@
-import React, { useMemo, useRef, useState } from 'react'
-import { Box, Button, FormControl, FormHelperText, InputLabel, MenuItem, Select, Stack, TextField, Typography } from '@mui/material'
-
-const FORMAT_OPTIONS = [
-  { value: 'PEM', label: 'PEM (Base64 with headers)' },
-  { value: 'DER', label: 'DER (binary X.509)' },
-  { value: 'PKCS12', label: 'PKCS#12 / PFX (.p12 / .pfx)' },
-  { value: 'JKS', label: 'JKS / Java KeyStore' },
-]
+import React, { useRef, useState } from 'react'
+import { Box, Button, FormHelperText, Stack, TextField, Typography } from '@mui/material'
 
 export default function ImportCertificateDialogContent({
-  defaultFormat = 'PEM',
   targetStore = 'trusted',
   onCancel,
   onSubmit,
 }) {
-  const [format, setFormat] = useState(defaultFormat)
   const [pemText, setPemText] = useState('')
   const [file, setFile] = useState(null)
-  const [password, setPassword] = useState('')
   const [alias, setAlias] = useState('')
   const [errors, setErrors] = useState({})
 
   const fileInputRef = useRef(null)
 
-  const fileAccept = useMemo(() => {
-    switch (format) {
-      case 'DER':
-        return '.der,.cer,.crt,application/pkix-cert,application/x-x509-ca-cert'
-      case 'PKCS12':
-        return '.p12,.pfx,application/x-pkcs12'
-      case 'JKS':
-        return '.jks,.keystore'
-      default:
-        return '.pem,.crt,.cer,text/plain,application/x-pem-file'
-    }
-  }, [format])
+  const fileAccept = '.pem,text/plain,application/x-pem-file'
 
   const validate = () => {
     const nextErrors = {}
-    if (format === 'PEM') {
-      if (!pemText.trim()) nextErrors.pemText = 'PEM content is required.'
-      if (pemText && !/-----BEGIN [^-]+-----[\s\S]*-----END [^-]+-----/m.test(pemText)) {
-        nextErrors.pemText = 'Expected PEM with BEGIN/END headers.'
-      }
-    } else {
-      if (!file) nextErrors.file = 'Please select a file.'
-    }
-    if (format === 'PKCS12' || format === 'JKS') {
-      if (!password) nextErrors.password = 'Password is required.'
+    if (!pemText.trim()) nextErrors.pemText = 'PEM content is required.'
+    if (pemText && !/-----BEGIN [^-]+-----[\s\S]*-----END [^-]+-----/m.test(pemText)) {
+      nextErrors.pemText = 'Expected PEM content with BEGIN/END headers.'
     }
     setErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
@@ -56,12 +28,10 @@ export default function ImportCertificateDialogContent({
   const handleSubmit = () => {
     if (!validate()) return
     const payload = {
-      format,
       targetStore,
-      source: format === 'PEM' ? 'text' : 'file',
-      pemText: format === 'PEM' ? pemText : undefined,
+      source: 'text',
+      pemText,
       fileName: file ? file.name : undefined,
-      password: format === 'PKCS12' || format === 'JKS' ? password : undefined,
       alias: alias || undefined,
     }
     // Useful debugging information
@@ -73,77 +43,50 @@ export default function ImportCertificateDialogContent({
   return (
     <Box sx={{ pt: 0.5 }}>
       <Stack spacing={2}>
-        <FormControl size="small">
-          <InputLabel id="format-label">Format</InputLabel>
-          <Select
-            labelId="format-label"
-            id="format-select"
-            label="Format"
-            value={format}
-            onChange={(e) => {
-              setFormat(e.target.value)
-              setErrors({})
-              setPemText('')
-              setFile(null)
-              setPassword('')
-              setAlias('')
-            }}
-          >
-            {FORMAT_OPTIONS.map((opt) => (
-              <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-            ))}
-          </Select>
-          <FormHelperText>Select the certificate/container format</FormHelperText>
-        </FormControl>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={fileAccept}
+          style={{ display: 'none' }}
+          onChange={async (e) => {
+            try {
+              const f = e.target.files && e.target.files[0]
+              setFile(f || null)
+              if (!f) return
+              const name = (f.name || '').toLowerCase()
+              if (!(name.endsWith('.pem') || f.type === 'text/plain' || f.type === 'application/x-pem-file')) {
+                setErrors((prev) => ({ ...prev, file: 'Please select a .pem file.' }))
+                return
+              }
+              const text = await f.text()
+              setPemText(text)
+              setErrors((prev) => ({ ...prev, file: undefined, pemText: undefined }))
+            } catch (err) {
+              setErrors((prev) => ({ ...prev, file: 'Failed to read file.' }))
+            }
+          }}
+        />
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Button variant="outlined" onClick={() => fileInputRef.current?.click()}>
+            {file ? 'Change .pem File' : 'Choose .pem File'}
+          </Button>
+          <Typography variant="body2" color={errors.file ? 'error' : 'text.secondary'}>
+            {file ? file.name : 'No file selected'}
+          </Typography>
+        </Stack>
+        {errors.file && <FormHelperText error>{errors.file}</FormHelperText>}
 
-        {format === 'PEM' ? (
-          <TextField
-            label="PEM (paste contents including BEGIN/END)"
-            placeholder={"-----BEGIN CERTIFICATE-----\n...base64...\n-----END CERTIFICATE-----"}
-            value={pemText}
-            onChange={(e) => setPemText(e.target.value)}
-            error={Boolean(errors.pemText)}
-            helperText={errors.pemText || 'You can paste a certificate chain.'}
-            multiline
-            minRows={6}
-            fullWidth
-          />
-        ) : (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={fileAccept}
-              style={{ display: 'none' }}
-              onChange={(e) => {
-                const f = e.target.files && e.target.files[0]
-                setFile(f || null)
-                setErrors((prev) => ({ ...prev, file: undefined }))
-              }}
-            />
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Button variant="outlined" onClick={() => fileInputRef.current?.click()}>
-                {file ? 'Change File' : 'Choose File'}
-              </Button>
-              <Typography variant="body2" color={errors.file ? 'error' : 'text.secondary'}>
-                {file ? file.name : 'No file selected'}
-              </Typography>
-            </Stack>
-            {errors.file && <FormHelperText error>{errors.file}</FormHelperText>}
-          </>
-        )}
-
-        {(format === 'PKCS12' || format === 'JKS') && (
-          <TextField
-            type="password"
-            label="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            error={Boolean(errors.password)}
-            helperText={errors.password || 'Password for the keystore/container.'}
-            fullWidth
-          />
-        )}
+        <TextField
+          label="PEM (paste contents including BEGIN/END)"
+          placeholder={"-----BEGIN CERTIFICATE-----\n...base64...\n-----END CERTIFICATE-----"}
+          value={pemText}
+          onChange={(e) => setPemText(e.target.value)}
+          error={Boolean(errors.pemText)}
+          helperText={errors.pemText || 'Paste certificate or chain. Uploading a .pem fills this field.'}
+          multiline
+          minRows={8}
+          fullWidth
+        />
 
         <TextField
           label="Alias (optional)"

@@ -10,19 +10,31 @@ export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const { login } = useAuth()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!username || !password) {
       setError('Please enter username and password')
       return
     }
-    login()
-    const redirectTo = location.state?.from?.pathname || '/ssl'
-    navigate(redirectTo, { replace: true })
+    setLoading(true)
+    setError('')
+    try {
+      await login({ username, password })
+      const redirectTo = location.state?.from?.pathname || '/ssl'
+      navigate(redirectTo, { replace: true })
+    } catch (err) {
+      const msg = err?.message || 'Login failed. Please try again.'
+      setError(msg)
+      // eslint-disable-next-line no-console
+      console.debug('[Login] failed', { msg, err })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -73,7 +85,9 @@ export default function Login() {
               }}
             />
             {error ? <Typography color="error" variant="body2">{error}</Typography> : null}
-            <Button type="submit" variant="contained" className='bg-novamap-orange hover:bg-novamap-orange/90 text-white'>Login</Button>
+            <Button type="submit" variant="contained" disabled={loading} className='bg-novamap-orange hover:bg-novamap-orange/90 text-white'>
+              {loading ? 'Logging in…' : 'Login'}
+            </Button>
           </Stack>
         </Stack>
       </Paper>

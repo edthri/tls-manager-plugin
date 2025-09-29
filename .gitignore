@@ -27,3 +27,4 @@ dist-ssr
 project-setup.md
 scratchpad.md
 /dashboard
+.env

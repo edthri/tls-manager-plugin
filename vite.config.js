@@ -7,6 +7,17 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: '/dashboard/',
+  server: {
+    allowedHosts: ['localhost', '127.0.0.1', '0.0.0.0', '778ded44be8d.ngrok-free.app'],
+    proxy: {
+      "/api": {
+        target: "https://oie-1.quantis.health",
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+
+  },
   build: {
     outDir: 'dashboard',
     emptyOutDir: true,

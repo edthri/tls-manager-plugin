@@ -38,10 +38,9 @@ export default function SslManagement() {
     setDialogProps({})
   }
 
-  const openImportDialog = (presetFormat) => {
-    const defaultFormat = presetFormat || 'PEM'
+  const openImportDialog = () => {
     const targetStore = tabKey === 'trusted' ? 'trusted' : 'private'
-    openDialog({ type: 'import-certificate', title: presetFormat === 'PKCS12' ? 'Import PKCS#12' : 'Import Certificate', props: { defaultFormat, targetStore } })
+    openDialog({ type: 'import-certificate', title: 'Import Certificate (PEM)', props: { targetStore } })
   }
 
   const onTabChange = (_e, newIndex) => {
@@ -82,7 +81,6 @@ export default function SslManagement() {
       actions: [
         { key: 'show-keys', label: 'Show Private Keys', color: 'secondary', onClick: () => openDialog({ type: 'text', title: 'Show Private Keys', props: { text: 'Placeholder dialog for showing private keys.' } }) },
         { key: 'import-cert', label: 'Import Certificate', color: 'info', onClick: () => openImportDialog() },
-        { key: 'import-pkcs12', label: 'Import PKCS#12', color: 'warning', onClick: () => openImportDialog('PKCS12') },
         { key: 'add-new', label: 'Add New', variant: 'contained', color: 'success', onClick: () => openDialog({ type: 'text', title: 'Add New Private Key', props: { text: 'Placeholder dialog for adding a new private key certificate.' } }) },
       ],
     },
@@ -123,7 +121,6 @@ export default function SslManagement() {
         <DialogContent>
           {dialogType === 'import-certificate' && (
             <ImportCertificateDialogContent
-              defaultFormat={dialogProps.defaultFormat}
               targetStore={dialogProps.targetStore}
               onCancel={closeDialog}
               onSubmit={() => closeDialog()}

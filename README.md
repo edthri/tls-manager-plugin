@@ -27,6 +27,12 @@ npm run build
 npm run preview
 ```
 
+### Environment
+- Create a `.env` file if needed:
+  - `VITE_API_BASE_URL=https://oie-test.quantis.health/api`
+
+Axios is configured with `withCredentials=true`, so successful login at `/users/_login` will set the `JSESSIONID` cookie in the browser (CORS must allow credentials).
+
 ## Routing & Auth
 - BrowserRouter `basename` is `/dashboard`.
 - Routes:
@@ -71,7 +77,7 @@ npm run preview
 
 ## Environment
 - Vite base path is `/dashboard/` (see `vite.config.js`).
-- To configure API endpoints, add an `.env` file and read via `import.meta.env` in a centralized `src/services/api.ts`/`api.js` (to be introduced with a real backend).
+- API base URL is centralized in `src/services/api.js` and reads `import.meta.env.VITE_API_BASE_URL`.
 
 ## Build & Deploy
 - `vite build` outputs to `./dashboard`.

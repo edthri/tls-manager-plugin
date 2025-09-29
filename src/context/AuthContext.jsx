@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { loginWithCredentials } from '../services/authService'
 
 const STORAGE_KEY = 'auth:isAuthenticated'
 
 const AuthContext = createContext({
   isAuthenticated: false,
-  login: () => {},
+  login: async (_credentials) => {},
   logout: () => {},
 })
 
@@ -26,7 +27,10 @@ export function AuthProvider({ children }) {
     } catch (_) {}
   }, [isAuthenticated])
 
-  const login = () => setIsAuthenticated(true)
+  const login = async ({ username, password }) => {
+    await loginWithCredentials({ username, password })
+    setIsAuthenticated(true)
+  }
   const logout = () => setIsAuthenticated(false)
 
   const value = useMemo(() => ({ isAuthenticated, login, logout }), [isAuthenticated])
