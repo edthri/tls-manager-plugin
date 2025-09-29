@@ -38,7 +38,17 @@ public class FileTrustStoreBackend implements TrustStoreBackend {
     private char[] storepass;
 
     public FileTrustStoreBackend(String keystorePath) {
+        this(keystorePath, System.getenv(TLSPluginConstants.ENV_PERSISTENCE_FS_STOREPASS));
+    }
+
+    public FileTrustStoreBackend(String keystorePath, String storePass) {
         this.keystorePath = Paths.get(keystorePath);
+
+        if (storePass == null) {
+            throw new IllegalStateException("TrustStore password not set");
+        }
+
+        this.storepass = storePass.toCharArray();
     }
 
     @Override
@@ -60,13 +70,6 @@ public class FileTrustStoreBackend implements TrustStoreBackend {
 
     @Override
     public void init() {
-        var envStorepass = System.getenv(TLSPluginConstants.ENV_PERSISTENCE_FS_STOREPASS);
-        if (envStorepass == null) {
-            throw new IllegalStateException("TrustStore password not set");
-        }
-
-        storepass = envStorepass.toCharArray();
-
         if (Files.exists(keystorePath)) {
             log.debug("Using existing keystore at {}", keystorePath);
             return;
@@ -99,6 +102,9 @@ public class FileTrustStoreBackend implements TrustStoreBackend {
 
     @Override
     public char[] loadPassword() {
+        if (storepass == null) {
+            throw new IllegalStateException("Store password not set");
+        }
         return storepass;
     }
 }

@@ -71,7 +71,7 @@ public class HttpConnectorProperties extends ConnectorPluginProperties {
         usedCiphers = Collections.emptySet();
 
         isHostnameVerificationEnabled = true;
-        clientCertificateAlias = "";
+        clientCertificateAlias = null;
     }
 
     public HttpConnectorProperties(HttpConnectorProperties props) {
