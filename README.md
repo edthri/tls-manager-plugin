@@ -36,3 +36,24 @@ Start the `docker/compose.yaml`.
 ```sh
 docker compose up -d
 ```
+
+### Integration testing
+
+Integration testing is built into the included JUnit test-suite. All integration tests are tagged with `integrationTest`.
+This tag is read by Junit to determine which test to execute.
+
+
+#### Running tests
+
+To run the integration test suite the caddy server must be started. Run the following command in the `docker/` directory.
+```shell
+docker compose up -d caddy
+```
+
+Then start all tests with the `integrationTest` tag. This can be done either via commandline:
+```shell
+mvn test -Dgroups=integrationTest
+```
+
+Or from IntelliJ:
+![IntellJ run configuration for integration tests](./docs/images/intellij_int_test_run_configuration.png)
