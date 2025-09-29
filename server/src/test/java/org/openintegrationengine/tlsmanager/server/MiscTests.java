@@ -82,7 +82,7 @@ public class MiscTests {
                 .when(MirthSSLUtil::getSupportedHttpsCipherSuites)
                 .thenReturn(cipherSuites());
 
-            var socketFactory = socketFactoryService.getChannelSocketFactory(connector, connectorProperties);
+            var socketFactory = socketFactoryService.getConnectorSocketFactory(connector, connectorProperties);
 
             var exception = assertThrows(SSLHandshakeException.class, () -> {
                 var connectionResult = ConnectionUtils.thing(
@@ -145,7 +145,7 @@ public class MiscTests {
                 .when(MirthSSLUtil::getSupportedHttpsCipherSuites)
                 .thenReturn(cipherSuites());
 
-            var socketFactory = socketFactoryService.getChannelSocketFactory(connector, connectorProperties);
+            var socketFactory = socketFactoryService.getConnectorSocketFactory(connector, connectorProperties);
 
             var exception = assertThrows(SSLHandshakeException.class, () -> {
                 var connectionResult = ConnectionUtils.thing(

@@ -39,7 +39,7 @@ public class SocketFactoryService {
         this.configurationController = configurationController;
     }
 
-    public SSLConnectionSocketFactory getChannelSocketFactory(DestinationConnector connector, HttpConnectorProperties properties) {
+    public SSLConnectionSocketFactory getConnectorSocketFactory(DestinationConnector connector, HttpConnectorProperties properties) {
         try {
             var truststore = certificateService.getTrustStoreFromProperties(
                 properties.isTrustSystemTruststore(),

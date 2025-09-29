@@ -138,7 +138,7 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
             return;
         }
 
-        var sslSocketFactory = socketFactoryService.getChannelSocketFactory(connector, properties);
+        var sslSocketFactory = socketFactoryService.getConnectorSocketFactory(connector, properties);
         if (sslSocketFactory != null) {
             // FIXME
             connector.getSocketFactoryRegistry().register("https", sslSocketFactory);

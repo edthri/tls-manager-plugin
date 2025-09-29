@@ -93,7 +93,7 @@ public final class CertificateService {
             systemTrustStore = KeyStore.getInstance(KeyStore.getDefaultType());
             externalTrustStore = KeyStore.getInstance(PKCS12);
         } catch (KeyStoreException e) {
-            log.error("Error initializing CetificateService", e);
+            log.error("Error initializing CertificateService", e);
             throw new RuntimeException(e);
         }
 
