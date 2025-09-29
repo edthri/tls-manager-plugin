@@ -2,13 +2,21 @@ package org.openintegrationengine.tlsmanager.server;
 
 import com.mirth.connect.connectors.http.HttpDispatcher;
 import com.mirth.connect.donkey.server.channel.DestinationConnector;
+import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.util.MirthSSLUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.openintegrationengine.tlsmanager.server.backend.FileTrustStoreBackend;
 import org.openintegrationengine.tlsmanager.server.backend.SystemTrustStoreBackend;
+import org.openintegrationengine.tlsmanager.server.misc.IntegrationTest;
+import org.openintegrationengine.tlsmanager.server.misc.UnitTest;
 import org.openintegrationengine.tlsmanager.server.util.ConnectionUtils;
 import org.openintegrationengine.tlsmanager.server.util.MockConfigurationController;
+import org.openintegrationengine.tlsmanager.server.util.MockDestinationConnector;
+import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.properties.HttpConnectorProperties;
 
@@ -18,8 +26,10 @@ import java.io.IOException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertPathValidatorException;
 import java.security.cert.CertificateException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -31,37 +41,54 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class MiscTests {
 
-    //@Test
+    private ConfigurationController configurationController;
+    private CertificateService certificateService;
+
+    private MockedStatic<MirthSSLUtil> mirthSSLUtil;
+
+    @BeforeEach
+    void setup() {
+        // Nasty
+        mirthSSLUtil = mockStatic(MirthSSLUtil.class);
+        mirthSSLUtil
+            .when(MirthSSLUtil::getSupportedHttpsProtocols)
+            .thenReturn(protocols());
+        mirthSSLUtil
+            .when(MirthSSLUtil::getSupportedHttpsCipherSuites)
+            .thenReturn(cipherSuites());
+
+
+        configurationController = mock(MockConfigurationController.class);
+        when(configurationController.getHttpsServerProtocols()).thenReturn(protocols());
+        when(configurationController.getHttpsCipherSuites()).thenReturn(cipherSuites());
+
+    }
+
+    @AfterEach
+    public void tearDown() {
+        mirthSSLUtil.close();
+    }
+
+    @IntegrationTest
     public void asi() throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
+        var connector = new MockDestinationConnector();
 
-        var configurationController = mock(MockConfigurationController.class);
-        var certificateService = mock(CertificateService.class);
-
-        var connector = new HttpDispatcher();
-
-        var trustStoreBackend = new FileTrustStoreBackend("/home/kaurpalang/IdeaProjects/plugin-ssl-manager/docker/certs/truststore.p12");
-        var trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        var trustStoreBackend = new FileTrustStoreBackend(
+            "/path/to/truststore.p12", // TODO Commit a known-good truststore
+            "changeit"
+        );
+        var trustStore = KeyStore.getInstance(TLSPluginConstants.PKCS12);
 
         try (var bais = new ByteArrayInputStream(trustStoreBackend.load())) {
             trustStore.load(bais, trustStoreBackend.loadPassword());
         }
 
+        certificateService = mock(CertificateService.class);
+
         when(
-            certificateService.getTrustStoreFromProperties(anyBoolean(), anySet(), isA(DestinationConnector.class))
+            certificateService.getTrustStoreFromProperties(anyBoolean(), anySet(), isA(MockDestinationConnector.class))
         ).thenReturn(
             trustStore
-        );
-
-        when(
-            configurationController.getHttpsServerProtocols()
-        ).thenReturn(
-            protocols()
-        );
-
-        when(
-            configurationController.getHttpsCipherSuites()
-        ).thenReturn(
-            cipherSuites()
         );
 
         var socketFactoryService = new SocketFactoryService(
@@ -73,35 +100,26 @@ public class MiscTests {
         connectorProperties.setCrlMode(RevocationMode.DISABLED);
         connectorProperties.setOscpMode(RevocationMode.DISABLED);
 
-        try (var mirthSSlUtil = mockStatic(MirthSSLUtil.class)) {
-            mirthSSlUtil
-                .when(MirthSSLUtil::getSupportedHttpsProtocols)
-                .thenReturn(protocols());
+        var socketFactory = socketFactoryService.getConnectorSocketFactory(connector, connectorProperties);
 
-            mirthSSlUtil
-                .when(MirthSSLUtil::getSupportedHttpsCipherSuites)
-                .thenReturn(cipherSuites());
+        var exception = assertThrows(SSLHandshakeException.class, () -> ConnectionUtils.thing(
+            socketFactory,
+            "valid.crl.caddy",
+            9443,
+            1_000,
+            null,
+            0
+        ));
 
-            var socketFactory = socketFactoryService.getConnectorSocketFactory(connector, connectorProperties);
-
-            var exception = assertThrows(SSLHandshakeException.class, () -> {
-                var connectionResult = ConnectionUtils.thing(
-                    socketFactory,
-                    "valid.crl.caddy",
-                    9443,
-                    2_000,
-                    null,
-                    0
-                );
-            });
-        }
+        assertEquals(
+            CertPathValidatorException.class,
+            exception.getCause().getCause().getClass()
+        );
     }
 
-    //@Test
+    @UnitTest
     public void test_SSLHandShakeException() throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
 
-        var configurationController = mock(MockConfigurationController.class);
-        var certificateService = mock(CertificateService.class);
         var connector = new HttpDispatcher();
 
         var trustStoreBackend = new SystemTrustStoreBackend();
@@ -117,18 +135,6 @@ public class MiscTests {
             trustStore
         );
 
-        when(
-            configurationController.getHttpsServerProtocols()
-        ).thenReturn(
-            protocols()
-        );
-
-        when(
-            configurationController.getHttpsCipherSuites()
-        ).thenReturn(
-            cipherSuites()
-        );
-
         var socketFactoryService = new SocketFactoryService(
             configurationController,
             certificateService
@@ -136,28 +142,18 @@ public class MiscTests {
 
         var connectorProperties = new HttpConnectorProperties();
 
-        try (var mirthSSlUtil = mockStatic(MirthSSLUtil.class)) {
-            mirthSSlUtil
-                .when(MirthSSLUtil::getSupportedHttpsProtocols)
-                .thenReturn(protocols());
+        var socketFactory = socketFactoryService.getConnectorSocketFactory(connector, connectorProperties);
 
-            mirthSSlUtil
-                .when(MirthSSLUtil::getSupportedHttpsCipherSuites)
-                .thenReturn(cipherSuites());
-
-            var socketFactory = socketFactoryService.getConnectorSocketFactory(connector, connectorProperties);
-
-            var exception = assertThrows(SSLHandshakeException.class, () -> {
-                var connectionResult = ConnectionUtils.thing(
-                    socketFactory,
-                    "valid.crl.caddy",
-                    9443,
-                    2_000,
-                    null,
-                    0
-                );
-            });
-        }
+        var exception = assertThrows(SSLHandshakeException.class, () -> {
+            var connectionResult = ConnectionUtils.thing(
+                socketFactory,
+                "valid.crl.caddy",
+                9443,
+                2_000,
+                null,
+                0
+            );
+        });
     }
 
     private static String[] protocols() {
