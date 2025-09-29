@@ -47,7 +47,7 @@ public final class CertificateService {
     private KeyStore systemTrustStore;
 
     @Getter
-    private KeyStore extraTrustStore;
+    private KeyStore externalTrustStore;
 
     @Getter
     private KeyStore keystore;
@@ -91,14 +91,14 @@ public final class CertificateService {
 
         try {
             systemTrustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            extraTrustStore = KeyStore.getInstance(PKCS12);
+            externalTrustStore = KeyStore.getInstance(PKCS12);
         } catch (KeyStoreException e) {
             log.error("Error initializing CetificateService", e);
             throw new RuntimeException(e);
         }
 
         loadKeyStore(systemTrustStore, cacertsBytes, systemTrustStoreBackend.loadPassword());
-        loadKeyStore(extraTrustStore, extraTrustStoreBytes, extraTrustStoreBackend.loadPassword());
+        loadKeyStore(externalTrustStore, extraTrustStoreBytes, extraTrustStoreBackend.loadPassword());
     }
 
     KeyStore getTrustStoreFromProperties(boolean isTrustSystem, Set<String> aliasSet, DestinationConnector connector) {
@@ -121,12 +121,12 @@ public final class CertificateService {
                         continue;
                     }
 
-                    if (!extraTrustStore.containsAlias(alias)) {
+                    if (!externalTrustStore.containsAlias(alias)) {
                         unknownAliases.add(alias);
                         continue;
                     }
 
-                    var publicCertificate = extraTrustStore.getCertificate(alias);
+                    var publicCertificate = externalTrustStore.getCertificate(alias);
                     finalTrustStore.setCertificateEntry(alias, publicCertificate);
                 } catch (KeyStoreException e) {
                     throw new RuntimeException(e);
@@ -169,7 +169,7 @@ public final class CertificateService {
 
     public void storeExtraTrustStore(byte[] keystoreBytes, char[] password) {
         try (var bais = new ByteArrayInputStream(keystoreBytes)) {
-            extraTrustStore.load(bais, password);
+            externalTrustStore.load(bais, password);
             extraTrustStoreBackend.persist(keystoreBytes);
         } catch (CertificateException | IOException | NoSuchAlgorithmException e) {
             log.error("Error overwriting truststore", e);
@@ -179,7 +179,7 @@ public final class CertificateService {
 
     public Set<String> getLoadedAliases() {
         try {
-            return new HashSet<>(Collections.list(extraTrustStore.aliases()));
+            return new HashSet<>(Collections.list(externalTrustStore.aliases()));
         } catch (KeyStoreException e) {
             log.error("Error reading alias list from loaded truststore", e);
             throw new RuntimeException(e);

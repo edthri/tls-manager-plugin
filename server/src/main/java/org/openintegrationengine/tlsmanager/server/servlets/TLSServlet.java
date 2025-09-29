@@ -70,7 +70,7 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
 
     @Override
     public byte[] getKeystore() {
-        var keystore = certificateService.getExtraTrustStore();
+        var keystore = certificateService.getExternalTrustStore();
 
         try (var baos = new ByteArrayOutputStream()) {
             keystore.store(baos, "changeit".toCharArray());
