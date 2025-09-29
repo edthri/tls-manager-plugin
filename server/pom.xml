@@ -108,5 +108,12 @@
             <version>1.2.0</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.13</version> <!-- latest version to be compatible with slf4j 1.x -->
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>
