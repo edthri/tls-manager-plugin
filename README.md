@@ -32,10 +32,15 @@ Run `./build.sh`.
 
 ## Testing
 
-Start the `docker/compose.yaml`.
-```sh
-docker compose up -d
+### Unit-testing
+
+Simply run from commandline with
+```shell
+mvn test -Dgroups=unitTest
 ```
+
+Or via IntelliJ
+![IntellJ run configuration for unit tests](./docs/images/intellij_unit_test_run_configuration.png)
 
 ### Integration testing
 
