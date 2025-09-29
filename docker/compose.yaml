@@ -2,7 +2,7 @@ name: tls-manager
 
 services:
   caddy:
-    image: caddy:latest
+    image: caddy:2-alpine
     restart: unless-stopped
     ports:
       - "9080:80/tcp"

@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -27,3 +27,131 @@ jobs:
         with:
           name: tls-manager-plugin
           path: target/tls-manager.zip
+
+  inttest:
+    runs-on: ubuntu-latest
+
+    needs: build
+
+    services:
+      caddy:
+        image: caddy:2-alpine
+        env:
+          CADDY_ADMIN: 0.0.0.0:2019 # Make admin api available from outside the container
+        ports:
+          - 2019:2019
+          - 9080:80
+          - 9443:443
+        options: >-
+          --network-alias orchestrator.unreachable.crl.caddy
+          --network-alias orchestrator.revoked.crl.caddy
+          --network-alias orchestrator.invalid.crl.caddy
+          --network-alias orchestrator.valid.crl.caddy
+          --network-alias orchestrator.valid.ocsp.caddy
+          --network-alias orchestrator.revoked.ocsp.caddy
+          --network-alias orchestrator.invalid.ocsp.caddy
+          --network-alias orchestrator.unreachable.ocsp.caddy
+          --network-alias orchestrator.valid.expired.ocsp.caddy
+          --network-alias orchestrator.revoked.expired.ocsp.caddy
+          --network-alias orchestrator.wrong.san.caddy
+          --network-alias orchestrator.wrong.cn.caddy
+          --network-alias orchestrator.cn.only.caddy
+          --network-alias tls13.chacha20.caddy
+          --network-alias wrong.domain.caddy
+          --network-alias revoked.crl.caddy
+          --network-alias tls12.ecdhe.caddy
+          --network-alias valid.crl.caddy
+          --network-alias mtls.caddy
+
+      db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: oieuser
+          POSTGRES_PASSWORD: oieuserpw
+          POSTGRES_DB: oie
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+      oie:
+        image: openintegrationengine/engine:latest
+        env:
+          DATABASE: postgres
+          DATABASE_URL: jdbc:postgresql://db:5432/oie
+          DATABASE_MAX_CONNECTIONS: 20
+          DATABASE_USERNAME: oieuser
+          DATABASE_PASSWORD: oieuserpw
+          KEYSTORE_STOREPASS: docker_storepass
+          KEYSTORE_KEYPASS: docker_keypass
+          OIE_TLS_PLUGIN_PERSISTENCE_BACKEND: filesystem
+          OIE_TLS_PLUGIN_FS_TRUSTSTOREPATH: /opt/engine/testing_truststore.p12
+          OIE_TLS_PLUGIN_FS_TRUSTSTOREPASS: changeit
+          OIE_TLS_PLUGIN_FS_KEYSTOREPATH: /opt/engine/testing_keystore.p12
+        ports:
+          - 8443:8443
+          - 5005:5005
+          - 6001:6001
+          - 8081:8081
+        options: >-
+          --env OIE_TLS_PLUGIN_FS_KEYSTOREPASS=""
+          --health-cmd="curl -kfs -H 'X-Requested-With: curl' https://localhost:8443/api/server/status | grep -q '<int>0</int>'"
+          --health-interval=3s
+          --health-retries=10
+          --health-timeout=2s
+          --health-start-period=3s
+
+    steps:
+      - name: Run integration-tests
+        env:
+          OPENSSL_EXECUTABLE: /usr/bin/openssl
+          OIE_API_BASE: https://localhost:8443/api
+        run: docker ps
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: tls-manager-plugin
+
+      - name: Install plugin
+        run: |
+          oie_id=$(docker ps --format '{{.ID}} {{.Image}}' | grep 'openintegrationengine/engine' | awk '{print $1}')
+          docker cp tls-manager.zip $oie_id:/opt/engine/custom-extensions/
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.TESTS_REPO_CLONE_PAT }}
+          repository: NovaMap-Health/oie-test-orchestrator
+          ref: local_run
+
+      - name: Copy keystores and certificates
+        run: |
+          set -x
+          docker ps
+          oie_id=$(docker ps --format '{{.ID}} {{.Image}}' | grep 'openintegrationengine/engine' | awk '{print $1}')
+          caddy_id=$(docker ps --format '{{.ID}} {{.Image}}' | grep 'caddy' | awk '{print $1}')
+
+          docker cp src/test/resources/certificates/testing_truststore.p12 "$oie_id:/opt/engine/testing_truststore.p12"
+          docker cp src/test/resources/certificates/testing_keystore.p12 "$oie_id:/opt/engine/testing_keystore.p12"
+          docker restart "$oie_id"
+          
+          docker cp src/test/resources/certificates "$caddy_id:/opt/cert"
+          set -x
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Run tests
+        env:
+          OPENSSL_EXECUTABLE: /usr/bin/openssl
+          OIE_API_BASE: https://localhost:8443/api
+        run: mvn -B test
+
+      - name: Generate reports
+        uses: dorny/test-reporter@v2
+        if: ${{ !cancelled() }}
+        with:
+          name: Integration Tests
+          path: target/surefire-reports/*.xml
+          reporter: java-junit
