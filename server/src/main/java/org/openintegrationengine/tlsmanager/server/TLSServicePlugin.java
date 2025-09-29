@@ -19,6 +19,7 @@ package org.openintegrationengine.tlsmanager.server;
 import com.kaurpalang.mirth.annotationsplugin.annotation.MirthServerClass;
 import lombok.Getter;
 import org.openintegrationengine.tlsmanager.server.connectorconfig.TLSHttpConfiguration;
+import org.openintegrationengine.tlsmanager.server.connectorconfig.TLSTcpConfiguration;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import com.mirth.connect.model.ExtensionPermission;
 import com.mirth.connect.plugins.ServicePlugin;
@@ -52,6 +53,12 @@ public class TLSServicePlugin implements ServicePlugin {
             "HTTP",
             "httpConfigurationClass",
             TLSHttpConfiguration.class.getCanonicalName()
+        );
+
+        configurationController.saveProperty(
+            "TCP",
+            "tcpConfigurationClass",
+            TLSTcpConfiguration.class.getCanonicalName()
         );
 
         SerializationController.registerSerializableClasses();
