@@ -12,11 +12,10 @@ services:
         aliases:
           - valid.crl.caddy
           - revoked.crl.caddy
-    configs:
-      - source: caddyfile
-        target: /etc/caddy/Caddyfile
+          - mtls.caddy
     volumes:
       - ../tools/cert-revocation/mini-ca:/opt/certs/crl:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
 
   oie:
     image: openintegrationengine/engine:latest
@@ -54,28 +53,3 @@ services:
       - POSTGRES_DB=oie
     volumes:
       - ${PWD}/pgdata:/var/lib/postgresql/data
-
-configs:
-  caddyfile:
-    content: |
-      https://valid.crl.caddy {
-        tls /opt/certs/crl/server1.crt /opt/certs/crl/server1.key
-
-      	respond "Hai with valid cert" 200
-      }
-
-      https://revoked.crl.caddy {
-        tls /opt/certs/crl/server2.crt /opt/certs/crl/server2.key
-
-      	respond "Hai with revoked cert" 200
-      }
-      
-      https://mtls.caddy {
-        tls /opt/certs/crl/server1.crt /opt/certs/crl/server1.key {
-          client_auth {
-            mode require
-          }
-        }
-
-      	respond "Hai from mtls" 200
-      }
