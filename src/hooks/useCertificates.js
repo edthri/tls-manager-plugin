@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchCertificates } from '../services/sslService'
+import { fetchCertificates } from '../services/tlsService'
 
 function normalize(text) {
   return (text || '').toLowerCase()

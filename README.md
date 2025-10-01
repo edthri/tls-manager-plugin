@@ -37,15 +37,15 @@ Axios is configured with `withCredentials=true`, so successful login at `/users/
 - BrowserRouter `basename` is `/dashboard`.
 - Routes:
   - `/login` (public)
-  - `/ssl` (protected)
+  - `/tls` (protected)
 - `AuthContext` provides `login()` and `logout()`; `ProtectedRoute` guards private routes.
 - Unauthenticated users are redirected to `/login`.
 
 ## Layout
 - `DashboardLayout` uses a top AppBar only (no drawer). The app content renders beneath it.
 
-## SSL Manager UI
-- Page: `src/pages/SslManagement.jsx`
+## TLS Manager UI
+- Page: `src/pages/TlsManagement.jsx`
 - Features a tabbed interface with 3 stores and count chips:
   1. Native Java Certificate Store (read-only)
   2. Additional Trusted Certificates
@@ -71,9 +71,9 @@ Axios is configured with `withCredentials=true`, so successful login at `/users/
 - Hook: `useCertificates` — fetches once, returns counts and per-store filtered lists
 
 ## Data & Services
-- Mock service: `src/services/sslService.js`
+- Mock service: `src/services/tlsService.js`
   - Returns a mixed list across stores with fields: `alias`, `name`, `type`, `subject`, `issuer`, `validFrom`, `validTo`, `fingerprintSha1`, `hasPrivateKey`, `store` (`native|trusted|private`).
-- Replace with a real API by switching the implementation in `sslService.js` to use Axios.
+- Replace with a real API by switching the implementation in `tlsService.js` to use Axios.
 
 ## Environment
 - Vite base path is `/dashboard/` (see `vite.config.js`).
@@ -104,7 +104,7 @@ src/
   components/     # Reusable UI components
   context/        # Auth context + ProtectedRoute
   layout/         # Dashboard layout (AppBar)
-  pages/          # Route pages (Login, SslManagement)
+  pages/          # Route pages (Login, TlsManagement)
   services/       # Data fetching (mock service for now)
   hooks/          # Custom hooks (useCertificates)
 ```

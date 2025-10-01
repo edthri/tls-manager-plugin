@@ -1,5 +1,5 @@
 /**
- * SSL Service - Certificate Management
+ * TLS Service - Certificate Management
  * 
  * Currently using internal store for development.
  * 
@@ -22,7 +22,7 @@ let internalStore = {
 }
 
 // Load from localStorage if available
-const STORAGE_KEY = 'ssl-manager-store'
+const STORAGE_KEY = 'tls-manager-store'
 try {
   const stored = localStorage.getItem(STORAGE_KEY)
   if (stored) {

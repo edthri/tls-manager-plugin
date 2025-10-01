@@ -3,7 +3,7 @@ import ProtectedRoute from './context/ProtectedRoute'
 import { useAuth } from './context/AuthContext'
 import DashboardLayout from './layout/DashboardLayout'
 import Login from './pages/Login'
-import SslManagement from './pages/SslManagement'
+import TlsManagement from './pages/TlsManagement'
 
 export default function App() {
   const { isAuthenticated } = useAuth()
@@ -14,26 +14,26 @@ export default function App() {
         <Route
           path="/login"
           element={
-            isAuthenticated ? <Navigate to="/ssl" replace /> : <Login />
+            isAuthenticated ? <Navigate to="/tls" replace /> : <Login />
           }
         />
         <Route
-          path="/ssl"
+          path="/tls"
           element={
             <ProtectedRoute>
               <DashboardLayout>
-                <SslManagement />
+                <TlsManagement />
               </DashboardLayout>
             </ProtectedRoute>
           }
         />
         <Route
           path="/"
-          element={<Navigate to={isAuthenticated ? '/ssl' : '/login'} replace />}
+          element={<Navigate to={isAuthenticated ? '/tls' : '/login'} replace />}
         />
         <Route
           path="*"
-          element={<Navigate to={isAuthenticated ? '/ssl' : '/login'} replace />}
+          element={<Navigate to={isAuthenticated ? '/tls' : '/login'} replace />}
         />
       </Routes>
     </BrowserRouter>

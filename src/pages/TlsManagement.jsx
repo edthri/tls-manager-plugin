@@ -13,7 +13,7 @@ import VpnKeyIcon from '@mui/icons-material/VpnKey'
 import ImportCertificateDialogContent from '../components/ImportCertificateDialogContent'
 import CertificateDetailsDialog from '../components/CertificateDetailsDialog'
 
-export default function SslManagement() {
+export default function TlsManagement() {
   const { counts, filterBy, loading, error, refetch } = useCertificates()
   const [params, setParams] = useSearchParams()
   const tabKeys = ['native', 'trusted', 'private']

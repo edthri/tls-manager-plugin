@@ -25,7 +25,7 @@ export default function Login() {
     setError('')
     try {
       await login({ username, password })
-      const redirectTo = location.state?.from?.pathname || '/ssl'
+      const redirectTo = location.state?.from?.pathname || '/tls'
       navigate(redirectTo, { replace: true })
     } catch (err) {
       const msg = err?.message || 'Login failed. Please try again.'

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react'
 import { Box, Button, FormHelperText, Stack, TextField, Typography, Alert } from '@mui/material'
 import { pemToBase64, isValidPemCertificate } from '../utils/certificateUtils.js'
-import { updateCertificates } from '../services/sslService.js'
+import { updateCertificates } from '../services/tlsService.js'
 
 export default function ImportCertificateDialogContent({
   targetStore = 'trusted',
