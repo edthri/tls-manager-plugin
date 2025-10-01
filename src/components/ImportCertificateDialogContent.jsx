@@ -27,6 +27,9 @@ export default function ImportCertificateDialogContent({
     } else if (!isValidPemCertificate(pemText)) {
       nextErrors.pemText = 'Invalid PEM certificate format. Please ensure it contains valid certificate data.'
     }
+    if (!alias.trim()) {
+      nextErrors.alias = 'Alias is required.'
+    }
     setErrors(nextErrors)
     setApiError(null) // Clear API errors on validation
     return Object.keys(nextErrors).length === 0
@@ -48,14 +51,14 @@ export default function ImportCertificateDialogContent({
       
       if (targetStore === 'trusted') {
         certificates = [{
-          alias: alias || `cert-${Date.now()}`,
+          alias: alias,
           certificate: base64Certificate
         }]
       } else if (targetStore === 'private') {
         // For private store, we need both certificate and private key
         // For now, we'll only store the certificate (private key would need separate input)
         pairs = [{
-          alias: alias || `pair-${Date.now()}`,
+          alias: alias,
           certificate: base64Certificate,
           privateKey: '' // TODO: Add private key input for private store
         }]
@@ -141,11 +144,13 @@ export default function ImportCertificateDialogContent({
         />
 
         <TextField
-          label="Alias (optional)"
+          label="Alias"
           value={alias}
           onChange={(e) => setAlias(e.target.value)}
-          helperText="Provide an alias for the entry if applicable"
+          error={Boolean(errors.alias)}
+          helperText={errors.alias || "Provide a unique alias for this certificate"}
           fullWidth
+          required
         />
         </Stack>
       </Box>
