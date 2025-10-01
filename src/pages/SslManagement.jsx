@@ -11,9 +11,10 @@ import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import VpnKeyIcon from '@mui/icons-material/VpnKey'
 import ImportCertificateDialogContent from '../components/ImportCertificateDialogContent'
+import CertificateDetailsDialog from '../components/CertificateDetailsDialog'
 
 export default function SslManagement() {
-  const { counts, filterBy, loading, error } = useCertificates()
+  const { counts, filterBy, loading, error, refetch } = useCertificates()
   const [params, setParams] = useSearchParams()
   const tabKeys = ['native', 'trusted', 'private']
   const initialKey = params.get('tab') && tabKeys.includes(params.get('tab')) ? params.get('tab') : 'native'
@@ -24,6 +25,9 @@ export default function SslManagement() {
   const [dialogTitle, setDialogTitle] = useState('')
   const [dialogType, setDialogType] = useState(null) // 'text' | 'import-certificate' | null
   const [dialogProps, setDialogProps] = useState({})
+  
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
+  const [selectedCertificate, setSelectedCertificate] = useState(null)
 
   const openDialog = ({ type, title, props = {} }) => {
     setDialogTitle(title)
@@ -36,6 +40,27 @@ export default function SslManagement() {
     setDialogOpen(false)
     setDialogType(null)
     setDialogProps({})
+  }
+
+  const handleImportSuccess = () => {
+    // Refresh the certificate data after successful import
+    refetch()
+    closeDialog()
+  }
+
+  const handleViewDetails = (certificate) => {
+    setSelectedCertificate(certificate)
+    setDetailsDialogOpen(true)
+  }
+
+  const handleCloseDetails = () => {
+    setDetailsDialogOpen(false)
+    setSelectedCertificate(null)
+  }
+
+  const handleExport = (certificate) => {
+    // TODO: Implement certificate export functionality
+    console.log('Export certificate:', certificate)
   }
 
   const openImportDialog = () => {
@@ -96,7 +121,13 @@ export default function SslManagement() {
         <StoreToolbar title={toolbarByTab.native.title} warning={toolbarByTab.native.warning} actions={toolbarByTab.native.actions} />
         <SearchInput value={search} onChange={setSearch} />
         <Box sx={{ mt: 2 }}>
-          <CertificateList rows={visibleRows} loading={loading} error={error} />
+          <CertificateList 
+            rows={visibleRows} 
+            loading={loading} 
+            error={error} 
+            onViewDetails={handleViewDetails}
+            onExport={handleExport}
+          />
         </Box>
       </TabPanel>
 
@@ -104,7 +135,13 @@ export default function SslManagement() {
         <StoreToolbar title={toolbarByTab.trusted.title} actions={toolbarByTab.trusted.actions} />
         <SearchInput value={search} onChange={setSearch} />
         <Box sx={{ mt: 2 }}>
-          <CertificateList rows={visibleRows} loading={loading} error={error} />
+          <CertificateList 
+            rows={visibleRows} 
+            loading={loading} 
+            error={error} 
+            onViewDetails={handleViewDetails}
+            onExport={handleExport}
+          />
         </Box>
       </TabPanel>
 
@@ -112,7 +149,13 @@ export default function SslManagement() {
         <StoreToolbar title={toolbarByTab.private.title} actions={toolbarByTab.private.actions} />
         <SearchInput value={search} onChange={setSearch} />
         <Box sx={{ mt: 2 }}>
-          <CertificateList rows={visibleRows} loading={loading} error={error} />
+          <CertificateList 
+            rows={visibleRows} 
+            loading={loading} 
+            error={error} 
+            onViewDetails={handleViewDetails}
+            onExport={handleExport}
+          />
         </Box>
       </TabPanel>
 
@@ -124,6 +167,7 @@ export default function SslManagement() {
               targetStore={dialogProps.targetStore}
               onCancel={closeDialog}
               onSubmit={() => closeDialog()}
+              onSuccess={handleImportSuccess}
             />
           )}
           {dialogType === 'text' && (
@@ -136,6 +180,12 @@ export default function SslManagement() {
           </DialogActions>
         )}
       </Dialog>
+
+      <CertificateDetailsDialog
+        open={detailsDialogOpen}
+        onClose={handleCloseDetails}
+        certificate={selectedCertificate}
+      />
     </Box>
   )
 }

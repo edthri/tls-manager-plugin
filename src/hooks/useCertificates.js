@@ -10,19 +10,23 @@ export default function useCertificates() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const loadCertificates = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const data = await fetchCertificates()
+      setAll(data)
+    } catch (e) {
+      setError('Failed to load certificates')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     let cancelled = false
     async function load() {
-      setLoading(true)
-      setError('')
-      try {
-        const data = await fetchCertificates()
-        if (!cancelled) setAll(data)
-      } catch (e) {
-        if (!cancelled) setError('Failed to load certificates')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
+      await loadCertificates()
     }
     load()
     return () => { cancelled = true }
@@ -42,7 +46,7 @@ export default function useCertificates() {
     private: all.filter((c) => c.store === 'private').length,
   }), [all])
 
-  return { all, loading, error, counts, filterBy }
+  return { all, loading, error, counts, filterBy, refetch: loadCertificates }
 }
 
 

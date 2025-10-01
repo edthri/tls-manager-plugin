@@ -1,85 +1,209 @@
+/**
+ * SSL Service - Certificate Management
+ * 
+ * Currently using internal store for development.
+ * 
+ * TO SWITCH TO REAL API:
+ * 1. Uncomment the api import line below
+ * 2. In fetchCertificates(): comment out the "INTERNAL STORE" section and uncomment the "REAL API" section
+ * 3. In updateCertificates(): comment out the "INTERNAL STORE" section and uncomment the "REAL API" section
+ * 4. Remove or comment out the internal store variables and helper functions at the bottom
+ */
+
+import { parseCertificate } from '../utils/certificateUtils.js'
+// import { api } from './api.js' // Uncomment when API is ready
+
+// === INTERNAL STORE (remove when switching to real API) ===
+// Internal store to simulate API - starts empty
+let internalStore = {
+  systemCertificates: [],
+  certificates: [],
+  pairs: []
+}
+
+// Load from localStorage if available
+const STORAGE_KEY = 'ssl-manager-store'
+try {
+  const stored = localStorage.getItem(STORAGE_KEY)
+  if (stored) {
+    internalStore = JSON.parse(stored)
+  }
+} catch (e) {
+  console.warn('Failed to load from localStorage:', e)
+}
+
+// Save to localStorage
+function saveToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(internalStore))
+  } catch (e) {
+    console.warn('Failed to save to localStorage:', e)
+  }
+}
+
 export async function fetchCertificates() {
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 400))
+  try {
+    // === INTERNAL STORE (for development) ===
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
+    const data = internalStore
+    
+    // === REAL API (uncomment when API is ready) ===
+    // const response = await api.get('/api/tlsmanager/certificates')
+    // const data = response.data
+    
+    const certificates = []
+    
+    // Map systemCertificates to native store
+    if (data.systemCertificates) {
+      for (const cert of data.systemCertificates) {
+        const parsed = await parseCertificate(cert.certificate)
+        certificates.push({
+          alias: cert.alias,
+          name: parsed.subject?.CN || cert.alias,
+          type: parsed.type || 'Unknown',
+          subject: parsed.subjectStr || 'Unknown',
+          issuer: parsed.issuerStr || 'Unknown',
+          validFrom: parsed.validFrom,
+          validTo: parsed.validTo,
+          fingerprintSha1: parsed.fingerprintSha1,
+          hasPrivateKey: false,
+          store: 'native',
+          rawCertificate: cert.certificate,
+          parsedCertificate: parsed,
+        })
+      }
+    }
+    
+    // Map certificates to trusted store
+    if (data.certificates) {
+      for (const cert of data.certificates) {
+        const parsed = await parseCertificate(cert.certificate)
+        certificates.push({
+          alias: cert.alias,
+          name: parsed.subject?.CN || cert.alias,
+          type: parsed.type || 'Unknown',
+          subject: parsed.subjectStr || 'Unknown',
+          issuer: parsed.issuerStr || 'Unknown',
+          validFrom: parsed.validFrom,
+          validTo: parsed.validTo,
+          fingerprintSha1: parsed.fingerprintSha1,
+          hasPrivateKey: false,
+          store: 'trusted',
+          channelsInUse: cert.channelsInUse || [],
+          rawCertificate: cert.certificate,
+          parsedCertificate: parsed,
+        })
+      }
+    }
+    
+    // Map pairs to private store
+    if (data.pairs) {
+      for (const pair of data.pairs) {
+        const parsed = await parseCertificate(pair.certificate)
+        certificates.push({
+          alias: pair.alias,
+          name: parsed.subject?.CN || pair.alias,
+          type: parsed.type || 'Unknown',
+          subject: parsed.subjectStr || 'Unknown',
+          issuer: parsed.issuerStr || 'Unknown',
+          validFrom: parsed.validFrom,
+          validTo: parsed.validTo,
+          fingerprintSha1: parsed.fingerprintSha1,
+          hasPrivateKey: true,
+          store: 'private',
+          channelsInUse: pair.channelsInUse || [],
+          rawCertificate: pair.certificate,
+          parsedCertificate: parsed,
+        })
+      }
+    }
+    
+    return certificates
+  } catch (error) {
+    console.error('Failed to fetch certificates:', error)
+    throw new Error('Failed to fetch certificates from server')
+  }
+}
 
-  // Mock data spanning all stores
-  return [
-    // Native Java Certificate Store (read-only)
-    {
-      alias: 'digicert-global-root',
-      name: 'DigiCert Global Root CA',
-      type: 'Root CA',
-      subject: 'CN=DigiCert Global Root CA, OU=www.digicert.com, O=DigiCert Inc, C=US',
-      issuer: 'Self-signed',
-      validFrom: '2006-11-10',
-      validTo: '2031-11-10',
-      fingerprintSha1: 'A8985D3A65E5E5C4B2D7D66D40C6DD2FB19C5436',
-      hasPrivateKey: false,
-      store: 'native',
-    },
-    {
-      alias: 'isrg-root-x1',
-      name: 'ISRG Root X1',
-      type: 'Root CA',
-      subject: 'CN=ISRG Root X1, O=Internet Security Research Group, C=US',
-      issuer: 'Self-signed',
-      validFrom: '2015-06-04',
-      validTo: '2035-06-04',
-      fingerprintSha1: 'CABD2A79A1076A31F21D253635CB039D4329A5E8',
-      hasPrivateKey: false,
-      store: 'native',
-    },
+export async function updateCertificates(certificates, pairs) {
+  try {
+    // === INTERNAL STORE (for development) ===
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
+    // Update internal store
+    if (certificates && certificates.length > 0) {
+      // Add new certificates to the store
+      for (const cert of certificates) {
+        const existing = internalStore.certificates.findIndex(c => c.alias === cert.alias)
+        if (existing >= 0) {
+          internalStore.certificates[existing] = cert
+        } else {
+          internalStore.certificates.push(cert)
+        }
+      }
+    }
+    
+    if (pairs && pairs.length > 0) {
+      // Add new pairs to the store
+      for (const pair of pairs) {
+        const existing = internalStore.pairs.findIndex(p => p.alias === pair.alias)
+        if (existing >= 0) {
+          internalStore.pairs[existing] = pair
+        } else {
+          internalStore.pairs.push(pair)
+        }
+      }
+    }
+    
+    // Save to localStorage
+    saveToStorage()
+    
+    console.log('[Internal Store] Updated:', internalStore)
+    
+    return { success: true }
+    
+    // === REAL API (uncomment when API is ready) ===
+    // const payload = {}
+    // 
+    // if (certificates && certificates.length > 0) {
+    //   payload.certificates = certificates.map(cert => ({
+    //     alias: cert.alias,
+    //     certificate: cert.certificate // Base64-encoded PEM
+    //   }))
+    // }
+    // 
+    // if (pairs && pairs.length > 0) {
+    //   payload.pairs = pairs.map(pair => ({
+    //     alias: pair.alias,
+    //     certificate: pair.certificate, // Base64-encoded PEM
+    //     privateKey: pair.privateKey // Base64-encoded PEM
+    //   }))
+    // }
+    // 
+    // const response = await api.put('/api/tlsmanager/certificates', payload)
+    // return response.data
+  } catch (error) {
+    console.error('Failed to update certificates:', error)
+    throw new Error('Failed to update certificates in internal store')
+  }
+}
 
-    // Additional Trusted Certificates (user-imported)
-    {
-      alias: 'corp-intermediate-1',
-      name: 'Corp Intermediate CA 1',
-      type: 'Intermediate',
-      subject: 'CN=Corp Intermediate CA 1, O=Corp Example Ltd, C=US',
-      issuer: 'Corp Root CA',
-      validFrom: '2024-02-01',
-      validTo: '2027-02-01',
-      fingerprintSha1: '11223344556677889900AABBCCDDEEFF00112233',
-      hasPrivateKey: false,
-      store: 'trusted',
-    },
-    {
-      alias: 'partner-public-cert',
-      name: 'Partner Public Cert',
-      type: 'End-entity',
-      subject: 'CN=api.partner.example, O=Partner Inc, C=US',
-      issuer: 'R3',
-      validFrom: '2024-10-01',
-      validTo: '2025-10-01',
-      fingerprintSha1: '223344556677889900AABBCCDDEEFF0011223344',
-      hasPrivateKey: false,
-      store: 'trusted',
-    },
+// === INTERNAL STORE HELPER FUNCTIONS (remove when switching to real API) ===
+// Helper function to clear the internal store (useful for testing)
+export function clearInternalStore() {
+  internalStore = {
+    systemCertificates: [],
+    certificates: [],
+    pairs: []
+  }
+  saveToStorage()
+  console.log('[Internal Store] Cleared')
+}
 
-    // Private Key Store
-    {
-      alias: 'prod-web-1',
-      name: 'Production Web Cert',
-      type: 'End-entity',
-      subject: 'CN=www.example.com, O=Example Inc, C=US',
-      issuer: "Let's Encrypt Authority X3",
-      validFrom: '2024-01-10',
-      validTo: '2026-01-15',
-      fingerprintSha1: '3344556677889900AABBCCDDEEFF001122334455',
-      hasPrivateKey: true,
-      store: 'private',
-    },
-    {
-      alias: 'staging-api',
-      name: 'Staging API Cert',
-      type: 'End-entity',
-      subject: 'CN=api.staging.example.com, O=Example Inc, C=US',
-      issuer: 'R3',
-      validFrom: '2024-12-01',
-      validTo: '2025-12-01',
-      fingerprintSha1: '44556677889900AABBCCDDEEFF00112233445566',
-      hasPrivateKey: true,
-      store: 'private',
-    },
-  ]
+// Helper function to get current store state (for debugging)
+export function getInternalStore() {
+  return { ...internalStore }
 }

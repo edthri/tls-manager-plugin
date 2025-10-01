@@ -1,15 +1,20 @@
 import React, { useRef, useState } from 'react'
-import { Box, Button, FormHelperText, Stack, TextField, Typography } from '@mui/material'
+import { Box, Button, FormHelperText, Stack, TextField, Typography, Alert } from '@mui/material'
+import { pemToBase64, isValidPemCertificate } from '../utils/certificateUtils.js'
+import { updateCertificates } from '../services/sslService.js'
 
 export default function ImportCertificateDialogContent({
   targetStore = 'trusted',
   onCancel,
   onSubmit,
+  onSuccess,
 }) {
   const [pemText, setPemText] = useState('')
   const [file, setFile] = useState(null)
   const [alias, setAlias] = useState('')
   const [errors, setErrors] = useState({})
+  const [loading, setLoading] = useState(false)
+  const [apiError, setApiError] = useState(null)
 
   const fileInputRef = useRef(null)
 
@@ -17,32 +22,68 @@ export default function ImportCertificateDialogContent({
 
   const validate = () => {
     const nextErrors = {}
-    if (!pemText.trim()) nextErrors.pemText = 'PEM content is required.'
-    if (pemText && !/-----BEGIN [^-]+-----[\s\S]*-----END [^-]+-----/m.test(pemText)) {
-      nextErrors.pemText = 'Expected PEM content with BEGIN/END headers.'
+    if (!pemText.trim()) {
+      nextErrors.pemText = 'PEM content is required.'
+    } else if (!isValidPemCertificate(pemText)) {
+      nextErrors.pemText = 'Invalid PEM certificate format. Please ensure it contains valid certificate data.'
     }
     setErrors(nextErrors)
+    setApiError(null) // Clear API errors on validation
     return Object.keys(nextErrors).length === 0
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return
-    const payload = {
-      targetStore,
-      source: 'text',
-      pemText,
-      fileName: file ? file.name : undefined,
-      alias: alias || undefined,
+    
+    setLoading(true)
+    setApiError(null)
+    
+    try {
+      // Convert PEM to Base64
+      const base64Certificate = pemToBase64(pemText)
+      
+      // Prepare payload based on target store
+      let certificates = null
+      let pairs = null
+      
+      if (targetStore === 'trusted') {
+        certificates = [{
+          alias: alias || `cert-${Date.now()}`,
+          certificate: base64Certificate
+        }]
+      } else if (targetStore === 'private') {
+        // For private store, we need both certificate and private key
+        // For now, we'll only store the certificate (private key would need separate input)
+        pairs = [{
+          alias: alias || `pair-${Date.now()}`,
+          certificate: base64Certificate,
+          privateKey: '' // TODO: Add private key input for private store
+        }]
+      }
+      
+      // Call the API
+      await updateCertificates(certificates, pairs)
+      
+      // Success - call callbacks
+      if (onSuccess) onSuccess()
+      if (onSubmit) onSubmit({ success: true, targetStore, alias })
+      
+    } catch (error) {
+      console.error('Failed to import certificate:', error)
+      setApiError(error.message || 'Failed to import certificate')
+    } finally {
+      setLoading(false)
     }
-    // Useful debugging information
-    // eslint-disable-next-line no-console
-    console.debug('[ImportCertificate] submit', payload)
-    if (onSubmit) onSubmit(payload)
   }
 
   return (
     <Box sx={{ pt: 0.5 }}>
       <Stack spacing={2}>
+        {apiError && (
+          <Alert severity="error" onClose={() => setApiError(null)}>
+            {apiError}
+          </Alert>
+        )}
         <input
           ref={fileInputRef}
           type="file"
@@ -97,8 +138,14 @@ export default function ImportCertificateDialogContent({
         />
 
         <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ pt: 1 }}>
-          <Button onClick={onCancel}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmit}>Import</Button>
+          <Button onClick={onCancel} disabled={loading}>Cancel</Button>
+          <Button 
+            variant="contained" 
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? 'Importing...' : 'Import'}
+          </Button>
         </Stack>
       </Stack>
     </Box>
