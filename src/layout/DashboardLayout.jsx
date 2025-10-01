@@ -19,9 +19,18 @@ export default function DashboardLayout({ children }) {
         </Toolbar>
       </AppBar>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3, height: '100vh' }}>
+      <Box component="main" sx={{ 
+        flexGrow: 1, 
+        p: 3, 
+        height: '100vh',
+        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
         <Toolbar />
-        {children}
+        <Box sx={{ flex: 1, minHeight: 0 }}>
+          {children}
+        </Box>
       </Box>
     </Box>
   )

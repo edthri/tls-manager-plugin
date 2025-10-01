@@ -15,7 +15,7 @@ export default function CertificateList({ rows, loading, error, emptyText = 'No 
   if (!rows || rows.length === 0) return <Typography variant="body2" color="text.secondary">{emptyText}</Typography>
 
   return (
-    <Grid container spacing={2}>
+    <Grid container spacing={2} sx={{ pb: 4 }}>
       {rows.map((row) => (
         <Grid key={row.alias} xs={12} md={6}>
           <CertificateCard certificate={row} onViewDetails={onViewDetails} onExport={onExport} />

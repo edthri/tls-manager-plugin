@@ -77,8 +77,18 @@ export default function ImportCertificateDialogContent({
   }
 
   return (
-    <Box sx={{ pt: 0.5 }}>
-      <Stack spacing={2}>
+    <Box sx={{ 
+      pt: 0.5,
+      maxHeight: '80vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      <Box sx={{ 
+        flex: 1,
+        overflow: 'auto',
+        minHeight: 0
+      }}>
+        <Stack spacing={2}>
         {apiError && (
           <Alert severity="error" onClose={() => setApiError(null)}>
             {apiError}
@@ -125,7 +135,8 @@ export default function ImportCertificateDialogContent({
           error={Boolean(errors.pemText)}
           helperText={errors.pemText || 'Paste certificate or chain. Uploading a .pem fills this field.'}
           multiline
-          minRows={8}
+          minRows={4}
+          maxRows={6}
           fullWidth
         />
 
@@ -136,17 +147,30 @@ export default function ImportCertificateDialogContent({
           helperText="Provide an alias for the entry if applicable"
           fullWidth
         />
-
-        <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ pt: 1 }}>
-          <Button onClick={onCancel} disabled={loading}>Cancel</Button>
-          <Button 
-            variant="contained" 
-            onClick={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? 'Importing...' : 'Import'}
-          </Button>
         </Stack>
+      </Box>
+      
+      {/* Fixed buttons at bottom */}
+      <Stack 
+        direction="row" 
+        spacing={1} 
+        justifyContent="flex-end" 
+        sx={{ 
+          pt: 2,
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          flexShrink: 0
+        }}
+      >
+        <Button onClick={onCancel} disabled={loading}>Cancel</Button>
+        <Button 
+          variant="contained" 
+          onClick={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? 'Importing...' : 'Import'}
+        </Button>
       </Stack>
     </Box>
   )
