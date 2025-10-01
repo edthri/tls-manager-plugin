@@ -9,8 +9,15 @@ const __dirname = path.dirname(__filename)
 const app = express()
 const PORT = process.env.PORT || 3000
 
-// API target - you can override this with environment variable
-const API_TARGET = process.env.API_TARGET || 'https://oie-1.quantis.health/api'
+// API target - MANDATORY environment variable
+const API_TARGET = process.env.API_TARGET
+
+if (!API_TARGET) {
+  console.error('❌ ERROR: API_TARGET environment variable is required but not set!')
+  console.error('Please set the API_TARGET environment variable to your backend API URL.')
+  console.error('Example: API_TARGET=https://your-api-server.com/api')
+  process.exit(1)
+}
 
 // Serve static files from the dashboard directory
 app.use('/dashboard', express.static(path.join(__dirname, 'dashboard'), {
