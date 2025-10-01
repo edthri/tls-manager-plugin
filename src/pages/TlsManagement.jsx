@@ -104,7 +104,6 @@ export default function TlsManagement() {
     private: {
       title: 'Private Key Store',
       actions: [
-        { key: 'show-keys', label: 'Show Private Keys', color: 'secondary', onClick: () => openDialog({ type: 'text', title: 'Show Private Keys', props: { text: 'Placeholder dialog for showing private keys.' } }) },
         { key: 'import-cert', label: 'Import Certificate', color: 'info', onClick: () => openImportDialog() },
         { key: 'add-new', label: 'Add New', variant: 'contained', color: 'success', onClick: () => openDialog({ type: 'text', title: 'Add New Private Key', props: { text: 'Placeholder dialog for adding a new private key certificate.' } }) },
       ],

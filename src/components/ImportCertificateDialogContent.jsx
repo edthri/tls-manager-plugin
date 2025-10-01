@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
 import { Box, Button, FormHelperText, Stack, TextField, Typography, Alert } from '@mui/material'
-import { pemToBase64, isValidPemCertificate } from '../utils/certificateUtils.js'
+import { pemToBase64, privateKeyPemToBase64, isValidPemCertificate, isValidPemPrivateKey } from '../utils/certificateUtils.js'
 import { updateCertificates } from '../services/tlsService.js'
 
 export default function ImportCertificateDialogContent({
@@ -12,13 +12,16 @@ export default function ImportCertificateDialogContent({
   const [pemText, setPemText] = useState('')
   const [file, setFile] = useState(null)
   const [alias, setAlias] = useState('')
+  const [privateKeyText, setPrivateKeyText] = useState('')
+  const [privateKeyFile, setPrivateKeyFile] = useState(null)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [apiError, setApiError] = useState(null)
 
   const fileInputRef = useRef(null)
+  const privateKeyFileInputRef = useRef(null)
 
-  const fileAccept = '.pem,text/plain,application/x-pem-file'
+  const fileAccept = '.pem,.key,text/plain,application/x-pem-file'
 
   const validate = () => {
     const nextErrors = {}
@@ -30,6 +33,16 @@ export default function ImportCertificateDialogContent({
     if (!alias.trim()) {
       nextErrors.alias = 'Alias is required.'
     }
+    
+    // For private store, private key is required
+    if (targetStore === 'private') {
+      if (!privateKeyText.trim()) {
+        nextErrors.privateKeyText = 'Private key is required for private store.'
+      } else if (!isValidPemPrivateKey(privateKeyText)) {
+        nextErrors.privateKeyText = 'Invalid private key format. Please ensure it contains valid private key data.'
+      }
+    }
+    
     setErrors(nextErrors)
     setApiError(null) // Clear API errors on validation
     return Object.keys(nextErrors).length === 0
@@ -56,11 +69,11 @@ export default function ImportCertificateDialogContent({
         }]
       } else if (targetStore === 'private') {
         // For private store, we need both certificate and private key
-        // For now, we'll only store the certificate (private key would need separate input)
+        const base64PrivateKey = privateKeyPemToBase64(privateKeyText)
         pairs = [{
           alias: alias,
           certificate: base64Certificate,
-          privateKey: '' // TODO: Add private key input for private store
+          privateKey: base64PrivateKey
         }]
       }
       
@@ -108,8 +121,8 @@ export default function ImportCertificateDialogContent({
               setFile(f || null)
               if (!f) return
               const name = (f.name || '').toLowerCase()
-              if (!(name.endsWith('.pem') || f.type === 'text/plain' || f.type === 'application/x-pem-file')) {
-                setErrors((prev) => ({ ...prev, file: 'Please select a .pem file.' }))
+              if (!(name.endsWith('.pem') || name.endsWith('.key') || f.type === 'text/plain' || f.type === 'application/x-pem-file')) {
+                setErrors((prev) => ({ ...prev, file: 'Please select a .pem or .key file.' }))
                 return
               }
               const text = await f.text()
@@ -122,7 +135,7 @@ export default function ImportCertificateDialogContent({
         />
         <Stack direction="row" spacing={1} alignItems="center">
           <Button variant="outlined" onClick={() => fileInputRef.current?.click()}>
-            {file ? 'Change .pem File' : 'Choose .pem File'}
+            {file ? 'Change Certificate File' : 'Choose Certificate File'}
           </Button>
           <Typography variant="body2" color={errors.file ? 'error' : 'text.secondary'}>
             {file ? file.name : 'No file selected'}
@@ -136,12 +149,63 @@ export default function ImportCertificateDialogContent({
           value={pemText}
           onChange={(e) => setPemText(e.target.value)}
           error={Boolean(errors.pemText)}
-          helperText={errors.pemText || 'Paste certificate or chain. Uploading a .pem fills this field.'}
+          helperText={errors.pemText || 'Paste certificate or chain. Uploading a .pem or .key file fills this field.'}
           multiline
           minRows={4}
           maxRows={6}
           fullWidth
         />
+
+        {targetStore === 'private' && (
+          <>
+            <input
+              ref={privateKeyFileInputRef}
+              type="file"
+              accept={fileAccept}
+              style={{ display: 'none' }}
+              onChange={async (e) => {
+                try {
+                  const f = e.target.files && e.target.files[0]
+                  setPrivateKeyFile(f || null)
+                  if (!f) return
+                  const name = (f.name || '').toLowerCase()
+                  if (!(name.endsWith('.pem') || name.endsWith('.key') || f.type === 'text/plain' || f.type === 'application/x-pem-file')) {
+                    setErrors((prev) => ({ ...prev, privateKeyFile: 'Please select a .pem or .key file.' }))
+                    return
+                  }
+                  const text = await f.text()
+                  setPrivateKeyText(text)
+                  setErrors((prev) => ({ ...prev, privateKeyFile: undefined, privateKeyText: undefined }))
+                } catch (err) {
+                  setErrors((prev) => ({ ...prev, privateKeyFile: 'Failed to read file.' }))
+                }
+              }}
+            />
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Button variant="outlined" onClick={() => privateKeyFileInputRef.current?.click()}>
+                {privateKeyFile ? 'Change Private Key File' : 'Choose Private Key File'}
+              </Button>
+              <Typography variant="body2" color={errors.privateKeyFile ? 'error' : 'text.secondary'}>
+                {privateKeyFile ? privateKeyFile.name : 'No private key file selected'}
+              </Typography>
+            </Stack>
+            {errors.privateKeyFile && <FormHelperText error>{errors.privateKeyFile}</FormHelperText>}
+
+            <TextField
+              label="Private Key (paste contents including BEGIN/END)"
+              placeholder={"-----BEGIN PRIVATE KEY-----\n...base64...\n-----END PRIVATE KEY-----"}
+              value={privateKeyText}
+              onChange={(e) => setPrivateKeyText(e.target.value)}
+              error={Boolean(errors.privateKeyText)}
+              helperText={errors.privateKeyText || 'Paste private key. Uploading a .pem or .key file fills this field.'}
+              multiline
+              minRows={4}
+              maxRows={6}
+              fullWidth
+              required
+            />
+          </>
+        )}
 
         <TextField
           label="Alias"

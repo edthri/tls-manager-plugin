@@ -161,11 +161,40 @@ export function isValidPemCertificate(pemString) {
     }
     
     // Try to parse it
-    const cert= forge.pki.certificateFromPem(pemString)
-    console.log(cert)
+    const cert= forge.pki.certificateFromPem(pemString);
+    
     return true
   } catch (error) {
     console.error('Failed to validate PEM certificate:', error)
+    return false
+  }
+}
+
+/**
+ * Validate if a string contains valid PEM private key data
+ * @param {string} pemString - PEM private key string
+ * @returns {boolean} True if valid PEM private key
+ */
+export function isValidPemPrivateKey(pemString) {
+  try {
+    // Check if it contains private key markers (support multiple formats)
+    const hasPrivateKeyMarkers = (
+      (pemString.includes('-----BEGIN PRIVATE KEY-----') && pemString.includes('-----END PRIVATE KEY-----')) ||
+      (pemString.includes('-----BEGIN RSA PRIVATE KEY-----') && pemString.includes('-----END RSA PRIVATE KEY-----')) ||
+      (pemString.includes('-----BEGIN EC PRIVATE KEY-----') && pemString.includes('-----END EC PRIVATE KEY-----')) ||
+      (pemString.includes('-----BEGIN DSA PRIVATE KEY-----') && pemString.includes('-----END DSA PRIVATE KEY-----'))
+    )
+    
+    if (!hasPrivateKeyMarkers) {
+      return false
+    }
+    
+    // Try to parse it as a private key
+    const privateKey = forge.pki.privateKeyFromPem(pemString)
+    
+    return true
+  } catch (error) {
+    console.error('Failed to validate PEM private key:', error)
     return false
   }
 }
@@ -187,6 +216,32 @@ export function pemToBase64(pemString) {
   } catch (error) {
     console.error('Failed to convert PEM to Base64:', error)
     throw new Error('Invalid PEM format')
+  }
+}
+
+/**
+ * Convert PEM private key string to Base64-encoded format
+ * @param {string} pemString - PEM private key string
+ * @returns {string} Base64-encoded private key
+ */
+export function privateKeyPemToBase64(pemString) {
+  try {
+    // Remove all possible private key headers and footers
+    const base64Content = pemString
+      .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+      .replace(/-----END PRIVATE KEY-----/g, '')
+      .replace(/-----BEGIN RSA PRIVATE KEY-----/g, '')
+      .replace(/-----END RSA PRIVATE KEY-----/g, '')
+      .replace(/-----BEGIN EC PRIVATE KEY-----/g, '')
+      .replace(/-----END EC PRIVATE KEY-----/g, '')
+      .replace(/-----BEGIN DSA PRIVATE KEY-----/g, '')
+      .replace(/-----END DSA PRIVATE KEY-----/g, '')
+      .replace(/\s/g, '') // Remove whitespace
+    
+    return base64Content
+  } catch (error) {
+    console.error('Failed to convert private key PEM to Base64:', error)
+    throw new Error('Invalid private key PEM format')
   }
 }
 
