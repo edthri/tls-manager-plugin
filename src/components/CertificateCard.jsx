@@ -3,7 +3,7 @@ import { Paper, Box, Typography, Stack, Button, Divider } from '@mui/material'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import StatusPill from './StatusPill'
 
-export default function CertificateCard({ certificate, onViewDetails, onExport }) {
+export default function CertificateCard({ certificate, onViewDetails, onExport, showPrivateKeys = false }) {
   const {
     name,
     type,
@@ -12,6 +12,8 @@ export default function CertificateCard({ certificate, onViewDetails, onExport }
     validFrom,
     validTo,
     fingerprintSha1,
+    hasPrivateKey,
+    rawPrivateKey,
   } = certificate
 
   return (
@@ -55,6 +57,30 @@ export default function CertificateCard({ certificate, onViewDetails, onExport }
           <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Fingerprint (SHA-1):</Typography>
           <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>{fingerprintSha1}</Typography>
         </Box>
+
+        {/* Private Key Section */}
+        {showPrivateKeys && hasPrivateKey && rawPrivateKey && (
+          <>
+            <Divider />
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Private Key (Base64):</Typography>
+              <Box
+                sx={{
+                  backgroundColor: 'grey.100',
+                  p: 1,
+                  borderRadius: 1,
+                  maxHeight: 150,
+                  overflow: 'auto',
+                  fontFamily: 'monospace',
+                  fontSize: '0.75rem',
+                  wordBreak: 'break-all',
+                }}
+              >
+                {rawPrivateKey}
+              </Box>
+            </Box>
+          </>
+        )}
 
         <Divider />
 

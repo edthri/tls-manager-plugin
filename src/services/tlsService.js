@@ -115,6 +115,7 @@ export async function fetchCertificates() {
           store: 'private',
           channelsInUse: pair.channelsInUse || [],
           rawCertificate: pair.certificate,
+          rawPrivateKey: pair.privateKey, // Include private key in response
           parsedCertificate: parsed,
         })
       }

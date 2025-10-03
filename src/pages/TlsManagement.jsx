@@ -14,7 +14,7 @@ import ImportCertificateDialogContent from '../components/ImportCertificateDialo
 import CertificateDetailsDialog from '../components/CertificateDetailsDialog'
 
 export default function TlsManagement() {
-  const { counts, filterBy, loading, error, refetch } = useCertificates()
+  const { all, counts, filterBy, loading, error, refetch } = useCertificates()
   const [params, setParams] = useSearchParams()
   const tabKeys = ['native', 'trusted', 'private']
   const initialKey = params.get('tab') && tabKeys.includes(params.get('tab')) ? params.get('tab') : 'native'
@@ -28,6 +28,7 @@ export default function TlsManagement() {
   
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [selectedCertificate, setSelectedCertificate] = useState(null)
+  const [showPrivateKeys, setShowPrivateKeys] = useState(false)
 
   const openDialog = ({ type, title, props = {} }) => {
     setDialogTitle(title)
@@ -56,6 +57,10 @@ export default function TlsManagement() {
   const handleCloseDetails = () => {
     setDetailsDialogOpen(false)
     setSelectedCertificate(null)
+  }
+
+  const handleTogglePrivateKeys = () => {
+    setShowPrivateKeys(!showPrivateKeys)
   }
 
   const handleExport = (certificate) => {
@@ -104,6 +109,7 @@ export default function TlsManagement() {
     private: {
       title: 'Private Key Store',
       actions: [
+        { key: 'show-private-keys', label: showPrivateKeys ? 'Hide Private Keys' : 'Show Private Keys', color: 'warning', onClick: handleTogglePrivateKeys },
         { key: 'import-cert', label: 'Import Certificate', color: 'info', onClick: () => openImportDialog() },
         { key: 'add-new', label: 'Add New', variant: 'contained', color: 'success', onClick: () => openDialog({ type: 'text', title: 'Add New Private Key', props: { text: 'Placeholder dialog for adding a new private key certificate.' } }) },
       ],
@@ -126,6 +132,7 @@ export default function TlsManagement() {
             error={error} 
             onViewDetails={handleViewDetails}
             onExport={handleExport}
+            showPrivateKeys={showPrivateKeys}
           />
         </Box>
       </TabPanel>
@@ -140,6 +147,7 @@ export default function TlsManagement() {
             error={error} 
             onViewDetails={handleViewDetails}
             onExport={handleExport}
+            showPrivateKeys={showPrivateKeys}
           />
         </Box>
       </TabPanel>
@@ -154,6 +162,7 @@ export default function TlsManagement() {
             error={error} 
             onViewDetails={handleViewDetails}
             onExport={handleExport}
+            showPrivateKeys={showPrivateKeys}
           />
         </Box>
       </TabPanel>
@@ -185,6 +194,7 @@ export default function TlsManagement() {
         onClose={handleCloseDetails}
         certificate={selectedCertificate}
       />
+
     </Box>
   )
 }

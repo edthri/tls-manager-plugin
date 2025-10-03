@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -12,13 +12,16 @@ import {
   Stack,
   Paper,
   Grid,
+  IconButton,
 } from '@mui/material'
+import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { formatDate } from '../utils/dateUtils.js'
 
 export default function CertificateDetailsDialog({ open, onClose, certificate }) {
   if (!certificate) return null
 
   const { parsedCertificate, rawCertificate } = certificate
+  const [showPrivateKey, setShowPrivateKey] = useState(false)
 
   const getStatusColor = (validFrom, validTo) => {
     const now = new Date()
@@ -50,10 +53,6 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
     return 'Valid'
   }
 
-  const formatDN = (dn) => {
-    if (!dn) return 'Unknown'
-    return dn.toString()
-  }
 
   const formatExtensions = (extensions) => {
     if (!extensions || extensions.length === 0) return []
@@ -111,7 +110,7 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
           <Paper variant="outlined" sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>Subject</Typography>
             <Typography variant="body1" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-              {formatDN(parsedCertificate?.subject)}
+              {parsedCertificate?.subjectStr || 'Unknown'}
             </Typography>
           </Paper>
 
@@ -119,7 +118,7 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
           <Paper variant="outlined" sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>Issuer</Typography>
             <Typography variant="body1" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-              {formatDN(parsedCertificate?.issuer)}
+              {parsedCertificate?.issuerStr || 'Unknown'}
             </Typography>
           </Paper>
 
@@ -201,6 +200,40 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
               {rawCertificate}
             </Box>
           </Paper>
+
+          {/* Private Key (if available) */}
+          {certificate.hasPrivateKey && certificate.rawPrivateKey && (
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                <Typography variant="h6">Private Key (Base64)</Typography>
+                <IconButton
+                  onClick={() => setShowPrivateKey(!showPrivateKey)}
+                  size="small"
+                  color="primary"
+                  title={showPrivateKey ? 'Hide private key' : 'Show private key'}
+                >
+                  {showPrivateKey ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </Stack>
+              {showPrivateKey && (
+                <Box
+                  sx={{
+                    backgroundColor: 'grey.100',
+                    p: 1,
+                    borderRadius: 1,
+                    maxHeight: 200,
+                    overflow: 'auto',
+                    fontFamily: 'monospace',
+                    fontSize: '0.75rem',
+                    wordBreak: 'break-all',
+                    mt: 1,
+                  }}
+                >
+                  {certificate.rawPrivateKey}
+                </Box>
+              )}
+            </Paper>
+          )}
         </Stack>
       </DialogContent>
       
