@@ -61,7 +61,6 @@ public class MiscTests {
         configurationController = mock(MockConfigurationController.class);
         when(configurationController.getHttpsServerProtocols()).thenReturn(protocols());
         when(configurationController.getHttpsCipherSuites()).thenReturn(cipherSuites());
-
     }
 
     @AfterEach
