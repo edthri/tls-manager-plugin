@@ -7,11 +7,32 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 
 public class ConnectionUtils {
 
     public static ConnectionTestResponse thing(
         SSLConnectionSocketFactory socketFactory,
+        String host,
+        int port,
+        int timeout,
+        String localAddr,
+        int localPort
+    ) throws IOException {
+        return thing(
+            socketFactory,
+            null,
+            host,
+            port,
+            timeout,
+            localAddr,
+            localPort
+        );
+    }
+
+    public static ConnectionTestResponse thing(
+        SSLConnectionSocketFactory socketFactory,
+        Socket socket,
         String host,
         int port,
         int timeout,
@@ -45,11 +66,10 @@ public class ConnectionUtils {
             localAddress = new InetSocketAddress(localAddr, localPort);
         }
 
-
         try (
             var sslSocket = (SSLSocket) socketFactory.connectSocket(
                 timeout,
-                null,
+                socket,
                 target,
                 remoteAddress,
                 localAddress,
