@@ -37,6 +37,8 @@ import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
+import static org.openintegrationengine.tlsmanager.server.util.Statics.cipherSuites;
+import static org.openintegrationengine.tlsmanager.server.util.Statics.protocols;
 
 @ExtendWith(MockitoExtension.class)
 public class MiscTests {
@@ -118,7 +120,7 @@ public class MiscTests {
     @UnitTest
     public void test_SSLHandShakeException() throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
 
-        var connector = new HttpDispatcher();
+        var connector = new MockDestinationConnector();
 
         var trustStoreBackend = new SystemTrustStoreBackend();
         var trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -126,6 +128,8 @@ public class MiscTests {
         try (var bais = new ByteArrayInputStream(trustStoreBackend.load())) {
             trustStore.load(bais, trustStoreBackend.loadPassword());
         }
+
+        certificateService = mock(CertificateService.class);
 
         when(
             certificateService.getTrustStoreFromProperties(anyBoolean(), anySet(), isA(DestinationConnector.class))
