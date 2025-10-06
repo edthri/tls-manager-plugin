@@ -14,7 +14,7 @@ function main() {
   echo "   Building jars..."
   echo
   echo "########################################"
-  mvn install package
+  mvn install package -DskipTests
 
   PLUGIN_PATH=$(mvn exec:exec --non-recursive --quiet -Dexec.executable="echo" -Dexec.args='${mirth.plugin.path}')
   ARTIFACT_ID=$(mvn exec:exec --non-recursive --quiet -Dexec.executable="echo" -Dexec.args='${project.artifactId}')
