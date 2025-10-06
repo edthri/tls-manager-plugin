@@ -1,15 +1,21 @@
 package org.openintegrationengine.tlsmanager.server.util;
 
 import com.mirth.connect.util.ConnectionTestResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHost;
+import org.apache.http.conn.SchemePortResolver;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.conn.DefaultSchemePortResolver;
 
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+@Slf4j
 public class ConnectionUtils {
+
+    private static SchemePortResolver defaultResolver = new DefaultSchemePortResolver();
 
     public static ConnectionTestResponse thing(
         SSLConnectionSocketFactory socketFactory,
@@ -45,7 +51,7 @@ public class ConnectionUtils {
 
         var target = HttpHost.create(host);
 
-        InetSocketAddress remoteAddress = new InetSocketAddress(target.getHostName(), target.getPort());
+        InetSocketAddress remoteAddress = new InetSocketAddress(target.getHostName(), defaultResolver.resolve(target));
 
         InetSocketAddress localAddress = null;
         if (localAddr != null) {
@@ -78,6 +84,9 @@ public class ConnectionUtils {
             );
 
             return new ConnectionTestResponse(ConnectionTestResponse.Type.SUCCESS, "Successfully connected to host: " + connectionInfo, connectionInfo);
+        } catch (Exception e) {
+            log.error("Error connecting to host: " + host, e);
+            return new ConnectionTestResponse(ConnectionTestResponse.Type.FAILURE, e.getMessage());
         }
     }
 }

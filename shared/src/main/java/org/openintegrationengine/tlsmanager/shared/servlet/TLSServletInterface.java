@@ -23,6 +23,7 @@ import com.mirth.connect.client.core.Operation;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
+import com.mirth.connect.connectors.http.HttpConnectorServletInterface;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -50,7 +51,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_XML;
 @Consumes({ APPLICATION_XML, APPLICATION_JSON })
 @Produces({ APPLICATION_XML, APPLICATION_JSON })
 @MirthApiProvider(type = ApiProviderType.SERVLET_INTERFACE)
-public interface TLSServletInterface extends BaseServletInterface {
+public interface TLSServletInterface extends BaseServletInterface, HttpConnectorServletInterface {
 
     @GET
     @Path("/importedcertificates")
@@ -108,5 +109,4 @@ public interface TLSServletInterface extends BaseServletInterface {
         @FormDataParam("password")
         String password
     ) throws ClientException;
-
 }

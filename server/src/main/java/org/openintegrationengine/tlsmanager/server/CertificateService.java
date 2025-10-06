@@ -16,20 +16,26 @@
 
 package org.openintegrationengine.tlsmanager.server;
 
+import com.mirth.connect.client.core.api.MirthApiException;
+import com.mirth.connect.connectors.http.HttpDispatcherProperties;
 import com.mirth.connect.donkey.server.channel.DestinationConnector;
 import com.mirth.connect.server.util.TemplateValueReplacer;
+import com.mirth.connect.util.ConnectionTestResponse;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.openintegrationengine.tlsmanager.server.backend.DatabaseTrustStoreBackend;
 import org.openintegrationengine.tlsmanager.server.backend.FileTrustStoreBackend;
 import org.openintegrationengine.tlsmanager.server.backend.SystemTrustStoreBackend;
 import org.openintegrationengine.tlsmanager.server.backend.TrustStoreBackend;
+import org.openintegrationengine.tlsmanager.server.util.ConnectionUtils;
 import org.openintegrationengine.tlsmanager.shared.PersistenceMode;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -56,6 +62,8 @@ public final class CertificateService {
     private TrustStoreBackend extraTrustStoreBackend;
 
     private TemplateValueReplacer templateValueReplacer;
+
+    private static int TEST_CONNECTION_TIMEOUT = 5_000;
 
     public CertificateService() {
         this(
@@ -137,8 +145,8 @@ public final class CertificateService {
             if (!presentInSystem.isEmpty()) {
                 log.warn(
                     "Generating effective TrustStore for connector ({}) in channel ({}). Found and ignored aliases present in system truststore: {}",
-                    connector.getDestinationName(),
-                    connector.getChannel().getName(),
+                    connector == null ? "testConnection" : connector.getDestinationName(),
+                    connector == null ? "testConnection" : connector.getChannel().getName(),
                     presentInSystem
                 );
             }
@@ -146,8 +154,8 @@ public final class CertificateService {
             if (!unknownAliases.isEmpty()) {
                 log.warn(
                     "Generating effective TrustStore for connector ({}) in channel ({}). Found aliases not present in additional truststore: {}",
-                    connector.getDestinationName(),
-                    connector.getChannel().getName(),
+                    connector == null ? "testConnection" : connector.getDestinationName(),
+                    connector == null ? "testConnection" : connector.getChannel().getName(),
                     presentInSystem
                 );
             }
@@ -200,30 +208,45 @@ public final class CertificateService {
         return persistenceMode;
     }
 
-    /*
-    TODO
-    public void testConnection(
+    public ConnectionTestResponse testConnection(
         String channelId,
         String channelName,
-        HttpConnectorProperties tlsProperties,
         HttpDispatcherProperties dispatcherProperties
     ) {
+        var oTlsPluginProperties = dispatcherProperties.getPluginProperties()
+            .stream()
+            .filter(TLSConnectorProperties.class::isInstance)
+            .findFirst();
+
+
+        if (oTlsPluginProperties.isEmpty()) {
+            log.warn("No TLS plugin properties found for testConnection");
+            return new ConnectionTestResponse(ConnectionTestResponse.Type.FAILURE, "No TLS plugin properties found for testConnection.");
+        }
+
+        var properties = (TLSConnectorProperties) oTlsPluginProperties.get();
+
         try {
-            var url = new URL(
-                templateValueReplacer.replaceValues(dispatcherProperties.getHost(),
-                    channelId,
-                    channelName
-                )
+            var url = new URL(templateValueReplacer.replaceValues(
+                dispatcherProperties.getHost(), channelId, channelName
+            ));
+
+            var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
+            var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
+
+            var result = ConnectionUtils.thing(
+                socketFactory,
+                url.toString(),
+                TEST_CONNECTION_TIMEOUT,
+                null,
+                0
             );
 
-            int port = url.getPort();
-            // If no port was provided, default to port 80 or 443.
-            return ConnectorUtil.testConnection(url.getHost(), (port == -1) ? (StringUtils.equalsIgnoreCase(url.getProtocol(), "https") ? 443 : 80) : port, TIMEOUT);
+            return result;
         } catch (Exception e) {
             throw new MirthApiException(e);
         }
     }
-     */
 
     /**
      * Perform a byte-level clone of a KeyStore object
