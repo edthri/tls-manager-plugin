@@ -98,7 +98,7 @@ public class MiscTests {
 
         var connectorProperties = new TLSConnectorProperties();
         connectorProperties.setCrlMode(RevocationMode.DISABLED);
-        connectorProperties.setOscpMode(RevocationMode.DISABLED);
+        connectorProperties.setOcspMode(RevocationMode.DISABLED);
 
         var socketFactory = socketFactoryService.getConnectorSocketFactory(connector, connectorProperties);
 

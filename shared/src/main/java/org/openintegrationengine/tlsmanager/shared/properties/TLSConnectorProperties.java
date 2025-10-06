@@ -37,7 +37,7 @@ public class TLSConnectorProperties extends ConnectorPluginProperties {
 
     // Certificate revocation modes
     private RevocationMode crlMode;
-    private RevocationMode oscpMode;
+    private RevocationMode ocspMode;
 
     // Public certificates
     private boolean trustSystemTruststore;
@@ -59,7 +59,7 @@ public class TLSConnectorProperties extends ConnectorPluginProperties {
         isServerCertificateValidationEnabled = false;
 
         crlMode = RevocationMode.HARD_FAIL;
-        oscpMode = RevocationMode.HARD_FAIL;
+        ocspMode = RevocationMode.HARD_FAIL;
 
         trustSystemTruststore = true;
         trustedServerCertificates = Collections.emptySet();
@@ -79,7 +79,7 @@ public class TLSConnectorProperties extends ConnectorPluginProperties {
         isServerCertificateValidationEnabled = props.isServerCertificateValidationEnabled();
 
         crlMode = props.getCrlMode();
-        oscpMode = props.getOscpMode();
+        ocspMode = props.getOcspMode();
 
         trustSystemTruststore = props.isTrustSystemTruststore();
         trustedServerCertificates = props.getTrustedServerCertificates();

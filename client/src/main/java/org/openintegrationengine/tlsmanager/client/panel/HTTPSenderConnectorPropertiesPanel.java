@@ -69,8 +69,8 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     private JLabel crlModeLabel;
     private MirthComboBox<RevocationMode> crlModeComboBox;
 
-    private JLabel oscpModeLabel;
-    private MirthComboBox<RevocationMode> oscpModeComboBox;
+    private JLabel ocspModeLabel;
+    private MirthComboBox<RevocationMode> ocspModeComboBox;
 
     private JLabel clientCertLabel;
     private JButton clientCertButton;
@@ -222,11 +222,11 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         crlModeComboBox.setModel(new DefaultComboBoxModel<>(revocationModeModel));
         crlModeComboBox.addActionListener(evt -> handleCrlModeChange());
 
-        oscpModeLabel = new JLabel("OSCP Mode:");
-        oscpModeComboBox = new MirthComboBox<>();
-        oscpModeComboBox.setRenderer(comboBoxRenderer);
-        oscpModeComboBox.setModel(new DefaultComboBoxModel<>(revocationModeModel));
-        oscpModeComboBox.addActionListener(evt -> handleOscpModeChange());
+        ocspModeLabel = new JLabel("OCSP Mode:");
+        ocspModeComboBox = new MirthComboBox<>();
+        ocspModeComboBox.setRenderer(comboBoxRenderer);
+        ocspModeComboBox.setModel(new DefaultComboBoxModel<>(revocationModeModel));
+        ocspModeComboBox.addActionListener(evt -> handleOcspModeChange());
 
         clientCertLabel = new JLabel("Client Certificate:");
         clientCertButton = new JButton(wrenchIcon);
@@ -302,8 +302,8 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         add(crlModeLabel, "newline, right");
         add(crlModeComboBox);
 
-        add(oscpModeLabel, "newline, right");
-        add(oscpModeComboBox);
+        add(ocspModeLabel, "newline, right");
+        add(ocspModeComboBox);
 
         add(trustedServerCertsLabel, "newline, right");
         add(trustedServerCertsButton, "h 22!, w 22!, split");
@@ -332,9 +332,9 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         }
     }
 
-    private void handleOscpModeChange() {
-        if (oscpModeComboBox.getSelectedItem() instanceof RevocationMode revocationMode) {
-            properties.setOscpMode(revocationMode);
+    private void handleOcspModeChange() {
+        if (ocspModeComboBox.getSelectedItem() instanceof RevocationMode revocationMode) {
+            properties.setOcspMode(revocationMode);
         }
     }
 
@@ -380,7 +380,7 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         }
 
         crlModeComboBox.setSelectedItem(properties.getCrlMode());
-        oscpModeComboBox.setSelectedItem(properties.getOscpMode());
+        ocspModeComboBox.setSelectedItem(properties.getOcspMode());
 
         var thingsToTrust = new ArrayList<String>();
         if (properties.isTrustSystemTruststore()) {
@@ -425,8 +425,6 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         final var workingId = PlatformUI.MIRTH_FRAME.startWorking("Fetching imported certificates...");
 
         var worker = new SwingWorker<Void, Void>() {
-            private String errorMessage = "";
-
             private Set<String> aliasSet;
 
             public Void doInBackground() {
