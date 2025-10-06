@@ -14,7 +14,6 @@ public class ConnectionUtils {
     public static ConnectionTestResponse thing(
         SSLConnectionSocketFactory socketFactory,
         String host,
-        int port,
         int timeout,
         String localAddr,
         int localPort
@@ -23,7 +22,6 @@ public class ConnectionUtils {
             socketFactory,
             null,
             host,
-            port,
             timeout,
             localAddr,
             localPort
@@ -34,7 +32,6 @@ public class ConnectionUtils {
         SSLConnectionSocketFactory socketFactory,
         Socket socket,
         String host,
-        int port,
         int timeout,
         String localAddr,
         int localPort
@@ -42,14 +39,11 @@ public class ConnectionUtils {
         if (
             host == null
             || host.isEmpty()
-            || port <= 0
-            || port > 65535
         ) {
             return new ConnectionTestResponse(ConnectionTestResponse.Type.FAILURE, "Invalid host or port.");
         }
 
-        // TODO Dynamic scheme
-        var target = new HttpHost(host, port, "https");
+        var target = HttpHost.create(host);
 
         InetSocketAddress remoteAddress = new InetSocketAddress(target.getHostName(), target.getPort());
 

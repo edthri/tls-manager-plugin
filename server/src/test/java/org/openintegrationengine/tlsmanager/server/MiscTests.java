@@ -104,8 +104,7 @@ public class MiscTests {
 
         var exception = assertThrows(SSLHandshakeException.class, () -> ConnectionUtils.thing(
             socketFactory,
-            "valid.crl.caddy",
-            9443,
+            "valid.crl.caddy:9443",
             1_000,
             null,
             0
@@ -147,8 +146,7 @@ public class MiscTests {
         var exception = assertThrows(SSLHandshakeException.class, () -> {
             var connectionResult = ConnectionUtils.thing(
                 socketFactory,
-                "valid.crl.caddy",
-                9443,
+                "valid.crl.caddy:9443",
                 2_000,
                 null,
                 0
