@@ -30,7 +30,7 @@ import net.miginfocom.swing.MigLayout;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
 import org.openintegrationengine.tlsmanager.client.misc.RevocationModeComboBoxRenderer;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
-import org.openintegrationengine.tlsmanager.shared.properties.HttpConnectorProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
 import javax.swing.ButtonGroup;
@@ -84,11 +84,11 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     private JButton ciphersButton;
     private JLabel ciphersText;
 
-    private HttpConnectorProperties properties;
+    private TLSConnectorProperties properties;
     private Set<String> importedAliases;
 
     public HTTPSenderConnectorPropertiesPanel() {
-        this.properties = new HttpConnectorProperties();
+        this.properties = new TLSConnectorProperties();
         this.importedAliases = new HashSet<>();
 
         initComponents();
@@ -97,22 +97,22 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     }
 
     @Override
-    public HttpConnectorProperties getProperties() {
+    public TLSConnectorProperties getProperties() {
         return properties.clone();
     }
 
     @Override
     public void setProperties(ConnectorProperties connectorProperties, ConnectorPluginProperties connectorPluginProperties, Connector.Mode mode, String s) {
-        if (connectorPluginProperties instanceof HttpConnectorProperties httpConnectorProperties) {
-            this.properties = httpConnectorProperties;
+        if (connectorPluginProperties instanceof TLSConnectorProperties TLSConnectorProperties) {
+            this.properties = TLSConnectorProperties;
             redrawState();
-            handleManagerEnabledButton(httpConnectorProperties.isTlsManagerEnabled());
+            handleManagerEnabledButton(TLSConnectorProperties.isTlsManagerEnabled());
         }
     }
 
     @Override
     public ConnectorPluginProperties getDefaults() {
-        return new HttpConnectorProperties();
+        return new TLSConnectorProperties();
     }
 
     @Override
@@ -381,7 +381,6 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
 
         crlModeComboBox.setSelectedItem(properties.getCrlMode());
         oscpModeComboBox.setSelectedItem(properties.getOscpMode());
-
 
         var thingsToTrust = new ArrayList<String>();
         if (properties.isTrustSystemTruststore()) {

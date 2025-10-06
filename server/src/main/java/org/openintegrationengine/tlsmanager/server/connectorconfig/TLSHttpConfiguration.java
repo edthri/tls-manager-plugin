@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.openintegrationengine.tlsmanager.server.CertificateService;
 import org.openintegrationengine.tlsmanager.server.SocketFactoryService;
 import org.openintegrationengine.tlsmanager.server.TLSServicePlugin;
-import org.openintegrationengine.tlsmanager.shared.properties.HttpConnectorProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 @Slf4j
 public class TLSHttpConfiguration extends DefaultHttpConfiguration {
@@ -115,7 +115,7 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
     private void configureSocketFactory(HttpDispatcher connector) {
         var oTlsPluginProperties = connector.getConnectorProperties().getPluginProperties()
             .stream()
-            .filter(HttpConnectorProperties.class::isInstance)
+            .filter(TLSConnectorProperties.class::isInstance)
             .findFirst();
 
         // TODO Fix repetition
@@ -128,7 +128,7 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
             return;
         }
 
-        var properties = (HttpConnectorProperties) oTlsPluginProperties.get();
+        var properties = (TLSConnectorProperties) oTlsPluginProperties.get();
         if (!properties.isTlsManagerEnabled()) {
             try {
                 super.configureSocketFactoryRegistry(null, connector.getSocketFactoryRegistry());

@@ -6,7 +6,7 @@ import com.mirth.connect.util.MirthSSLUtil;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
-import org.openintegrationengine.tlsmanager.shared.properties.HttpConnectorProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.SSLContext;
@@ -39,7 +39,7 @@ public class SocketFactoryService {
         this.configurationController = configurationController;
     }
 
-    public SSLConnectionSocketFactory getConnectorSocketFactory(DestinationConnector connector, HttpConnectorProperties properties) {
+    public SSLConnectionSocketFactory getConnectorSocketFactory(DestinationConnector connector, TLSConnectorProperties properties) {
         try {
             var truststore = certificateService.getTrustStoreFromProperties(
                 properties.isTrustSystemTruststore(),

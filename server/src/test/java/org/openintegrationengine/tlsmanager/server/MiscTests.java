@@ -18,7 +18,7 @@ import org.openintegrationengine.tlsmanager.server.util.MockConfigurationControl
 import org.openintegrationengine.tlsmanager.server.util.MockDestinationConnector;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
-import org.openintegrationengine.tlsmanager.shared.properties.HttpConnectorProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import javax.net.ssl.SSLHandshakeException;
 import java.io.ByteArrayInputStream;
@@ -96,7 +96,7 @@ public class MiscTests {
             certificateService
         );
 
-        var connectorProperties = new HttpConnectorProperties();
+        var connectorProperties = new TLSConnectorProperties();
         connectorProperties.setCrlMode(RevocationMode.DISABLED);
         connectorProperties.setOscpMode(RevocationMode.DISABLED);
 
@@ -140,7 +140,7 @@ public class MiscTests {
             certificateService
         );
 
-        var connectorProperties = new HttpConnectorProperties();
+        var connectorProperties = new TLSConnectorProperties();
 
         var socketFactory = socketFactoryService.getConnectorSocketFactory(connector, connectorProperties);
 

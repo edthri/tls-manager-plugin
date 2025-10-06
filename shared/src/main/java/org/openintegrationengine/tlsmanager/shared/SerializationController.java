@@ -17,14 +17,14 @@
 package org.openintegrationengine.tlsmanager.shared;
 
 import com.mirth.connect.model.converters.ObjectXMLSerializer;
-import org.openintegrationengine.tlsmanager.shared.properties.HttpConnectorProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import java.util.List;
 
 public class SerializationController {
 
     private static final List<String> types = List.of(
-        HttpConnectorProperties.class.getCanonicalName()
+        TLSConnectorProperties.class.getCanonicalName()
     );
 
     private static final List<String> wildcardTypes = List.of();

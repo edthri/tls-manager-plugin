@@ -30,7 +30,7 @@ import java.util.Set;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = false)
-public class HttpConnectorProperties extends ConnectorPluginProperties {
+public class TLSConnectorProperties extends ConnectorPluginProperties {
 
     private boolean isTlsManagerEnabled;
     private boolean isServerCertificateValidationEnabled;
@@ -54,7 +54,7 @@ public class HttpConnectorProperties extends ConnectorPluginProperties {
     private boolean isHostnameVerificationEnabled;
     private String clientCertificateAlias;
 
-    public HttpConnectorProperties() {
+    public TLSConnectorProperties() {
         isTlsManagerEnabled = false;
         isServerCertificateValidationEnabled = false;
 
@@ -74,7 +74,7 @@ public class HttpConnectorProperties extends ConnectorPluginProperties {
         clientCertificateAlias = null;
     }
 
-    public HttpConnectorProperties(HttpConnectorProperties props) {
+    public TLSConnectorProperties(TLSConnectorProperties props) {
         isTlsManagerEnabled = props.isTlsManagerEnabled();
         isServerCertificateValidationEnabled = props.isServerCertificateValidationEnabled();
 
@@ -100,8 +100,8 @@ public class HttpConnectorProperties extends ConnectorPluginProperties {
     }
 
     @Override
-    public HttpConnectorProperties clone() {
-        return new HttpConnectorProperties(this);
+    public TLSConnectorProperties clone() {
+        return new TLSConnectorProperties(this);
     }
 
     @Override
