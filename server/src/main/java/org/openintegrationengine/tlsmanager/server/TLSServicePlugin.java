@@ -25,6 +25,7 @@ import com.mirth.connect.model.ExtensionPermission;
 import com.mirth.connect.plugins.ServicePlugin;
 import com.mirth.connect.server.controllers.ControllerFactory;
 import org.openintegrationengine.tlsmanager.shared.SerializationController;
+import org.openintegrationengine.tlsmanager.shared.models.TLSPluginConfiguration;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -94,7 +95,8 @@ public class TLSServicePlugin implements ServicePlugin {
 
     @Override
     public void start() {
-        this.certificateService.init();
+        var pluginConfiguration = TLSPluginConfiguration.fromEnv();
+        this.certificateService.init(pluginConfiguration);
     }
 
     @Override

@@ -38,7 +38,7 @@ public class FileTrustStoreBackend implements TrustStoreBackend {
     private char[] storepass;
 
     public FileTrustStoreBackend(String keystorePath) {
-        this(keystorePath, System.getenv(TLSPluginConstants.ENV_PERSISTENCE_FS_STOREPASS));
+        this(keystorePath, System.getenv(TLSPluginConstants.ENV_PERSISTENCE_FS_TRUSTSTOREPASS));
     }
 
     public FileTrustStoreBackend(String keystorePath, String storePass) {

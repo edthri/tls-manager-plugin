@@ -30,6 +30,7 @@ import org.openintegrationengine.tlsmanager.server.backend.TrustStoreBackend;
 import org.openintegrationengine.tlsmanager.server.util.ConnectionUtils;
 import org.openintegrationengine.tlsmanager.shared.PersistenceMode;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
+import org.openintegrationengine.tlsmanager.shared.models.TLSPluginConfiguration;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import java.io.ByteArrayInputStream;
@@ -66,18 +67,14 @@ public final class CertificateService {
     private static int TEST_CONNECTION_TIMEOUT = 5_000;
 
     public CertificateService() {
-        this(
-            new TemplateValueReplacer()
-        );
+        this(new TemplateValueReplacer());
     }
 
-    public CertificateService(
-        TemplateValueReplacer templateValueReplacer
-    ) {
+    public CertificateService(TemplateValueReplacer templateValueReplacer) {
         this.templateValueReplacer = templateValueReplacer;
     }
 
-    void init() {
+    void init(TLSPluginConfiguration pluginConfiguration) {
         systemTrustStoreBackend = new SystemTrustStoreBackend();
 
         var persistenceMode = getPersistenceMode();
@@ -85,11 +82,11 @@ public final class CertificateService {
         if (persistenceMode == PersistenceMode.DATABASE) {
             extraTrustStoreBackend = new DatabaseTrustStoreBackend();
         } else if (persistenceMode == PersistenceMode.FILESYSTEM) {
-            var truststorePath = System.getenv(TLSPluginConstants.ENV_PERSISTENCE_FS_STOREPATH);
+            var truststorePath = System.getenv(TLSPluginConstants.ENV_PERSISTENCE_FS_TRUSTSTOREPATH);
             extraTrustStoreBackend = new FileTrustStoreBackend(truststorePath);
         } else {
             // Should not get here
-            throw new RuntimeException("Unsupported persistence mode: " + persistenceMode);
+            throw new RuntimeException("Unsupported persistence mode: " + pluginConfiguration.persistenceMode());
         }
 
         extraTrustStoreBackend.init();
@@ -141,7 +138,6 @@ public final class CertificateService {
                 }
             }
 
-            // TODO Connector data
             if (!presentInSystem.isEmpty()) {
                 log.warn(
                     "Generating effective TrustStore for connector ({}) in channel ({}). Found and ignored aliases present in system truststore: {}",
