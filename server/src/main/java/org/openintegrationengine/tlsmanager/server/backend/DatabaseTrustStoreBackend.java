@@ -26,17 +26,18 @@ public class DatabaseTrustStoreBackend implements TrustStoreBackend {
 
     private ConfigurationController configurationController;
 
-    private static final String TRUSTSTORE_KEY = "extraTrustStore";
+    private final String databaseColumn;
 
-    public DatabaseTrustStoreBackend() {
+    public DatabaseTrustStoreBackend(String databaseColumn) {
         this.configurationController = ControllerFactory.getFactory().createConfigurationController();
+        this.databaseColumn = databaseColumn;
     }
 
     @Override
     public boolean persist(byte[] keystore) {
         var encoder = Base64.getEncoder();
         var b64Keystore = encoder.encodeToString(keystore);
-        configurationController.saveProperty(TLSPluginConstants.PLUGIN_POINTNAME, TRUSTSTORE_KEY, b64Keystore);
+        configurationController.saveProperty(TLSPluginConstants.PLUGIN_POINTNAME, databaseColumn, b64Keystore);
         return false;
     }
 
@@ -48,7 +49,7 @@ public class DatabaseTrustStoreBackend implements TrustStoreBackend {
     @Override
     public byte[] load() {
         var decoder = Base64.getDecoder();
-        var keystoreBytes = configurationController.getProperty(TLSPluginConstants.PLUGIN_POINTNAME, TRUSTSTORE_KEY);
+        var keystoreBytes = configurationController.getProperty(TLSPluginConstants.PLUGIN_POINTNAME, databaseColumn);
         return decoder.decode(keystoreBytes);
     }
 

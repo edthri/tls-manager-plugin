@@ -29,7 +29,6 @@ import org.openintegrationengine.tlsmanager.server.backend.SystemTrustStoreBacke
 import org.openintegrationengine.tlsmanager.server.backend.TrustStoreBackend;
 import org.openintegrationengine.tlsmanager.server.util.ConnectionUtils;
 import org.openintegrationengine.tlsmanager.shared.PersistenceMode;
-import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.models.TLSPluginConfiguration;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
@@ -57,10 +56,11 @@ public final class CertificateService {
     private KeyStore externalTrustStore;
 
     @Getter
-    private KeyStore keystore;
+    private KeyStore externalKeyStore;
 
     private TrustStoreBackend systemTrustStoreBackend;
     private TrustStoreBackend extraTrustStoreBackend;
+    private TrustStoreBackend extraKeyStoreBackend;
 
     private TemplateValueReplacer templateValueReplacer;
 
@@ -77,26 +77,35 @@ public final class CertificateService {
     void init(TLSPluginConfiguration pluginConfiguration) {
         systemTrustStoreBackend = new SystemTrustStoreBackend();
 
-        var persistenceMode = getPersistenceMode();
+        if (pluginConfiguration.persistenceMode() == PersistenceMode.DATABASE) {
+            extraTrustStoreBackend = new DatabaseTrustStoreBackend("extraTrustStore");
+            extraKeyStoreBackend = new DatabaseTrustStoreBackend("extraKeyStore");
+        } else if (pluginConfiguration.persistenceMode() == PersistenceMode.FILESYSTEM) {
+            extraTrustStoreBackend = new FileTrustStoreBackend(
+                pluginConfiguration.truststorePath(),
+                pluginConfiguration.truststorePassword()
+            );
 
-        if (persistenceMode == PersistenceMode.DATABASE) {
-            extraTrustStoreBackend = new DatabaseTrustStoreBackend();
-        } else if (persistenceMode == PersistenceMode.FILESYSTEM) {
-            var truststorePath = System.getenv(TLSPluginConstants.ENV_PERSISTENCE_FS_TRUSTSTOREPATH);
-            extraTrustStoreBackend = new FileTrustStoreBackend(truststorePath);
+            extraKeyStoreBackend = new FileTrustStoreBackend(
+                pluginConfiguration.keystorePath(),
+                pluginConfiguration.keystorePassword()
+            );
         } else {
             // Should not get here
             throw new RuntimeException("Unsupported persistence mode: " + pluginConfiguration.persistenceMode());
         }
 
         extraTrustStoreBackend.init();
+        extraKeyStoreBackend.init();
 
         byte[] cacertsBytes = systemTrustStoreBackend.load();
         byte[] extraTrustStoreBytes = extraTrustStoreBackend.load();
+        byte[] extraKeyStoreBytes = extraKeyStoreBackend.load();
 
         try {
             systemTrustStore = KeyStore.getInstance(KeyStore.getDefaultType());
             externalTrustStore = KeyStore.getInstance(PKCS12);
+            externalKeyStore = KeyStore.getInstance(PKCS12);
         } catch (KeyStoreException e) {
             log.error("Error initializing CertificateService", e);
             throw new RuntimeException(e);
@@ -104,6 +113,7 @@ public final class CertificateService {
 
         loadKeyStore(systemTrustStore, cacertsBytes, systemTrustStoreBackend.loadPassword());
         loadKeyStore(externalTrustStore, extraTrustStoreBytes, extraTrustStoreBackend.loadPassword());
+        loadKeyStore(externalKeyStore, extraKeyStoreBytes, extraKeyStoreBackend.loadPassword());
     }
 
     KeyStore getTrustStoreFromProperties(boolean isTrustSystem, Set<String> aliasSet, DestinationConnector connector) {
@@ -188,20 +198,6 @@ public final class CertificateService {
             log.error("Error reading alias list from loaded truststore", e);
             throw new RuntimeException(e);
         }
-    }
-
-    private PersistenceMode getPersistenceMode() {
-        var persistenceModeFromEnv = System.getenv(TLSPluginConstants.ENV_PERSISTENCE_BACKEND);
-
-        if (persistenceModeFromEnv == null) {
-            throw new IllegalStateException("%s is not set".formatted(TLSPluginConstants.ENV_PERSISTENCE_BACKEND));
-        }
-
-        var persistenceMode = PersistenceMode.valueOf(persistenceModeFromEnv.toUpperCase());
-
-        log.info("Using persistence mode {}", persistenceMode);
-
-        return persistenceMode;
     }
 
     public ConnectionTestResponse testConnection(
