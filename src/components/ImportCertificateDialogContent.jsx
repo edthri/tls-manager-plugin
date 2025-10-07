@@ -55,10 +55,49 @@ export default function ImportCertificateDialogContent({
     try {
       const details = parseCertificate(pemToBase64(pemText))
       setCertificateDetails(details)
+      
+      // Auto-complete alias if it's empty
+      if (!alias.trim()) {
+        const suggestedAlias = getSuggestedAlias(details)
+        if (suggestedAlias) {
+          setAlias(suggestedAlias)
+        }
+      }
     } catch (error) {
       console.error('Failed to parse certificate details:', error)
       setCertificateDetails(null)
     }
+  }
+
+  // Get suggested alias from certificate details
+  const getSuggestedAlias = (details) => {
+    if (!details) return null
+    
+    // Try to get CN from subject
+    const subjectStr = details.subjectStr || ''
+    const cnMatch = subjectStr.match(/CN=([^,]+)/)
+    if (cnMatch && cnMatch[1]) {
+      return cnMatch[1].trim()
+    }
+    
+    // Try to get first DNS name from SAN
+    if (details.raw && details.raw.extensions) {
+      const sanExtension = details.raw.extensions.find(ext => ext.name === 'subjectAltName')
+      if (sanExtension && sanExtension.altNames) {
+        const dnsName = sanExtension.altNames.find(altName => altName.type === 2) // DNS type
+        if (dnsName && dnsName.value) {
+          return dnsName.value.trim()
+        }
+      }
+    }
+    
+    // Fallback to first part of subject
+    const firstPart = subjectStr.split(',')[0]
+    if (firstPart && firstPart.includes('=')) {
+      return firstPart.split('=')[1]?.trim()
+    }
+    
+    return null
   }
 
   const validate = () => {
