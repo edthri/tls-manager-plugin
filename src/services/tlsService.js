@@ -10,7 +10,7 @@
  * 4. Remove or comment out the internal store variables and helper functions at the bottom
  */
 
-import { parseCertificate } from '../utils/certificateUtils.js'
+import { parseCertificate, pemToBase64, privateKeyPemToBase64 } from '../utils/certificateUtils.js'
 // import { api } from './api.js' // Uncomment when API is ready
 
 // === INTERNAL STORE (remove when switching to real API) ===
@@ -128,34 +128,45 @@ export async function fetchCertificates() {
   }
 }
 
-export async function updateCertificates(certificates, pairs) {
+export async function updateCertificates(targetStore, certificateData) {
   try {
     // === INTERNAL STORE (for development) ===
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 300))
     
-    // Update internal store
-    if (certificates && certificates.length > 0) {
-      // Add new certificates to the store
-      for (const cert of certificates) {
-        const existing = internalStore.certificates.findIndex(c => c.alias === cert.alias)
-        if (existing >= 0) {
-          internalStore.certificates[existing] = cert
-        } else {
-          internalStore.certificates.push(cert)
-        }
-      }
-    }
+    const { alias, pemText, privateKeyText } = certificateData
     
-    if (pairs && pairs.length > 0) {
-      // Add new pairs to the store
-      for (const pair of pairs) {
-        const existing = internalStore.pairs.findIndex(p => p.alias === pair.alias)
-        if (existing >= 0) {
-          internalStore.pairs[existing] = pair
-        } else {
-          internalStore.pairs.push(pair)
-        }
+    // Convert PEM to Base64 using utility functions
+    const base64Certificate = pemToBase64(pemText)
+    
+    if (targetStore === 'trusted') {
+      // Add to trusted certificates
+      const cert = {
+        alias,
+        certificate: base64Certificate
+      }
+      
+      const existing = internalStore.certificates.findIndex(c => c.alias === alias)
+      if (existing >= 0) {
+        internalStore.certificates[existing] = cert
+      } else {
+        internalStore.certificates.push(cert)
+      }
+    } else if (targetStore === 'private') {
+      // Add to private key pairs
+      const base64PrivateKey = privateKeyPemToBase64(privateKeyText)
+      
+      const pair = {
+        alias,
+        certificate: base64Certificate,
+        privateKey: base64PrivateKey
+      }
+      
+      const existing = internalStore.pairs.findIndex(p => p.alias === alias)
+      if (existing >= 0) {
+        internalStore.pairs[existing] = pair
+      } else {
+        internalStore.pairs.push(pair)
       }
     }
     
@@ -164,7 +175,7 @@ export async function updateCertificates(certificates, pairs) {
     
     console.log('[Internal Store] Updated:', internalStore)
     
-    return { success: true }
+    return { success: true, data: { alias, targetStore } }
     
     // === REAL API (uncomment when API is ready) ===
     // const payload = {}
