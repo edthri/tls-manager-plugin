@@ -5,7 +5,7 @@ import {
   Stack,
   Chip
 } from '@mui/material'
-import { Security } from '@mui/icons-material'
+import { Info } from '@mui/icons-material'
 
 const CertificateDetailsSection = ({ certificateDetails }) => {
   if (!certificateDetails) return null
@@ -13,7 +13,7 @@ const CertificateDetailsSection = ({ certificateDetails }) => {
   return (
     <Box>
       <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <Security color="primary" />
+        <Info color="primary" />
         Certificate Details
       </Typography>
       

@@ -87,9 +87,10 @@ export const useCertificateImport = (targetStore) => {
   }
 
   // Parse certificate details when PEM text changes
-  const parseCertificateDetails = (pemText) => {
+  const parseCertificateDetails = async (pemText) => {
     if (!pemText.trim() || !isValidPemCertificate(pemText)) {
       setCertificateDetails(null)
+      setVerificationResult(null)
       return
     }
 
@@ -109,9 +110,35 @@ export const useCertificateImport = (targetStore) => {
         // If alias is already set, check for conflicts
         checkAliasExists(alias)
       }
+
+      // Auto-verify certificate
+      await performAutoVerification(pemText)
     } catch (error) {
       console.error('Failed to parse certificate details:', error)
       setCertificateDetails(null)
+      setVerificationResult(null)
+    }
+  }
+
+  // Perform auto-verification
+  const performAutoVerification = async (pemText, privateKeyPem = null) => {
+    if (!pemText.trim()) return
+
+    setIsVerifying(true)
+    try {
+      // Use provided private key or current state
+      const keyToUse = privateKeyPem !== null ? privateKeyPem : 
+        (targetStore === 'private' && privateKeyText.trim() ? privateKeyText : null)
+      
+      const result = await verifyCertificate(pemText, keyToUse)
+      setVerificationResult(result)
+    } catch (error) {
+      setVerificationResult({
+        success: false,
+        error: `Auto-verification failed: ${error.message}`
+      })
+    } finally {
+      setIsVerifying(false)
     }
   }
 
@@ -162,7 +189,7 @@ export const useCertificateImport = (targetStore) => {
       }
       const text = await f.text()
       setPemText(text)
-      parseCertificateDetails(text) // This will now check for alias conflicts
+      await parseCertificateDetails(text) // This will now auto-verify and check for alias conflicts
       setErrors((prev) => ({ ...prev, file: undefined, pemText: undefined }))
     } catch (err) {
       setErrors((prev) => ({ ...prev, file: 'Failed to read file.' }))
@@ -182,6 +209,12 @@ export const useCertificateImport = (targetStore) => {
       }
       const text = await f.text()
       setPrivateKeyText(text)
+      
+      // Auto-verify if certificate is already present
+      if (pemText.trim()) {
+        await performAutoVerification(pemText, text)
+      }
+      
       setErrors((prev) => ({ ...prev, privateKeyFile: undefined, privateKeyText: undefined }))
     } catch (err) {
       setErrors((prev) => ({ ...prev, privateKeyFile: 'Failed to read file.' }))
@@ -189,14 +222,20 @@ export const useCertificateImport = (targetStore) => {
   }
 
   // Handle PEM text change
-  const handlePemTextChange = (e) => {
+  const handlePemTextChange = async (e) => {
     setPemText(e.target.value)
-    parseCertificateDetails(e.target.value) // This will now check for alias conflicts
+    await parseCertificateDetails(e.target.value) // This will now auto-verify and check for alias conflicts
   }
 
   // Handle private key text change
-  const handlePrivateKeyTextChange = (e) => {
-    setPrivateKeyText(e.target.value)
+  const handlePrivateKeyTextChange = async (e) => {
+    const newPrivateKeyText = e.target.value
+    setPrivateKeyText(newPrivateKeyText)
+    
+    // Auto-verify if certificate is already present
+    if (pemText.trim()) {
+      await performAutoVerification(pemText, newPrivateKeyText)
+    }
   }
 
   // Handle alias change
@@ -250,6 +289,7 @@ export const useCertificateImport = (targetStore) => {
     parseCertificateDetails,
     validate,
     loadExistingCertificates,
-    checkAliasExists
+    checkAliasExists,
+    performAutoVerification
   }
 }
