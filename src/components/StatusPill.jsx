@@ -1,16 +1,41 @@
 import React, { useMemo } from 'react'
 import { Chip } from '@mui/material'
+import dayjs from 'dayjs'
 
 function computeStatus(validFrom, validTo, thresholdDays = 30) {
-  const now = new Date()
-  const start = validFrom ? new Date(validFrom) : null
-  const end = validTo ? new Date(validTo) : null
-  if (end && end < now) return { label: 'Expired', color: 'error' }
-  if (end) {
-    const msLeft = end.getTime() - now.getTime()
-    const daysLeft = msLeft / (1000 * 60 * 60 * 24)
-    if (daysLeft <= thresholdDays) return { label: 'Expiring soon', color: 'warning' }
+  const now = dayjs()
+  
+  // Parse dates with dayjs for better handling
+  const start = validFrom ? dayjs(validFrom) : null
+  const end = validTo ? dayjs(validTo) : null
+  
+  // Validate that dates are actually valid
+  if (start && !start.isValid()) {
+    return { label: 'Invalid start date', color: 'error' }
   }
+  if (end && !end.isValid()) {
+    return { label: 'Invalid end date', color: 'error' }
+  }
+  
+  // Check if certificate is not yet valid
+  if (start && start.isAfter(now)) {
+    const daysUntilValid = start.diff(now, 'day')
+    return { label: `Valid in ${daysUntilValid} days`, color: 'info' }
+  }
+  
+  // Check if certificate is expired
+  if (end && end.isBefore(now)) {
+    return { label: 'Expired', color: 'error' }
+  }
+  
+  // Check if certificate is expiring soon
+  if (end) {
+    const daysLeft = end.diff(now, 'day')
+    if (daysLeft <= thresholdDays && daysLeft >= 0) {
+      return { label: `Expires in ${daysLeft} days`, color: 'warning' }
+    }
+  }
+  
   return { label: 'Valid', color: 'success' }
 }
 
