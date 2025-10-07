@@ -1,8 +1,13 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Box,
   Stack,
-  Button
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material'
 import { useCertificateImport } from '../hooks/useCertificateImport'
 import CertificateDetailsSection from './CertificateDetailsSection'
@@ -17,6 +22,8 @@ export default function ImportCertificateDialogContent({
   onSubmit,
   onSuccess,
 }) {
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  
   const {
     // State
     alias,
@@ -30,6 +37,8 @@ export default function ImportCertificateDialogContent({
     certificateDetails,
     verificationResult,
     isVerifying,
+    existingCertificates,
+    aliasWarning,
     
     // Refs
     fileInputRef,
@@ -47,12 +56,31 @@ export default function ImportCertificateDialogContent({
     handlePemTextChange,
     handlePrivateKeyTextChange,
     handleAliasChange,
-    validate
+    validate,
+    loadExistingCertificates,
+    checkAliasExists
   } = useCertificateImport(targetStore)
+
+  // Load existing certificates on component mount
+  useEffect(() => {
+    loadExistingCertificates()
+  }, [loadExistingCertificates])
 
   const handleSubmit = async () => {
     if (!validate()) return
 
+    // Check if alias already exists
+    const aliasExists = checkAliasExists(alias)
+    if (aliasExists) {
+      setShowConfirmDialog(true)
+      return
+    }
+
+    // Proceed with import if no conflict
+    await performImport()
+  }
+
+  const performImport = async () => {
     setLoading(true)
     setApiError(null)
     try {
@@ -74,6 +102,15 @@ export default function ImportCertificateDialogContent({
     }
   }
 
+  const handleConfirmReplace = async () => {
+    setShowConfirmDialog(false)
+    await performImport()
+  }
+
+  const handleCancelReplace = () => {
+    setShowConfirmDialog(false)
+  }
+
   return (
     <Box sx={{ 
       pt: 0.5,
@@ -89,8 +126,8 @@ export default function ImportCertificateDialogContent({
         gap: 3
       }}>
 
-         {/* Left Column - User Inputs */}
-         <UserInputsSection
+        {/* Left Column - User Inputs */}
+        <UserInputsSection
           alias={alias}
           pemText={pemText}
           privateKeyText={privateKeyText}
@@ -99,6 +136,7 @@ export default function ImportCertificateDialogContent({
           apiError={apiError}
           errors={errors}
           targetStore={targetStore}
+          aliasWarning={aliasWarning}
           fileInputRef={fileInputRef}
           privateKeyFileInputRef={privateKeyFileInputRef}
           fileAccept={fileAccept}
@@ -161,6 +199,36 @@ export default function ImportCertificateDialogContent({
           {loading ? 'Importing...' : 'Import Certificate'}
         </Button>
       </Stack>
+
+      {/* Confirmation Dialog for Replacing Existing Certificate */}
+      <Dialog
+        open={showConfirmDialog}
+        onClose={handleCancelReplace}
+        aria-labelledby="confirm-dialog-title"
+        aria-describedby="confirm-dialog-description"
+      >
+        <DialogTitle id="confirm-dialog-title">
+          Replace Existing Certificate
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="confirm-dialog-description">
+            A certificate with the alias "{alias}" already exists. This will replace the existing certificate. Are you sure you want to continue?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelReplace} disabled={loading}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleConfirmReplace} 
+            variant="contained" 
+            color="warning"
+            disabled={loading}
+          >
+            {loading ? 'Replacing...' : 'Replace Certificate'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

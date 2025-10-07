@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { parseCertificate, pemToBase64, isValidPemCertificate } from '../utils/certificateUtils'
 import { verifyCertificate } from '../utils/verificationUtils'
+import { fetchCertificates } from '../services/tlsService'
 
 export const useCertificateImport = (targetStore) => {
   // State management
@@ -15,12 +16,44 @@ export const useCertificateImport = (targetStore) => {
   const [certificateDetails, setCertificateDetails] = useState(null)
   const [verificationResult, setVerificationResult] = useState(null)
   const [isVerifying, setIsVerifying] = useState(false)
+  const [existingCertificates, setExistingCertificates] = useState([])
+  const [aliasWarning, setAliasWarning] = useState(null)
 
   // Refs
   const fileInputRef = useRef(null)
   const privateKeyFileInputRef = useRef(null)
 
   const fileAccept = '.pem,.key,text/plain,application/x-pem-file'
+
+  // Load existing certificates to check for alias conflicts
+  const loadExistingCertificates = async () => {
+    try {
+      const certificates = await fetchCertificates()
+      setExistingCertificates(certificates)
+    } catch (error) {
+      console.error('Failed to load existing certificates:', error)
+    }
+  }
+
+  // Check if alias already exists
+  const checkAliasExists = (aliasToCheck) => {
+    if (!aliasToCheck.trim()) {
+      setAliasWarning(null)
+      return false
+    }
+
+    const exists = existingCertificates.some(cert => 
+      cert.alias.toLowerCase() === aliasToCheck.toLowerCase()
+    )
+    
+    if (exists) {
+      setAliasWarning('This alias is already in use')
+      return true
+    } else {
+      setAliasWarning(null)
+      return false
+    }
+  }
 
   // Get suggested alias from certificate details
   const getSuggestedAlias = (details) => {
@@ -69,7 +102,12 @@ export const useCertificateImport = (targetStore) => {
         const suggestedAlias = getSuggestedAlias(details)
         if (suggestedAlias) {
           setAlias(suggestedAlias)
+          // Check for conflicts immediately after setting the suggested alias
+          checkAliasExists(suggestedAlias)
         }
+      } else {
+        // If alias is already set, check for conflicts
+        checkAliasExists(alias)
       }
     } catch (error) {
       console.error('Failed to parse certificate details:', error)
@@ -124,7 +162,7 @@ export const useCertificateImport = (targetStore) => {
       }
       const text = await f.text()
       setPemText(text)
-      parseCertificateDetails(text)
+      parseCertificateDetails(text) // This will now check for alias conflicts
       setErrors((prev) => ({ ...prev, file: undefined, pemText: undefined }))
     } catch (err) {
       setErrors((prev) => ({ ...prev, file: 'Failed to read file.' }))
@@ -153,7 +191,7 @@ export const useCertificateImport = (targetStore) => {
   // Handle PEM text change
   const handlePemTextChange = (e) => {
     setPemText(e.target.value)
-    parseCertificateDetails(e.target.value)
+    parseCertificateDetails(e.target.value) // This will now check for alias conflicts
   }
 
   // Handle private key text change
@@ -163,7 +201,9 @@ export const useCertificateImport = (targetStore) => {
 
   // Handle alias change
   const handleAliasChange = (e) => {
-    setAlias(e.target.value)
+    const newAlias = e.target.value
+    setAlias(newAlias)
+    checkAliasExists(newAlias)
   }
 
   return {
@@ -179,6 +219,8 @@ export const useCertificateImport = (targetStore) => {
     certificateDetails,
     verificationResult,
     isVerifying,
+    existingCertificates,
+    aliasWarning,
     
     // Refs
     fileInputRef,
@@ -206,6 +248,8 @@ export const useCertificateImport = (targetStore) => {
     handlePrivateKeyTextChange,
     handleAliasChange,
     parseCertificateDetails,
-    validate
+    validate,
+    loadExistingCertificates,
+    checkAliasExists
   }
 }

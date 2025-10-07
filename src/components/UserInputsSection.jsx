@@ -19,6 +19,7 @@ const UserInputsSection = ({
   apiError,
   errors,
   targetStore,
+  aliasWarning,
   
   // Refs
   fileInputRef,
@@ -50,10 +51,15 @@ const UserInputsSection = ({
           value={alias}
           onChange={handleAliasChange}
           error={Boolean(errors.alias)}
-          helperText={errors.alias || "Provide a unique alias for this certificate"}
+          helperText={errors.alias || aliasWarning || "Provide a unique alias for this certificate"}
           fullWidth
           required
-          sx={{ marginTop: '10px !important' }}
+          sx={{ 
+            marginTop: '10px !important',
+            '& .MuiFormHelperText-root': {
+              color: aliasWarning ? 'warning.main' : 'inherit'
+            }
+          }}
         />
 
         <input

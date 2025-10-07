@@ -17,8 +17,14 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
   } = certificate
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-      <Stack spacing={2}>
+    <Paper variant="outlined" sx={{ 
+      p: 2, 
+      borderRadius: 2,
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      <Stack spacing={2} sx={{ flex: 1 }}>
         <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
           <Stack direction="row" spacing={1} alignItems="center">
             <Box sx={{ width: 36, height: 36, borderRadius: 2, backgroundColor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -34,12 +40,36 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
 
         <Box>
           <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Subject:</Typography>
-          <Typography variant="body2" color="text.primary">{subject}</Typography>
+          <Typography 
+            variant="body2" 
+            color="text.primary"
+            sx={{ 
+              wordBreak: 'break-all',
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical'
+            }}
+          >
+            {subject}
+          </Typography>
         </Box>
 
         <Box>
           <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Issuer:</Typography>
-          <Typography variant="body2" color="text.primary">{issuer}</Typography>
+          <Typography 
+            variant="body2" 
+            color="text.primary"
+            sx={{ 
+              wordBreak: 'break-all',
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical'
+            }}
+          >
+            {issuer}
+          </Typography>
         </Box>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -84,11 +114,24 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
 
         <Divider />
 
-        <Stack direction="row" spacing={1}>
-          <Button variant="contained" color="info" startIcon={<Box component={ShieldOutlinedIcon} />} onClick={() => onViewDetails?.(certificate)}>
+        <Stack direction="row" spacing={1} sx={{ mt: 'auto' }}>
+          <Button 
+            variant="contained" 
+            color="info" 
+            startIcon={<Box component={ShieldOutlinedIcon} />} 
+            onClick={() => onViewDetails?.(certificate)}
+            fullWidth
+          >
             View Details
           </Button>
-          <Button variant="outlined" color="secondary" onClick={() => onExport?.(certificate)}>Export</Button>
+          <Button 
+            variant="outlined" 
+            color="secondary" 
+            onClick={() => onExport?.(certificate)}
+            fullWidth
+          >
+            Export
+          </Button>
         </Stack>
       </Stack>
     </Paper>

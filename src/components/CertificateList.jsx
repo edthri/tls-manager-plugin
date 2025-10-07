@@ -17,7 +17,14 @@ export default function CertificateList({ rows, loading, error, emptyText = 'No 
   return (
     <Grid container spacing={2} sx={{ pb: 4 }}>
       {rows.map((row) => (
-        <Grid key={row.alias} xs={12} md={6}>
+        <Grid 
+          key={row.alias} 
+          xs={12}        // Mobile: 1 column
+          sm={6}         // Small tablet: 2 columns  
+          md={6}         // Medium desktop: 2 columns
+          lg={4}         // Large desktop: 3 columns
+          xl={3}         // Extra large: 4 columns
+        >
           <CertificateCard certificate={row} onViewDetails={onViewDetails} onExport={onExport} showPrivateKeys={showPrivateKeys} />
         </Grid>
       ))}
