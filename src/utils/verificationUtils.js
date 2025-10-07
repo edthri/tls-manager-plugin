@@ -346,8 +346,13 @@ export function verifyCertificate(certText, keyText = null) {
       keyValidation = validatePrivateKey(certificates[0], keyText)
     }
 
+    // Determine overall success based on validation results
+    const chainValid = chainValidation && chainValidation.isValid
+    const keyValid = !keyText || (keyValidation && keyValidation.isValid)
+    const overallSuccess = chainValid && keyValid
+
     return {
-      success: true,
+      success: overallSuccess,
       certificates,
       certDetails,
       chainValidation,
@@ -359,7 +364,10 @@ export function verifyCertificate(certText, keyText = null) {
         issuer: getSubjectField(certObj.cert, 'CN', 'issuer'),
         validFrom: certObj.cert.validity.notBefore.toDateString(),
         validTo: certObj.cert.validity.notAfter.toDateString()
-      })) : null
+      })) : null,
+      error: !overallSuccess ? 
+        (!chainValid ? 'Certificate chain validation failed' : 'Private key validation failed') : 
+        null
     }
 
   } catch (error) {

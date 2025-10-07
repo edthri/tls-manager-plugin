@@ -15,6 +15,7 @@ import CertificateVerificationSection from './CertificateVerificationSection'
 import UserInputsSection from './UserInputsSection'
 import MobileCertificateSection from './MobileCertificateSection'
 import { updateCertificates } from '../services/tlsService.js'
+import { verifyCertificate } from '../utils/verificationUtils.js'
 
 export default function ImportCertificateDialogContent({
   targetStore = 'trusted',
@@ -23,6 +24,8 @@ export default function ImportCertificateDialogContent({
   onSuccess,
 }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [showValidationDialog, setShowValidationDialog] = useState(false)
+  const [validationError, setValidationError] = useState(null)
   
   const {
     // State
@@ -66,6 +69,28 @@ export default function ImportCertificateDialogContent({
     loadExistingCertificates()
   }, [loadExistingCertificates])
 
+  // Reusable verification function
+  const performFinalVerification = async () => {
+    try {
+      const privateKeyPem = targetStore === 'private' && privateKeyText.trim() 
+        ? privateKeyText 
+        : null
+      
+      const verificationResult = await verifyCertificate(pemText, privateKeyPem)
+      
+      if (!verificationResult.success) {
+        setValidationError(verificationResult.error || 'Certificate validation failed')
+        setShowValidationDialog(true)
+        return false
+      }
+      return true
+    } catch (error) {
+      setValidationError('Certificate validation failed: ' + error.message)
+      setShowValidationDialog(true)
+      return false
+    }
+  }
+
   const handleSubmit = async () => {
     if (!validate()) return
 
@@ -76,7 +101,11 @@ export default function ImportCertificateDialogContent({
       return
     }
 
-    // Proceed with import if no conflict
+    // Final verification before import
+    const verificationPassed = await performFinalVerification()
+    if (!verificationPassed) return
+
+    // Proceed with import if verification passes
     await performImport()
   }
 
@@ -104,6 +133,12 @@ export default function ImportCertificateDialogContent({
 
   const handleConfirmReplace = async () => {
     setShowConfirmDialog(false)
+    
+    // Final verification before import
+    const verificationPassed = await performFinalVerification()
+    if (!verificationPassed) return
+
+    // Proceed with import if verification passes
     await performImport()
   }
 
@@ -227,8 +262,30 @@ export default function ImportCertificateDialogContent({
           >
             {loading ? 'Replacing...' : 'Replace Certificate'}
           </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  )
-}
+              </DialogActions>
+            </Dialog>
+
+            {/* Validation Error Dialog */}
+            <Dialog
+              open={showValidationDialog}
+              onClose={() => setShowValidationDialog(false)}
+              aria-labelledby="validation-dialog-title"
+              aria-describedby="validation-dialog-description"
+            >
+              <DialogTitle id="validation-dialog-title">
+                Certificate Validation Failed
+              </DialogTitle>
+              <DialogContent>
+                <DialogContentText id="validation-dialog-description">
+                  {validationError}
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setShowValidationDialog(false)}>
+                  Close
+                </Button>
+              </DialogActions>
+            </Dialog>
+          </Box>
+        )
+      }
