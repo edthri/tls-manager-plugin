@@ -260,3 +260,19 @@ export function base64ToPem(base64Cert) {
     throw new Error('Invalid Base64 format')
   }
 }
+
+/**
+ * Convert Base64-encoded private key to PEM format
+ * @param {string} base64Key - Base64-encoded private key
+ * @returns {string} PEM private key string
+ */
+export function base64ToPrivateKeyPem(base64Key) {
+  try {
+    // Add PEM headers for private key
+    const pemString = `-----BEGIN PRIVATE KEY-----\n${base64Key}\n-----END PRIVATE KEY-----`
+    return pemString
+  } catch (error) {
+    console.error('Failed to convert Base64 to private key PEM:', error)
+    throw new Error('Invalid Base64 private key format')
+  }
+}

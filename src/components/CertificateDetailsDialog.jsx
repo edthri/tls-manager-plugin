@@ -13,15 +13,27 @@ import {
   Paper,
   Grid,
   IconButton,
+  Alert,
+  CircularProgress,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  List,
+  ListItem,
+  ListItemText,
 } from '@mui/material'
-import { Visibility, VisibilityOff } from '@mui/icons-material'
+import { Visibility, VisibilityOff, ExpandMore, CheckCircle, Error, Warning } from '@mui/icons-material'
 import { formatDate } from '../utils/dateUtils.js'
+import { verifyCertificate } from '../utils/verificationUtils.js'
+import { base64ToPem, base64ToPrivateKeyPem } from '../utils/certificateUtils.js'
 
 export default function CertificateDetailsDialog({ open, onClose, certificate }) {
   if (!certificate) return null
 
   const { parsedCertificate, rawCertificate } = certificate
   const [showPrivateKey, setShowPrivateKey] = useState(false)
+  const [verificationResult, setVerificationResult] = useState(null)
+  const [isVerifying, setIsVerifying] = useState(false)
 
   const getStatusColor = (validFrom, validTo) => {
     const now = new Date()
@@ -62,6 +74,29 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
       value: ext.value || ext.critical ? 'Critical' : 'Not Critical',
       critical: ext.critical || false
     }))
+  }
+
+  const handleVerifyCertificate = async () => {
+    setIsVerifying(true)
+    try {
+      // Convert Base64 certificate to PEM format
+      const pemCertificate = base64ToPem(rawCertificate)
+      
+      // If private key is available, include it in verification
+      const privateKeyPem = certificate.hasPrivateKey && certificate.rawPrivateKey 
+        ? base64ToPrivateKeyPem(certificate.rawPrivateKey) 
+        : null
+      
+      const result = verifyCertificate(pemCertificate, privateKeyPem)
+      setVerificationResult(result)
+    } catch (error) {
+      setVerificationResult({
+        success: false,
+        error: `Verification failed: ${error.message}`
+      })
+    } finally {
+      setIsVerifying(false)
+    }
   }
 
   return (
@@ -234,6 +269,157 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
               )}
             </Paper>
           )}
+
+          {/* Certificate Verification */}
+          <Paper variant="outlined" sx={{ p: 2 }}>
+            <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+              <Typography variant="h6">Certificate Verification</Typography>
+              <Button
+                variant="contained"
+                onClick={handleVerifyCertificate}
+                disabled={isVerifying}
+                startIcon={isVerifying ? <CircularProgress size={16} /> : <CheckCircle />}
+              >
+                {isVerifying ? 'Verifying...' : 'Verify Certificate'}
+              </Button>
+            </Stack>
+
+            {verificationResult && (
+              <Box sx={{ mt: 2 }}>
+                {verificationResult.success ? (
+                  <Alert severity="success" sx={{ mb: 2 }}>
+                    Certificate verification completed successfully!
+                  </Alert>
+                ) : (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {verificationResult.error}
+                  </Alert>
+                )}
+
+                {verificationResult.success && (
+                  <Stack spacing={2}>
+                    {/* Chain Validation Results */}
+                    {verificationResult.chainValidation && (
+                      <Accordion>
+                        <AccordionSummary expandIcon={<ExpandMore />}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            {verificationResult.chainValidation.isValid ? (
+                              <CheckCircle color="success" />
+                            ) : (
+                              <Error color="error" />
+                            )}
+                            <Typography variant="h6">
+                              Chain Validation {verificationResult.chainValidation.isValid ? 'Passed' : 'Failed'}
+                            </Typography>
+                          </Stack>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          {verificationResult.chainValidation.errors.length > 0 && (
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="subtitle2" color="error" gutterBottom>
+                                Errors:
+                              </Typography>
+                              <List dense>
+                                {verificationResult.chainValidation.errors.map((error, index) => (
+                                  <ListItem key={index}>
+                                    <ListItemText primary={error} />
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </Box>
+                          )}
+                          {verificationResult.chainValidation.warnings.length > 0 && (
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="subtitle2" color="warning.main" gutterBottom>
+                                Warnings:
+                              </Typography>
+                              <List dense>
+                                {verificationResult.chainValidation.warnings.map((warning, index) => (
+                                  <ListItem key={index}>
+                                    <ListItemText primary={warning} />
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </Box>
+                          )}
+                          {verificationResult.chainValidation.details.length > 0 && (
+                            <Box>
+                              <Typography variant="subtitle2" gutterBottom>
+                                Details:
+                              </Typography>
+                              <List dense>
+                                {verificationResult.chainValidation.details.map((detail, index) => (
+                                  <ListItem key={index}>
+                                    <ListItemText primary={detail} />
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </Box>
+                          )}
+                        </AccordionDetails>
+                      </Accordion>
+                    )}
+
+                    {/* Private Key Validation */}
+                    {verificationResult.keyValidation && (
+                      <Accordion>
+                        <AccordionSummary expandIcon={<ExpandMore />}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            {verificationResult.keyValidation.isValid ? (
+                              <CheckCircle color="success" />
+                            ) : (
+                              <Error color="error" />
+                            )}
+                            <Typography variant="h6">
+                              Private Key Validation {verificationResult.keyValidation.isValid ? 'Passed' : 'Failed'}
+                            </Typography>
+                          </Stack>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Alert 
+                            severity={verificationResult.keyValidation.isValid ? 'success' : 'error'}
+                          >
+                            {verificationResult.keyValidation.message}
+                          </Alert>
+                        </AccordionDetails>
+                      </Accordion>
+                    )}
+
+                    {/* Certificate Chain Details */}
+                    {verificationResult.chainDetails && verificationResult.chainDetails.length > 1 && (
+                      <Accordion>
+                        <AccordionSummary expandIcon={<ExpandMore />}>
+                          <Typography variant="h6">
+                            Certificate Chain ({verificationResult.chainDetails.length} certificates)
+                          </Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <List>
+                            {verificationResult.chainDetails.map((cert, index) => (
+                              <ListItem key={index} sx={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                  {cert.type} (Certificate #{cert.index})
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  Subject: {cert.subject}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  Issuer: {cert.issuer}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  Valid: {cert.validFrom} - {cert.validTo}
+                                </Typography>
+                              </ListItem>
+                            ))}
+                          </List>
+                        </AccordionDetails>
+                      </Accordion>
+                    )}
+                  </Stack>
+                )}
+              </Box>
+            )}
+          </Paper>
         </Stack>
       </DialogContent>
       

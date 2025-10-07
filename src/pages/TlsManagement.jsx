@@ -167,7 +167,7 @@ export default function TlsManagement() {
         </Box>
       </TabPanel>
 
-      <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="sm">
+      <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="lg">
         <DialogTitle>{dialogTitle}</DialogTitle>
         <DialogContent>
           {dialogType === 'import-certificate' && (
