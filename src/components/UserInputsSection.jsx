@@ -20,12 +20,12 @@ const UserInputsSection = ({
   errors,
   targetStore,
   aliasWarning,
-  
+
   // Refs
   fileInputRef,
   privateKeyFileInputRef,
   fileAccept,
-  
+
   // Handlers
   handleAliasChange,
   handlePemTextChange,
@@ -35,7 +35,7 @@ const UserInputsSection = ({
   setApiError
 }) => {
   return (
-    <Box sx={{ 
+    <Box sx={{
       flex: 1,
       minWidth: 0
     }}>
@@ -46,21 +46,32 @@ const UserInputsSection = ({
           </Alert>
         )}
 
-        <TextField
-          label="Alias"
-          value={alias}
-          onChange={handleAliasChange}
-          error={Boolean(errors.alias)}
-          helperText={errors.alias || aliasWarning || "Provide a unique alias for this certificate"}
-          fullWidth
-          required
-          sx={{ 
-            marginTop: '10px !important',
-            '& .MuiFormHelperText-root': {
-              color: aliasWarning ? 'warning.main' : 'inherit'
-            }
-          }}
-        />
+                <TextField
+                  label="Alias"
+                  value={alias}
+                  onChange={handleAliasChange}
+                  error={Boolean(errors.alias)}
+                  helperText={errors.alias || aliasWarning || "Provide a unique alias for this certificate"}
+                  fullWidth
+                  required
+                  sx={{ 
+                    marginTop: '10px !important',
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: aliasWarning ? '#ff9800' : 'default',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: aliasWarning ? '#ff9800' : 'default',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: aliasWarning ? '#ff9800' : 'default',
+                      },
+                    },
+                    '& .MuiFormHelperText-root': {
+                      color: aliasWarning ? '#ff9800' : 'inherit'
+                    }
+                  }}
+                />
 
         <input
           ref={fileInputRef}
