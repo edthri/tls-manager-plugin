@@ -147,12 +147,6 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
         if (softFail) opts.add(PKIXRevocationChecker.Option.SOFT_FAIL);
 
-        // Fixed responder or AIA from leaf
-        var ocspUrl = firstOcspUrlFromAIA((X509Certificate) path.getCertificates().get(0));
-        if (ocspUrl != null) {
-            revocationChecker.setOcspResponder(ocspUrl);
-        }
-
         revocationChecker.setOptions(opts);
         params.addCertPathChecker(revocationChecker);
 
@@ -198,22 +192,6 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
             }
         }
         return out;
-    }
-
-    private static URI firstOcspUrlFromAIA(X509Certificate cert) {
-        try {
-            byte[] ext = cert.getExtensionValue(Extension.authorityInfoAccess.getId());
-            if (ext == null) return null;
-            byte[] inner = ((DEROctetString) ASN1Primitive.fromByteArray(ext)).getOctets();
-            AuthorityInformationAccess aia = AuthorityInformationAccess.getInstance(ASN1Primitive.fromByteArray(inner));
-            for (AccessDescription ad : aia.getAccessDescriptions()) {
-                if (ad.getAccessMethod().equals(AccessDescription.id_ad_ocsp)) {
-                    String uri = ad.getAccessLocation().getName().toString();
-                    if (uri.startsWith("http://") || uri.startsWith("https://")) return URI.create(uri);
-                }
-            }
-        } catch (Exception ignore) {}
-        return null;
     }
 
     private static Collection<? extends CRL> fetchCrlsFromCrlDP(X509Certificate[] chain) {
