@@ -18,14 +18,14 @@ public class ConnectionUtils {
 
     private static SchemePortResolver defaultSchemePortResolver = new DefaultSchemePortResolver();
 
-    public static ConnectionTestResponse thing(
+    public static ConnectionTestResponse testConnection(
         SSLConnectionSocketFactory socketFactory,
         String host,
         int timeout,
         String localAddr,
         int localPort
     ) throws IOException {
-        return thing(
+        return testConnection(
             socketFactory,
             null,
             host,
@@ -35,7 +35,7 @@ public class ConnectionUtils {
         );
     }
 
-    public static ConnectionTestResponse thing(
+    public static ConnectionTestResponse testConnection(
         SSLConnectionSocketFactory socketFactory,
         Socket socket,
         String host,

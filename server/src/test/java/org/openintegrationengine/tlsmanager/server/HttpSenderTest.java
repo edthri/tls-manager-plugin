@@ -117,7 +117,7 @@ public class HttpSenderTest {
         var socketFactoryService = new SocketFactoryService(configurationController, certificateService);
         var socketFactory = socketFactoryService.getConnectorSocketFactory(connector, tlsProperties);
 
-        var exception = assertThrows(SSLHandshakeException.class, () -> ConnectionUtils.thing(
+        var exception = assertThrows(SSLHandshakeException.class, () -> ConnectionUtils.testConnection(
             socketFactory,
             "https://valid.crl.caddy:9443",
             1_000,
@@ -157,7 +157,7 @@ public class HttpSenderTest {
         var socketFactoryService = new SocketFactoryService(configurationController, certificateService);
         var socketFactory = socketFactoryService.getConnectorSocketFactory(connector, tlsProperties);
 
-        var result = ConnectionUtils.thing(
+        var result = ConnectionUtils.testConnection(
             socketFactory,
             "https://bbc.co.uk",
             1_000,

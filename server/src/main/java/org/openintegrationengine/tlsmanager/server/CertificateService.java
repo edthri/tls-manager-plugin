@@ -253,7 +253,7 @@ public final class CertificateService {
             var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
             var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
 
-            var result = ConnectionUtils.thing(
+            var result = ConnectionUtils.testConnection(
                 socketFactory,
                 url.toString(),
                 TEST_CONNECTION_TIMEOUT,
