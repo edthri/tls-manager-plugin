@@ -22,8 +22,8 @@ public record TLSPluginConfiguration(
             getPersistenceMode(),
             readKeyFromEnv(ENV_PERSISTENCE_FS_TRUSTSTOREPATH, false),
             readKeyFromEnv(ENV_PERSISTENCE_FS_TRUSTSTOREPASS, false),
-            readKeyFromEnv(ENV_PERSISTENCE_FS_KEYSTOREPASS, false),
-            readKeyFromEnv(ENV_PERSISTENCE_FS_KEYSTOREPATH, false)
+            readKeyFromEnv(ENV_PERSISTENCE_FS_KEYSTOREPATH, false),
+            readKeyFromEnv(ENV_PERSISTENCE_FS_KEYSTOREPASS, false)
         );
 
         return conf;
