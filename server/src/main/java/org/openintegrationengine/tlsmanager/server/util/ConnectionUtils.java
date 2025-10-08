@@ -96,10 +96,57 @@ public class ConnectionUtils {
                 var localPrinc = sess.getLocalPrincipal();        // null => none presented
                 log.debug("Client cert presented? {}", localPrinc != null);
             }
+
+            isSocketAlive(sslSocket);
+
             return new ConnectionTestResponse(ConnectionTestResponse.Type.SUCCESS, "Successfully connected to host: " + connectionInfo, connectionInfo);
         } catch (Exception e) {
             log.error("Error connecting to host: {}", host, e);
             throw e;
         }
+    }
+
+    /**
+     * Performs a lightweight check to see if the given {@link Socket} appears alive.
+     * <p>
+     * This method verifies local socket state and performs a short read with a timeout
+     * to detect EOF or I/O errors. It returns {@code true} if the connection seems open
+     * and responsive, or {@code false} if it is closed, reset, or reaches end-of-stream.
+     * <p>
+     * Note that TCP cannot guarantee remote liveness without actual I/O, so this result
+     * is best-effort only.
+     *
+     * @param socket the socket to test (not {@code null})
+     * @return {@code true} if the socket likely remains open; {@code false} otherwise
+     */
+
+    private static boolean isSocketAlive(Socket socket) throws IOException {
+        log.trace("Checking socket liveness");
+        int oldTimeOut = socket.getSoTimeout();
+        socket.setSoTimeout(100); // 100ms read timeout
+
+        log.trace("Set socket timeout to 100ms");
+
+        var in = socket.getInputStream();
+
+        try {
+            if (in.available() > 0 || in.read() >= 0) {
+                // Data received (or connection still healthy)
+                log.debug("Socket alive (data or no EOF)");
+            } else {
+                // read() == -1 → remote closed cleanly
+                log.debug("Socket dead (EOF)");
+            }
+        } catch (SocketTimeoutException e) {
+            // no data within timeout → probably still open
+            log.debug("Socket alive (idle)");
+        } catch (IOException e) {
+            // network error, RST, etc.
+            log.debug("Socket dead (idle)", e);
+        } finally {
+            socket.setSoTimeout(oldTimeOut);
+        }
+
+        return true;
     }
 }
