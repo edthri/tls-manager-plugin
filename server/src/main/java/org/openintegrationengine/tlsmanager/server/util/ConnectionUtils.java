@@ -11,11 +11,12 @@ import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 @Slf4j
 public class ConnectionUtils {
 
-    private static SchemePortResolver defaultResolver = new DefaultSchemePortResolver();
+    private static SchemePortResolver defaultSchemePortResolver = new DefaultSchemePortResolver();
 
     public static ConnectionTestResponse thing(
         SSLConnectionSocketFactory socketFactory,
@@ -51,7 +52,7 @@ public class ConnectionUtils {
 
         var target = HttpHost.create(host);
 
-        InetSocketAddress remoteAddress = new InetSocketAddress(target.getHostName(), defaultResolver.resolve(target));
+        InetSocketAddress remoteAddress = new InetSocketAddress(target.getHostName(), defaultSchemePortResolver.resolve(target));
 
         InetSocketAddress localAddress = null;
         if (localAddr != null) {
@@ -83,10 +84,22 @@ public class ConnectionUtils {
                 remoteAddress.getPort()
             );
 
+            if (log.isDebugEnabled()) {
+                // Handshake is done if we got here. Inspect what happened:
+                var sess = sslSocket.getSession();
+                log.debug("Protocol: {}", sess.getProtocol());
+                log.debug("Cipher:   {}", sess.getCipherSuite());
+                log.debug("Peer:     {}", sess.getPeerPrincipal());
+
+                // Did we actually present a client cert?
+                var localCerts = sess.getLocalCertificates();     // null => none presented
+                var localPrinc = sess.getLocalPrincipal();        // null => none presented
+                log.debug("Client cert presented? {}", localPrinc != null);
+            }
             return new ConnectionTestResponse(ConnectionTestResponse.Type.SUCCESS, "Successfully connected to host: " + connectionInfo, connectionInfo);
         } catch (Exception e) {
-            log.error("Error connecting to host: " + host, e);
-            return new ConnectionTestResponse(ConnectionTestResponse.Type.FAILURE, e.getMessage());
+            log.error("Error connecting to host: {}", host, e);
+            throw e;
         }
     }
 }
