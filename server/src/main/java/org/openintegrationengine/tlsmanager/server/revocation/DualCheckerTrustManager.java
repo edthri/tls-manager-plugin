@@ -90,37 +90,15 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
             // OCSP-only pass (if requested)
             if (ocspMode != RevocationMode.DISABLED) {
-                try {
-                    pkixOcspOnly(certPath, anchors, ocspMode == RevocationMode.SOFT_FAIL);
-                } catch (CertPathValidatorException e) {
-                    if (e.getReason() == CertPathValidatorException.BasicReason.REVOKED) {
-                        throw new CertificateException("OCSP: certificate revoked", e);
-                    }
-
-                    if (ocspMode == RevocationMode.HARD_FAIL) {
-                        throw new CertificateException("OCSP hard-fail: " + e.getReason(), e);
-                    }
-                    // SOFT_FAIL: ignore
-                }
+                pkixOcspOnly(certPath, anchors, ocspMode == RevocationMode.SOFT_FAIL);
             }
 
             // CRL-only pass (if requested)
             if (crlMode != RevocationMode.DISABLED) {
-                try {
-                    // Preloaded CRLs + CRLDP-fetched CRLs (HTTP)
-                    List<CRL> crls = new ArrayList<>(preloadedCrls);
-                    crls.addAll(fetchCrlsFromCrlDP(chain));
-                    pkixCrlOnly(certPath, anchors, crls, crlMode == RevocationMode.SOFT_FAIL);
-                } catch (CertPathValidatorException e) {
-                    if (e.getReason() == CertPathValidatorException.BasicReason.REVOKED) {
-                        throw new CertificateException("CRL: certificate revoked", e);
-                    }
-
-                    if (crlMode == RevocationMode.HARD_FAIL) {
-                        throw new CertificateException("CRL hard-fail: " + e.getReason(), e);
-                    }
-                    // SOFT_FAIL: ignore
-                }
+                // Preloaded CRLs + CRLDP-fetched CRLs (HTTP)
+                List<CRL> crls = new ArrayList<>(preloadedCrls);
+                crls.addAll(fetchCrlsFromCrlDP(chain));
+                pkixCrlOnly(certPath, anchors, crls, crlMode == RevocationMode.SOFT_FAIL);
             }
             // If both are HARD_FAIL, reaching here means both passes succeeded.
 
