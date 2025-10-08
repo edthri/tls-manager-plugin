@@ -17,6 +17,7 @@
 package org.openintegrationengine.tlsmanager.shared.properties;
 
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
+import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,6 +31,7 @@ import java.util.Set;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = false)
+@AllArgsConstructor
 public class TLSConnectorProperties extends ConnectorPluginProperties {
 
     private boolean isTlsManagerEnabled;
