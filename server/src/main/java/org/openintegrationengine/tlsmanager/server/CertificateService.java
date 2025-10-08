@@ -39,6 +39,7 @@ import java.net.URL;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -114,6 +115,32 @@ public final class CertificateService {
         loadKeyStore(systemTrustStore, cacertsBytes, systemTrustStoreBackend.loadPassword());
         loadKeyStore(externalTrustStore, extraTrustStoreBytes, extraTrustStoreBackend.loadPassword());
         loadKeyStore(externalKeyStore, extraKeyStoreBytes, extraKeyStoreBackend.loadPassword());
+    }
+
+    KeyStore getKeyStore(String alias, DestinationConnector connector) {
+        try {
+            var keystore = KeyStore.getInstance(PKCS12);
+            keystore.load(null, new char[0]);
+
+            if (externalKeyStore.isKeyEntry(alias)) {
+                var certChain = externalKeyStore.getCertificateChain(alias);
+                var privateKey = externalKeyStore.getKey(alias, new char[0]);
+
+                keystore.setKeyEntry(
+                    alias,
+                    privateKey,
+                    new char[0],
+                    certChain
+                );
+            } else {
+                log.warn("Alias ({}) is not a key entry", alias);
+            }
+
+            return keystore;
+        } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException e) {
+            log.error("Error creating a keystore", e);
+            throw new RuntimeException(e);
+        }
     }
 
     KeyStore getTrustStoreFromProperties(boolean isTrustSystem, Set<String> aliasSet, DestinationConnector connector) {

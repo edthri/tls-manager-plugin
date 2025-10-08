@@ -3,18 +3,23 @@ package org.openintegrationengine.tlsmanager.server;
 import com.mirth.connect.donkey.server.channel.DestinationConnector;
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.util.MirthSSLUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.openintegrationengine.tlsmanager.server.revocation.DualCheckerTrustManager;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public class SocketFactoryService {
 
     private final ConfigurationController configurationController;
@@ -50,9 +55,18 @@ public class SocketFactoryService {
                 null
             );
 
+            KeyManager[] keyManagers = null;
+            var clientAlias = properties.getClientCertificateAlias();
+            if (clientAlias != null && !clientAlias.isBlank()) {
+                var keystore = certificateService.getKeyStore(clientAlias, connector);
+
+                var keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+                keyManagerFactory.init(keystore, new char[0]);
+                keyManagers = keyManagerFactory.getKeyManagers();
+            }
 
             var sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, new TrustManager[] { dualcheckerTrustManager }, null);
+            sslContext.init(keyManagers, new TrustManager[] { dualcheckerTrustManager }, null);
 
             var protocolArray = properties.isUseServerDefaultProtocols()
                 ? MirthSSLUtil.getEnabledHttpsProtocols(configurationController.getHttpsServerProtocols())
@@ -72,7 +86,8 @@ public class SocketFactoryService {
                 cipherArray,
                 hostnameVerificationStrategy
             );
-        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException e) {
+        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException e) {
+            log.error("Error generating SSLConnectionSocketFactory", e);
             throw new RuntimeException(e);
         }
     }
