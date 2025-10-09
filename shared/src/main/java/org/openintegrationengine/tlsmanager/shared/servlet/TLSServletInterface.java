@@ -39,7 +39,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.io.InputStream;
-import java.util.List;
 import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -58,15 +57,15 @@ public interface TLSServletInterface extends BaseServletInterface, HttpConnector
     @Produces({ APPLICATION_XML, APPLICATION_JSON })
     @ApiResponse(responseCode = "200", description = "Found the information",
         content = {
-            @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = List.class)),
-            @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = List.class))
+            @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = Set.class)),
+            @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = Set.class))
         })
     @MirthOperation(
         name = "getImportedCertificates",
         display = "Get list of imported certificates",
         type = Operation.ExecuteType.ASYNC
     )
-    Set<String> getImportedCertificates();
+    Set<String> getPublicCertificates();
 
     @GET
     @Path("/keystore")

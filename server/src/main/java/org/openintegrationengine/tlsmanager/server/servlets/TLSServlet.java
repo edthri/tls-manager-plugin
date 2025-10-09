@@ -67,8 +67,8 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
     }
 
     @Override
-    public Set<String> getImportedCertificates() {
-        return certificateService.getLoadedAliases();
+    public Set<String> getPublicCertificates() {
+        return certificateService.getPublicCertificates();
     }
 
     @Override

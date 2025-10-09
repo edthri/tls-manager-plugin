@@ -218,7 +218,7 @@ public final class CertificateService {
         }
     }
 
-    public Set<String> getLoadedAliases() {
+    public Set<String> getPublicCertificates() {
         try {
             return new HashSet<>(Collections.list(externalTrustStore.aliases()));
         } catch (KeyStoreException e) {

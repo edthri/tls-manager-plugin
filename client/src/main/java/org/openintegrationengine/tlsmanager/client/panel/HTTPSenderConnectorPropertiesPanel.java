@@ -85,11 +85,11 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     private JLabel ciphersText;
 
     private TLSConnectorProperties properties;
-    private Set<String> importedAliases;
+    private Set<String> publicCertificates;
 
     public HTTPSenderConnectorPropertiesPanel() {
         this.properties = new TLSConnectorProperties();
-        this.importedAliases = new HashSet<>();
+        this.publicCertificates = new HashSet<>();
 
         initComponents();
         initLayout();
@@ -184,7 +184,7 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
             new ItemPickerDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Certificate Picker",
-                importedAliases,
+                publicCertificates,
                 properties.getTrustedServerCertificates(),
                 properties.isTrustSystemTruststore(),
                 "[JVM Truststore]",
@@ -422,27 +422,27 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     }
 
     private void fetchData() {
-        final var workingId = PlatformUI.MIRTH_FRAME.startWorking("Fetching imported certificates...");
+        final var workingId = PlatformUI.MIRTH_FRAME.startWorking("Fetching certificates...");
 
-        var worker = new SwingWorker<Void, Void>() {
+        var publicCertWorker = new SwingWorker<Void, Void>() {
             private Set<String> aliasSet;
 
             public Void doInBackground() {
                 try {
-                    aliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getImportedCertificates();
+                    aliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getPublicCertificates();
                 } catch (Exception e) {
-                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported certificates failed");
+                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported public certificates failed");
                 }
 
                 return null;
             }
 
             public void done() {
-                importedAliases = aliasSet;
+                publicCertificates = aliasSet;
                 PlatformUI.MIRTH_FRAME.stopWorking(workingId);
             }
         };
 
-        worker.execute();
+        publicCertWorker.execute();
     }
 }
