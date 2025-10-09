@@ -360,4 +360,13 @@ public class ItemPickerDialog extends MirthDialog {
             return panel;
         }
     }
+    private void setAllSelected(boolean isSelected) {
+        for (int row = 0; row < certificateTable.getRowCount(); row++) {
+            certificateTable.setValueAt(
+                isSelected ? MirthTriStateCheckBox.CHECKED : MirthTriStateCheckBox.UNCHECKED,
+                row,
+                SELECTED_COLUMN
+            );
+        }
+    }
 }
