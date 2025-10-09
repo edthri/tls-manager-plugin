@@ -227,6 +227,15 @@ public final class CertificateService {
         }
     }
 
+    public Set<String> getClientCertificates() {
+        try {
+            return new HashSet<>(Collections.list(externalKeyStore.aliases()));
+        } catch (KeyStoreException e) {
+            log.error("Error reading alias list from loaded keystore", e);
+            throw new RuntimeException(e);
+        }
+    }
+
     public ConnectionTestResponse testConnection(
         String channelId,
         String channelName,

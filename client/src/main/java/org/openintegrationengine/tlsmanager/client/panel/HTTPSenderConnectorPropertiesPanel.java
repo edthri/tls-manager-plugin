@@ -86,10 +86,12 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
 
     private TLSConnectorProperties properties;
     private Set<String> publicCertificates;
+    private Set<String> clientCertificates;
 
     public HTTPSenderConnectorPropertiesPanel() {
         this.properties = new TLSConnectorProperties();
         this.publicCertificates = new HashSet<>();
+        this.clientCertificates = new HashSet<>();
 
         initComponents();
         initLayout();
@@ -230,8 +232,28 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
 
         clientCertLabel = new JLabel("Client Certificate:");
         clientCertButton = new JButton(wrenchIcon);
-        clientCertButton.addActionListener(e -> System.out.println("client button"));
-        clientCertText = new JLabel("myclientcert");
+        clientCertButton.addActionListener(e -> {
+            BiConsumer<Boolean, Set<String>> completionConsumer = (unused, selectedCertificate) -> {
+                var selectedAlias = selectedCertificate.stream().findFirst().orElse(null);
+                properties.setClientCertificateAlias(selectedAlias);
+
+                redrawState();
+                PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
+            };
+
+            Set<String> currentCerts = properties.getClientCertificateAlias() == null ?  Collections.emptySet() : Set.of(properties.getClientCertificateAlias());
+
+            new ItemPickerDialog(
+                PlatformUI.MIRTH_FRAME,
+                "Client Certificate Picker",
+                clientCertificates,
+                currentCerts,
+                false,
+                null,
+                completionConsumer
+            );
+        });
+        clientCertText = new JLabel("");
 
         protocolsLabel = new JLabel("Enabled Protocols:");
         protocolsButton = new JButton(wrenchIcon);

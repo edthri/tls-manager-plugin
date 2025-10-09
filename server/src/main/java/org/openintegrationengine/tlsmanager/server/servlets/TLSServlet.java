@@ -72,6 +72,11 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
     }
 
     @Override
+    public Set<String> getClientCertificates() {
+        return certificateService.getClientCertificates();
+    }
+
+    @Override
     public byte[] getKeystore() {
         var keystore = certificateService.getExternalTrustStore();
 

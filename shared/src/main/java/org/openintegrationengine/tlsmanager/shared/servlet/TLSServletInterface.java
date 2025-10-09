@@ -68,6 +68,21 @@ public interface TLSServletInterface extends BaseServletInterface, HttpConnector
     Set<String> getPublicCertificates();
 
     @GET
+    @Path("/clientcertificates")
+    @Produces({ APPLICATION_XML, APPLICATION_JSON })
+    @ApiResponse(responseCode = "200", description = "Found the information",
+        content = {
+            @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = Set.class)),
+            @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = Set.class))
+        })
+    @MirthOperation(
+        name = "getClientCertificates",
+        display = "Get list of client certificates",
+        type = Operation.ExecuteType.ASYNC
+    )
+    Set<String> getClientCertificates();
+
+    @GET
     @Path("/keystore")
     @Produces({ APPLICATION_OCTET_STREAM })
     @ApiResponse(
