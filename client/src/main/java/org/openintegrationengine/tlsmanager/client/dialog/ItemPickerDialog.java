@@ -25,6 +25,7 @@ import com.mirth.connect.client.ui.components.MirthTriStateCheckBox;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.lang3.StringUtils;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
+import org.openintegrationengine.tlsmanager.shared.Pair;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
@@ -52,7 +53,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Comparator;
 import java.util.EventObject;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -74,9 +76,8 @@ public class ItemPickerDialog extends MirthDialog {
     private JButton okButton;
     private JButton cancelButton;
 
-    private static final int CERTIFICATES_SELECTED_COLUMN = 0;
-    private static final int CERTIFICATES_NAME_COLUMN = 1;
-    private static final int CERTIFICATES_ID_COLUMN = 2;
+    private static final int SELECTED_COLUMN = 0;
+    private static final int NAME_COLUMN = 1;
 
     private final Set<String> allOptions;
     private Set<String> selectedOptions;
@@ -122,7 +123,7 @@ public class ItemPickerDialog extends MirthDialog {
                     1, 1, 1, 1,
                     new Color(204, 204, 204)
                 ),
-                "Destination TLS settings",
+                "TLS settings",
                 TitledBorder.DEFAULT_JUSTIFICATION,
                 TitledBorder.DEFAULT_POSITION,
                 new Font("Tahoma", Font.BOLD, 11)
@@ -159,9 +160,7 @@ public class ItemPickerDialog extends MirthDialog {
             @Override
             public void mouseReleased(MouseEvent evt) {
                 if (evt.getComponent().isEnabled()) {
-                    for (int row = 0; row < certificateTable.getRowCount(); row++) {
-                        certificateTable.setValueAt(MirthTriStateCheckBox.CHECKED, row, CERTIFICATES_SELECTED_COLUMN);
-                    }
+                    setAllSelected(true);
                 }
             }
         });
@@ -175,9 +174,7 @@ public class ItemPickerDialog extends MirthDialog {
             @Override
             public void mouseReleased(MouseEvent evt) {
                 if (evt.getComponent().isEnabled()) {
-                    for (int row = 0; row < certificateTable.getRowCount(); row++) {
-                        certificateTable.setValueAt(MirthTriStateCheckBox.UNCHECKED, row, CERTIFICATES_SELECTED_COLUMN);
-                    }
+                    setAllSelected(false);
                 }
             }
         });
@@ -186,7 +183,7 @@ public class ItemPickerDialog extends MirthDialog {
         certificateTable.setModel(new RefreshTableModel(new String[] { "", "Alias" }, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == CERTIFICATES_SELECTED_COLUMN;
+                return column == SELECTED_COLUMN;
             }
         });
         certificateTable.setDragEnabled(false);
@@ -225,10 +222,10 @@ public class ItemPickerDialog extends MirthDialog {
         rowSorter.setRowFilter(rowFilter);
         certificateTable.setRowFilter(rowFilter);
 
-        certificateTable.getColumnExt(CERTIFICATES_SELECTED_COLUMN).setMinWidth(20);
-        certificateTable.getColumnExt(CERTIFICATES_SELECTED_COLUMN).setMaxWidth(20);
-        certificateTable.getColumn(CERTIFICATES_SELECTED_COLUMN).setCellEditor(new TagSelectionCellEditor());
-        certificateTable.getColumn(CERTIFICATES_SELECTED_COLUMN).setCellRenderer(new TagSelectionCellRenderer());
+        certificateTable.getColumnExt(SELECTED_COLUMN).setMinWidth(20);
+        certificateTable.getColumnExt(SELECTED_COLUMN).setMaxWidth(20);
+        certificateTable.getColumn(SELECTED_COLUMN).setCellEditor(new TagSelectionCellEditor());
+        certificateTable.getColumn(SELECTED_COLUMN).setCellRenderer(new TagSelectionCellRenderer());
 
         certificateScrollPane = new JScrollPane(certificateTable);
 
@@ -265,32 +262,40 @@ public class ItemPickerDialog extends MirthDialog {
 
     private void setProperties() {
 
-        var data = new Object[allOptions.size() + 1][2];
-
-        // 0 is CHECKED and 1 is UNCHECKED
-        data[0][CERTIFICATES_SELECTED_COLUMN] = isDefaultSelected ? 0 : 1;
-        data[0][CERTIFICATES_NAME_COLUMN] = defaultValue;
-
-        int i = 1;
-        for (String item : allOptions) {
-            data[i][CERTIFICATES_SELECTED_COLUMN] = selectedOptions.contains(item) ? 0 : 1;
-            data[i][CERTIFICATES_NAME_COLUMN] = item;
-            i++;
+        // Convert to list to get by-index accession
+        var linkedOptionsList = new LinkedList<Pair<String, Integer>>();
+        if (defaultValue != null) {
+            linkedOptionsList.add(new Pair<>(defaultValue, isDefaultSelected ? MirthTriStateCheckBox.CHECKED : MirthTriStateCheckBox.UNCHECKED));
         }
+
+        allOptions
+            .stream()
+            .sorted()
+            .map(alias -> new Pair<>(alias, selectedOptions.contains(alias) ? MirthTriStateCheckBox.CHECKED : MirthTriStateCheckBox.UNCHECKED))
+            .forEachOrdered(linkedOptionsList::add);
+
+        var data = new Object[linkedOptionsList.size()][2];
+
+        for (int i = 0; i < linkedOptionsList.size(); i++) {
+            var option = linkedOptionsList.get(i);
+            data[i][SELECTED_COLUMN] = option.b();
+            data[i][NAME_COLUMN] = option.a();
+        }
+
         ((RefreshTableModel) certificateTable.getModel()).refreshDataVector(data);
     }
 
     private void processTableState() {
-        var localSelectedOptions = new HashSet<String>();
+        var localSelectedOptions = new LinkedHashSet<String>();
 
         for (int row = 0; row < certificateTable.getModel().getRowCount(); row++) {
-            var state = (int) certificateTable.getModel().getValueAt(row, CERTIFICATES_SELECTED_COLUMN);
-            var certificateAlias = (String) certificateTable.getModel().getValueAt(row, CERTIFICATES_NAME_COLUMN);
+            var state = (int) certificateTable.getModel().getValueAt(row, SELECTED_COLUMN);
+            var certificateAlias = (String) certificateTable.getModel().getValueAt(row, NAME_COLUMN);
 
             if (certificateAlias.equals(defaultValue)) {
                 // State 0 is CHECKED
-                isDefaultSelected = state == 0;
-            } else if (state == 0) {
+                isDefaultSelected = state == MirthTriStateCheckBox.CHECKED;
+            } else if (state == MirthTriStateCheckBox.CHECKED) {
                 localSelectedOptions.add(certificateAlias);
             }
         }

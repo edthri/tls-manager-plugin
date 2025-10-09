@@ -146,13 +146,13 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
 
         managerEnabledRadioYes = new MirthRadioButton();
         managerEnabledRadioYes.setText("Yes");
-        managerEnabledRadioYes.setBackground(new Color(255, 255, 255));
+        managerEnabledRadioYes.setBackground(Color.white);
         managerEnabledRadioYes.addActionListener(e -> handleManagerEnabledButton(true));
         managerEnabledButtonGroup.add(managerEnabledRadioYes);
 
         managerEnabledRadioNo = new MirthRadioButton();
         managerEnabledRadioNo.setText("No");
-        managerEnabledRadioNo.setBackground(new Color(255, 255, 255));
+        managerEnabledRadioNo.setBackground(Color.white);
         managerEnabledRadioNo.addActionListener(e -> handleManagerEnabledButton(false));
         managerEnabledButtonGroup.add(managerEnabledRadioNo);
 
@@ -160,13 +160,13 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         var serverCertificateValidationButtonGroup = new ButtonGroup();
 
         serverCertificateValidationRadioYes = new MirthRadioButton();
-        serverCertificateValidationRadioYes.setBackground(new Color(255, 255, 255));
+        serverCertificateValidationRadioYes.setBackground(Color.white);
         serverCertificateValidationRadioYes.setText("Enabled");
         serverCertificateValidationRadioYes.addActionListener(e -> properties.setServerCertificateValidationEnabled(true));
         serverCertificateValidationButtonGroup.add(serverCertificateValidationRadioYes);
 
         serverCertificateValidationRadioNo = new MirthRadioButton();
-        serverCertificateValidationRadioNo.setBackground(new Color(255, 255, 255));
+        serverCertificateValidationRadioNo.setBackground(Color.white);
         serverCertificateValidationRadioNo.setText("Disabled");
         serverCertificateValidationRadioNo.addActionListener(e -> properties.setServerCertificateValidationEnabled(false));
         serverCertificateValidationButtonGroup.add(serverCertificateValidationRadioNo);
@@ -198,13 +198,13 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         var hostnameValidationButtonGroup = new ButtonGroup();
 
         hostnameValidationRadioYes = new MirthRadioButton();
-        hostnameValidationRadioYes.setBackground(new Color(255, 255, 255));
+        hostnameValidationRadioYes.setBackground(Color.white);
         hostnameValidationRadioYes.setText("Enabled");
         hostnameValidationRadioYes.addActionListener(e -> properties.setHostnameVerificationEnabled(true));
         hostnameValidationButtonGroup.add(hostnameValidationRadioYes);
 
         hostnameValidationRadioNo = new MirthRadioButton();
-        hostnameValidationRadioNo.setBackground(new Color(255, 255, 255));
+        hostnameValidationRadioNo.setBackground(Color.white);
         hostnameValidationRadioNo.setText("Disabled");
         hostnameValidationRadioNo.addActionListener(e -> properties.setHostnameVerificationEnabled(false));
         hostnameValidationButtonGroup.add(hostnameValidationRadioNo);
