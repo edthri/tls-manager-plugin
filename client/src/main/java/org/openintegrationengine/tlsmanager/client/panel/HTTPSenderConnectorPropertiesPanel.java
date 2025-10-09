@@ -465,6 +465,26 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
             }
         };
 
+        var clientCertWorker = new SwingWorker<Void, Void>() {
+            private Set<String> aliasSet;
+
+            public Void doInBackground() {
+                try {
+                    aliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
+                } catch (Exception e) {
+                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported clint certificates failed");
+                }
+
+                return null;
+            }
+
+            public void done() {
+                clientCertificates = aliasSet;
+                PlatformUI.MIRTH_FRAME.stopWorking(workingId);
+            }
+        };
+
         publicCertWorker.execute();
+        clientCertWorker.execute();
     }
 }
