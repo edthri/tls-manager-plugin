@@ -24,6 +24,7 @@ import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.SerializationController;
 
 import java.util.List;
+import java.util.Set;
 
 @MirthClientClass
 public class TLSConnectorPropertiesPlugin extends ConnectorPropertiesPlugin {
@@ -52,7 +53,9 @@ public class TLSConnectorPropertiesPlugin extends ConnectorPropertiesPlugin {
 
     @Override
     public boolean isSupported(String transportName) {
-        return transportName.equals("HTTP Sender");
+        return Set
+            .of("HTTP Sender", "TCP Sender")
+            .contains(transportName);
     }
 
     @Override
