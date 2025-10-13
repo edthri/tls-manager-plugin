@@ -104,6 +104,33 @@ export default function EditAliasDialog({
               </Alert>
             )}
 
+            {/* Alias Input */}
+            <TextField
+              label="New Alias"
+              value={newAlias}
+              onChange={handleAliasChange}
+              error={Boolean(apiError)}
+              helperText={apiError || aliasWarning || "Enter a unique alias for this certificate"}
+              fullWidth
+              required
+              sx={{ 
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: aliasWarning ? '#ff9800' : 'default',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: aliasWarning ? '#ff9800' : 'default',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: aliasWarning ? '#ff9800' : 'default',
+                  },
+                },
+                '& .MuiFormHelperText-root': {
+                  color: aliasWarning ? '#ff9800' : 'inherit'
+                }
+              }}
+            />
+
             {/* Certificate Info Display */}
             <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
               <Typography variant="h6" gutterBottom>Certificate Information</Typography>
@@ -133,32 +160,7 @@ export default function EditAliasDialog({
               </Grid>
             </Paper>
 
-            {/* Alias Input */}
-            <TextField
-              label="New Alias"
-              value={newAlias}
-              onChange={handleAliasChange}
-              error={Boolean(apiError)}
-              helperText={apiError || aliasWarning || "Enter a unique alias for this certificate"}
-              fullWidth
-              required
-              sx={{ 
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: aliasWarning ? '#ff9800' : 'default',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: aliasWarning ? '#ff9800' : 'default',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: aliasWarning ? '#ff9800' : 'default',
-                  },
-                },
-                '& .MuiFormHelperText-root': {
-                  color: aliasWarning ? '#ff9800' : 'inherit'
-                }
-              }}
-            />
+            
           </Box>
         </DialogContent>
         <DialogActions>

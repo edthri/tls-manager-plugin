@@ -3,7 +3,7 @@ import { Paper, Box, Typography, Stack, Button, Divider } from '@mui/material'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import StatusPill from './StatusPill'
 
-export default function CertificateCard({ certificate, onViewDetails, onExport, onEditAlias, showPrivateKeys = false }) {
+export default function CertificateCard({ certificate, onViewDetails, onExport, onEditAlias, onRemove, showPrivateKeys = false }) {
   const {
     name,
     type,
@@ -141,6 +141,17 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
               fullWidth
             >
               Edit Alias
+            </Button>
+          )}
+          {/* Remove button - only show for trusted and private stores */}
+          {(certificate.store === 'trusted' || certificate.store === 'private') && (
+            <Button 
+              variant="outlined" 
+              color="error" 
+              onClick={() => onRemove?.(certificate)}
+              fullWidth
+            >
+              Remove
             </Button>
           )}
         </Stack>

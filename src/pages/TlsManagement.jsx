@@ -13,9 +13,12 @@ import VpnKeyIcon from '@mui/icons-material/VpnKey'
 import ImportCertificateDialogContent from '../components/ImportCertificateDialogContent'
 import CertificateDetailsDialog from '../components/CertificateDetailsDialog'
 import EditAliasDialog from '../components/EditAliasDialog'
+import RemoveCertificateDialog from '../components/RemoveCertificateDialog'
+import { useNotification } from '../context/NotificationContext'
 
 export default function TlsManagement() {
   const { all, counts, filterBy, loading, error, refetch } = useCertificates()
+  const { showSuccess, showError } = useNotification()
   const [params, setParams] = useSearchParams()
   const tabKeys = ['native', 'trusted', 'private']
   const initialKey = params.get('tab') && tabKeys.includes(params.get('tab')) ? params.get('tab') : 'native'
@@ -33,6 +36,9 @@ export default function TlsManagement() {
   
   const [editAliasDialogOpen, setEditAliasDialogOpen] = useState(false)
   const [certificateToEdit, setCertificateToEdit] = useState(null)
+  
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false)
+  const [certificateToRemove, setCertificateToRemove] = useState(null)
 
   const openDialog = ({ type, title, props = {} }) => {
     setDialogTitle(title)
@@ -86,6 +92,23 @@ export default function TlsManagement() {
     // Refresh the certificate data after successful alias edit
     refetch()
     handleCloseEditAlias()
+  }
+
+  const handleRemove = (certificate) => {
+    setCertificateToRemove(certificate)
+    setRemoveDialogOpen(true)
+  }
+
+  const handleCloseRemove = () => {
+    setRemoveDialogOpen(false)
+    setCertificateToRemove(null)
+  }
+
+  const handleRemoveSuccess = () => {
+    // Refresh the certificate data after successful removal
+    refetch()
+    handleCloseRemove()
+    showSuccess(`Certificate "${certificateToRemove?.alias}" has been removed successfully`)
   }
 
   const openImportDialog = () => {
@@ -153,6 +176,7 @@ export default function TlsManagement() {
             onViewDetails={handleViewDetails}
             onExport={handleExport}
             onEditAlias={handleEditAlias}
+            onRemove={handleRemove}
             showPrivateKeys={showPrivateKeys}
           />
         </Box>
@@ -169,6 +193,7 @@ export default function TlsManagement() {
             onViewDetails={handleViewDetails}
             onExport={handleExport}
             onEditAlias={handleEditAlias}
+            onRemove={handleRemove}
             showPrivateKeys={showPrivateKeys}
           />
         </Box>
@@ -185,6 +210,7 @@ export default function TlsManagement() {
             onViewDetails={handleViewDetails}
             onExport={handleExport}
             onEditAlias={handleEditAlias}
+            onRemove={handleRemove}
             showPrivateKeys={showPrivateKeys}
           />
         </Box>
@@ -223,6 +249,13 @@ export default function TlsManagement() {
         onClose={handleCloseEditAlias}
         certificate={certificateToEdit}
         onSuccess={handleAliasEditSuccess}
+      />
+
+      <RemoveCertificateDialog
+        open={removeDialogOpen}
+        onClose={handleCloseRemove}
+        certificate={certificateToRemove}
+        onSuccess={handleRemoveSuccess}
       />
 
     </Box>
