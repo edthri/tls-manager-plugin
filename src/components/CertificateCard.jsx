@@ -21,33 +21,38 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
   } = certificate
 
   return (
-    <Paper variant="outlined" sx={{ 
-      p: 2, 
+    <Paper variant="outlined" sx={{
+      p: 2,
       borderRadius: 2,
       height: '100%',
+      width: '100%',
+      maxWidth: '100%',
       display: 'flex',
-      flexDirection: 'column'
+      flexDirection: 'column',
+      overflow: 'hidden',
     }}>
-      <Stack spacing={2} sx={{ flex: 1 }}>
-        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Box sx={{ width: 36, height: 36, borderRadius: 2, backgroundColor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ShieldOutlinedIcon fontSize="small" />
-            </Box>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1 }}>{name}</Typography>
-              <Typography variant="body2" color="text.secondary">{type}</Typography>
-            </Box>
+      {/* Main Content Area - grows to fill available space */}
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Stack spacing={2}>
+          <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Box sx={{ width: 36, height: 36, borderRadius: 2, backgroundColor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ShieldOutlinedIcon fontSize="small" />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1 }}>{name}</Typography>
+                <Typography variant="body2" color="text.secondary">{type}</Typography>
+              </Box>
+            </Stack>
+            <StatusPill validFrom={validFrom} validTo={validTo} />
           </Stack>
-          <StatusPill validFrom={validFrom} validTo={validTo} />
-        </Stack>
 
-        <Box>
+        <Box sx={{ flex: '0 0 auto' }}>
           <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Subject:</Typography>
-          <Typography 
-            variant="body2" 
+          <Typography
+            variant="body2"
             color="text.primary"
-            sx={{ 
+            sx={{
               wordBreak: 'break-all',
               overflow: 'hidden',
               display: '-webkit-box',
@@ -59,12 +64,12 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
           </Typography>
         </Box>
 
-        <Box>
+        <Box sx={{ flex: '0 0 auto' }}>
           <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Issuer:</Typography>
-          <Typography 
-            variant="body2" 
+          <Typography
+            variant="body2"
             color="text.primary"
-            sx={{ 
+            sx={{
               wordBreak: 'break-all',
               overflow: 'hidden',
               display: '-webkit-box',
@@ -76,7 +81,7 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
           </Typography>
         </Box>
 
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ flex: '0 0 auto' }}>
           <Box>
             <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Valid From:</Typography>
             <Typography variant="body2">{validFrom}</Typography>
@@ -87,14 +92,25 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
           </Box>
         </Stack>
 
-        <Box>
+        <Box sx={{ flex: '0 0 auto' }}>
           <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Fingerprint (SHA-1):</Typography>
-          <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>{fingerprintSha1}</Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              wordBreak: 'break-all',
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical'
+            }}
+          >
+            {fingerprintSha1}
+          </Typography>
         </Box>
 
         {/* Channels in Use Section */}
         {channelsInUse && channelsInUse.length > 0 && (
-          <Box>
+          <Box sx={{ flex: '0 0 auto' }}>
             <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Used by Channels:</Typography>
             <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
               {channelsInUse.map((channel, index) => (
@@ -104,7 +120,7 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
                   size="small"
                   color="primary"
                   variant="outlined"
-                  sx={{ 
+                  sx={{
                     fontSize: '0.75rem',
                     height: '24px',
                     '& .MuiChip-label': {
@@ -121,18 +137,23 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
         {showPrivateKeys && hasPrivateKey && rawPrivateKey && (
           <>
             <Divider />
-            <Box>
+            <Box sx={{ flex: '0 0 auto', width: '100%', overflow: 'hidden' }}>
               <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Private Key (Base64):</Typography>
               <Box
                 sx={{
                   backgroundColor: 'grey.100',
                   p: 1,
                   borderRadius: 1,
-                  maxHeight: 150,
+                  height: 120,
+                  width: '100%',
+                  maxWidth: '100%',
                   overflow: 'auto',
                   fontFamily: 'monospace',
                   fontSize: '0.75rem',
                   wordBreak: 'break-all',
+                  border: '1px solid',
+                  borderColor: 'grey.300',
+                  boxSizing: 'border-box',
                 }}
               >
                 {rawPrivateKey}
@@ -141,53 +162,85 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
           </>
         )}
 
-        <Divider />
+        </Stack>
+      </Box>
 
-        <Stack direction="row" spacing={1} sx={{ mt: 'auto' }}>
-          <Button 
-            variant="outlined" 
-            color="success" 
-            startIcon={<Box component={ShieldOutlinedIcon} />} 
+      {/* Button Area - fixed at bottom */}
+      <Box sx={{ flex: '0 0 auto', mt: 2 }}>
+        <Divider sx={{ mb: 2 }} />
+        <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
+          <Button
+            variant="outlined"
+            color="success"
+            size="small"
+            startIcon={<ShieldOutlinedIcon fontSize="small" />}
             onClick={() => onViewDetails?.(certificate)}
             fullWidth
+            sx={{
+              fontSize: '0.75rem',
+              py: 0.5,
+              textTransform: 'none',
+              fontWeight: 500,
+            }}
           >
             View Details
           </Button>
-          <Button 
-            variant="outlined" 
-            color="secondary" 
+          <Button
+            variant="outlined"
+            color="secondary"
+            size="small"
+            startIcon={<ImportExportOutlinedIcon fontSize="small" />}
             onClick={() => onExport?.(certificate)}
-            startIcon={<Box component={ImportExportOutlinedIcon} />}
             fullWidth
+            sx={{
+              fontSize: '0.75rem',
+              py: 0.5,
+              textTransform: 'none',
+              fontWeight: 500,
+            }}
           >
             Export
           </Button>
           {/* Edit Alias button - only show for trusted and private stores */}
           {(certificate.store === 'trusted' || certificate.store === 'private') && (
-            <Button 
-              variant="outlined" 
-              color="primary" 
+            <Button
+              variant="outlined"
+              color="primary"
+              size="small"
+              startIcon={<EditOutlinedIcon fontSize="small" />}
               onClick={() => onEditAlias?.(certificate)}
-              startIcon={<Box component={EditOutlinedIcon} />}
               fullWidth
+              sx={{
+                fontSize: '0.75rem',
+                py: 0.5,
+                textTransform: 'none',
+                fontWeight: 500,
+              }}
             >
               Edit Alias
             </Button>
           )}
           {/* Remove button - only show for trusted and private stores */}
           {(certificate.store === 'trusted' || certificate.store === 'private') && (
-            <Button 
-              variant="outlined" 
-              color="error" 
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              startIcon={<DeleteOutlinedIcon fontSize="small" />}
               onClick={() => onRemove?.(certificate)}
-              startIcon={<Box component={DeleteOutlinedIcon} />}
               fullWidth
+              sx={{
+                fontSize: '0.75rem',
+                py: 0.5,
+                textTransform: 'none',
+                fontWeight: 500,
+              }}
             >
               Remove
             </Button>
           )}
         </Stack>
-      </Stack>
+      </Box>
     </Paper>
   )
 }
