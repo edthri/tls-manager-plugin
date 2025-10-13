@@ -2,7 +2,7 @@ import React from 'react'
 import { Box, CircularProgress, Typography, Alert, Grid, Stack } from '@mui/material'
 import CertificateCard from './CertificateCard'
 
-export default function CertificateList({ rows, loading, error, emptyText = 'No certificates found.', onViewDetails, onExport, showPrivateKeys = false }) {
+export default function CertificateList({ rows, loading, error, emptyText = 'No certificates found.', onViewDetails, onExport, onEditAlias, showPrivateKeys = false }) {
   if (loading) {
     return (
       <Stack direction="row" spacing={1} alignItems="center">
@@ -25,7 +25,7 @@ export default function CertificateList({ rows, loading, error, emptyText = 'No 
           lg={4}         // Large desktop: 3 columns
           xl={3}         // Extra large: 4 columns
         >
-          <CertificateCard certificate={row} onViewDetails={onViewDetails} onExport={onExport} showPrivateKeys={showPrivateKeys} />
+          <CertificateCard certificate={row} onViewDetails={onViewDetails} onExport={onExport} onEditAlias={onEditAlias} showPrivateKeys={showPrivateKeys} />
         </Grid>
       ))}
     </Grid>

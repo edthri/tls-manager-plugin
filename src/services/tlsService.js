@@ -203,6 +203,49 @@ export async function updateCertificates(targetStore, certificateData) {
   }
 }
 
+export async function updateCertificateAlias(store, oldAlias, newAlias) {
+  try {
+    // === INTERNAL STORE (for development) ===
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
+    if (store === 'trusted') {
+      const certIndex = internalStore.certificates.findIndex(c => c.alias === oldAlias)
+      if (certIndex >= 0) {
+        internalStore.certificates[certIndex].alias = newAlias
+      } else {
+        throw new Error('Certificate not found')
+      }
+    } else if (store === 'private') {
+      const pairIndex = internalStore.pairs.findIndex(p => p.alias === oldAlias)
+      if (pairIndex >= 0) {
+        internalStore.pairs[pairIndex].alias = newAlias
+      } else {
+        throw new Error('Certificate not found')
+      }
+    } else {
+      throw new Error('Invalid store type')
+    }
+    
+    // Save to localStorage
+    saveToStorage()
+    
+    console.log('[Internal Store] Updated alias:', { store, oldAlias, newAlias })
+    
+    return { success: true, data: { store, oldAlias, newAlias } }
+    
+    // === REAL API (uncomment when API is ready) ===
+    // const response = await api.put(`/api/tlsmanager/certificates/${store}/alias`, {
+    //   oldAlias,
+    //   newAlias
+    // })
+    // return response.data
+  } catch (error) {
+    console.error('Failed to update certificate alias:', error)
+    throw new Error('Failed to update certificate alias')
+  }
+}
+
 // === INTERNAL STORE HELPER FUNCTIONS (remove when switching to real API) ===
 // Helper function to clear the internal store (useful for testing)
 export function clearInternalStore() {

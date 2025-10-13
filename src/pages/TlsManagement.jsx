@@ -12,6 +12,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import VpnKeyIcon from '@mui/icons-material/VpnKey'
 import ImportCertificateDialogContent from '../components/ImportCertificateDialogContent'
 import CertificateDetailsDialog from '../components/CertificateDetailsDialog'
+import EditAliasDialog from '../components/EditAliasDialog'
 
 export default function TlsManagement() {
   const { all, counts, filterBy, loading, error, refetch } = useCertificates()
@@ -29,6 +30,9 @@ export default function TlsManagement() {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [selectedCertificate, setSelectedCertificate] = useState(null)
   const [showPrivateKeys, setShowPrivateKeys] = useState(false)
+  
+  const [editAliasDialogOpen, setEditAliasDialogOpen] = useState(false)
+  const [certificateToEdit, setCertificateToEdit] = useState(null)
 
   const openDialog = ({ type, title, props = {} }) => {
     setDialogTitle(title)
@@ -66,6 +70,22 @@ export default function TlsManagement() {
   const handleExport = (certificate) => {
     // TODO: Implement certificate export functionality
     console.log('Export certificate:', certificate)
+  }
+
+  const handleEditAlias = (certificate) => {
+    setCertificateToEdit(certificate)
+    setEditAliasDialogOpen(true)
+  }
+
+  const handleCloseEditAlias = () => {
+    setEditAliasDialogOpen(false)
+    setCertificateToEdit(null)
+  }
+
+  const handleAliasEditSuccess = () => {
+    // Refresh the certificate data after successful alias edit
+    refetch()
+    handleCloseEditAlias()
   }
 
   const openImportDialog = () => {
@@ -132,6 +152,7 @@ export default function TlsManagement() {
             error={error} 
             onViewDetails={handleViewDetails}
             onExport={handleExport}
+            onEditAlias={handleEditAlias}
             showPrivateKeys={showPrivateKeys}
           />
         </Box>
@@ -147,6 +168,7 @@ export default function TlsManagement() {
             error={error} 
             onViewDetails={handleViewDetails}
             onExport={handleExport}
+            onEditAlias={handleEditAlias}
             showPrivateKeys={showPrivateKeys}
           />
         </Box>
@@ -162,6 +184,7 @@ export default function TlsManagement() {
             error={error} 
             onViewDetails={handleViewDetails}
             onExport={handleExport}
+            onEditAlias={handleEditAlias}
             showPrivateKeys={showPrivateKeys}
           />
         </Box>
@@ -193,6 +216,13 @@ export default function TlsManagement() {
         open={detailsDialogOpen}
         onClose={handleCloseDetails}
         certificate={selectedCertificate}
+      />
+
+      <EditAliasDialog
+        open={editAliasDialogOpen}
+        onClose={handleCloseEditAlias}
+        certificate={certificateToEdit}
+        onSuccess={handleAliasEditSuccess}
       />
 
     </Box>

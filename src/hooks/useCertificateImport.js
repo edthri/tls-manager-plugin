@@ -35,7 +35,7 @@ export const useCertificateImport = (targetStore) => {
     }
   }
 
-  // Check if alias already exists
+  // Check if alias already exists within the target store
   const checkAliasExists = (aliasToCheck) => {
     if (!aliasToCheck.trim()) {
       setAliasWarning(null)
@@ -43,11 +43,12 @@ export const useCertificateImport = (targetStore) => {
     }
 
     const exists = existingCertificates.some(cert => 
+      cert.store === targetStore &&
       cert.alias.toLowerCase() === aliasToCheck.toLowerCase()
     )
     
     if (exists) {
-      setAliasWarning('This alias is already in use')
+      setAliasWarning('This alias is already in use in this store')
       return true
     } else {
       setAliasWarning(null)
