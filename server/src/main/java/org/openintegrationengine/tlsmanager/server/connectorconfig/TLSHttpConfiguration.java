@@ -113,35 +113,26 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
     }
 
     private void configureSocketFactory(HttpDispatcher connector) {
-        var oTlsPluginProperties = connector.getConnectorProperties().getPluginProperties()
+        var tlsConnectorProperties = connector.getConnectorProperties().getPluginProperties()
             .stream()
             .filter(TLSConnectorProperties.class::isInstance)
-            .findFirst();
+            .findFirst()
+            .map(TLSConnectorProperties.class::cast)
+            .orElse(null);
 
-        // TODO Fix repetition
-        if (oTlsPluginProperties.isEmpty()) {
+        if (tlsConnectorProperties != null && tlsConnectorProperties.isTlsManagerEnabled()) {
+            var sslSocketFactory = socketFactoryService.getConnectorSocketFactory(connector, tlsConnectorProperties);
+            if (sslSocketFactory != null) {
+                // FIXME
+                connector.getSocketFactoryRegistry().register("https", sslSocketFactory);
+            }
+        } else {
             try {
                 super.configureSocketFactoryRegistry(null, connector.getSocketFactoryRegistry());
             } catch (Exception e) {
+                log.error("Error creating non-TLS socket factory", e);
                 throw new RuntimeException(e);
             }
-            return;
-        }
-
-        var properties = (TLSConnectorProperties) oTlsPluginProperties.get();
-        if (!properties.isTlsManagerEnabled()) {
-            try {
-                super.configureSocketFactoryRegistry(null, connector.getSocketFactoryRegistry());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-            return;
-        }
-
-        var sslSocketFactory = socketFactoryService.getConnectorSocketFactory(connector, properties);
-        if (sslSocketFactory != null) {
-            // FIXME
-            connector.getSocketFactoryRegistry().register("https", sslSocketFactory);
         }
     }
 }
