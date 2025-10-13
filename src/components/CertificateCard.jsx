@@ -1,6 +1,9 @@
 import React from 'react'
-import { Paper, Box, Typography, Stack, Button, Divider } from '@mui/material'
+import { Paper, Box, Typography, Stack, Button, Divider, Chip } from '@mui/material'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
+import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined'
 import StatusPill from './StatusPill'
 
 export default function CertificateCard({ certificate, onViewDetails, onExport, onEditAlias, onRemove, showPrivateKeys = false }) {
@@ -14,6 +17,7 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
     fingerprintSha1,
     hasPrivateKey,
     rawPrivateKey,
+    channelsInUse,
   } = certificate
 
   return (
@@ -88,6 +92,31 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
           <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>{fingerprintSha1}</Typography>
         </Box>
 
+        {/* Channels in Use Section */}
+        {channelsInUse && channelsInUse.length > 0 && (
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Used by Channels:</Typography>
+            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+              {channelsInUse.map((channel, index) => (
+                <Chip
+                  key={index}
+                  label={channel}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  sx={{ 
+                    fontSize: '0.75rem',
+                    height: '24px',
+                    '& .MuiChip-label': {
+                      px: 1
+                    }
+                  }}
+                />
+              ))}
+            </Stack>
+          </Box>
+        )}
+
         {/* Private Key Section */}
         {showPrivateKeys && hasPrivateKey && rawPrivateKey && (
           <>
@@ -116,8 +145,8 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
 
         <Stack direction="row" spacing={1} sx={{ mt: 'auto' }}>
           <Button 
-            variant="contained" 
-            color="info" 
+            variant="outlined" 
+            color="success" 
             startIcon={<Box component={ShieldOutlinedIcon} />} 
             onClick={() => onViewDetails?.(certificate)}
             fullWidth
@@ -128,6 +157,7 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
             variant="outlined" 
             color="secondary" 
             onClick={() => onExport?.(certificate)}
+            startIcon={<Box component={ImportExportOutlinedIcon} />}
             fullWidth
           >
             Export
@@ -138,6 +168,7 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
               variant="outlined" 
               color="primary" 
               onClick={() => onEditAlias?.(certificate)}
+              startIcon={<Box component={EditOutlinedIcon} />}
               fullWidth
             >
               Edit Alias
@@ -149,6 +180,7 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
               variant="outlined" 
               color="error" 
               onClick={() => onRemove?.(certificate)}
+              startIcon={<Box component={DeleteOutlinedIcon} />}
               fullWidth
             >
               Remove

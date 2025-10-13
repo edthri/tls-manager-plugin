@@ -23,6 +23,8 @@ let internalStore = {
 
 // Load from localStorage if available
 const STORAGE_KEY = 'tls-manager-store'
+const CHANNEL_ASSIGNMENTS_KEY = 'tls-manager-channel-assignments'
+
 try {
   const stored = localStorage.getItem(STORAGE_KEY)
   if (stored) {
@@ -41,6 +43,65 @@ function saveToStorage() {
   }
 }
 
+// === MOCK CHANNEL ASSIGNMENT HELPERS ===
+const CHANNEL_POOL = [
+  'Channel 1', 'Channel 2', 'Channel 3', 'Channel 4', 
+  'Channel 5', 'Channel 6', 'Channel 7', 'Channel 8'
+]
+
+// Generate random channels (1-3 channels from pool)
+function generateMockChannels() {
+  const numChannels = Math.floor(Math.random() * 3) + 1 // 1-3 channels
+  const shuffled = [...CHANNEL_POOL].sort(() => 0.5 - Math.random())
+  return shuffled.slice(0, numChannels)
+}
+
+// Returns true ~35% of the time
+function shouldHaveChannels() {
+  return Math.random() < 0.35
+}
+
+// Get or create channel assignments from localStorage
+function getOrCreateChannelAssignments() {
+  try {
+    const stored = localStorage.getItem(CHANNEL_ASSIGNMENTS_KEY)
+    if (stored) {
+      return JSON.parse(stored)
+    }
+  } catch (e) {
+    console.warn('Failed to load channel assignments from localStorage:', e)
+  }
+  
+  // Create new assignments if none exist
+  return {
+    trusted: {},
+    private: {}
+  }
+}
+
+// Save channel assignments to localStorage
+function saveChannelAssignments(assignments) {
+  try {
+    localStorage.setItem(CHANNEL_ASSIGNMENTS_KEY, JSON.stringify(assignments))
+  } catch (e) {
+    console.warn('Failed to save channel assignments to localStorage:', e)
+  }
+}
+
+// Get channels for a specific certificate, creating if needed
+function getChannelsForCertificate(store, alias, assignments) {
+  const storeAssignments = assignments[store] || {}
+  
+  if (!(alias in storeAssignments)) {
+    // Create new assignment
+    storeAssignments[alias] = shouldHaveChannels() ? generateMockChannels() : []
+    assignments[store] = storeAssignments
+    saveChannelAssignments(assignments)
+  }
+  
+  return storeAssignments[alias] || []
+}
+
 export async function fetchCertificates() {
   try {
     // === INTERNAL STORE (for development) ===
@@ -48,6 +109,9 @@ export async function fetchCertificates() {
     await new Promise(resolve => setTimeout(resolve, 300))
     
     const data = internalStore
+    
+    // Get channel assignments
+    const channelAssignments = getOrCreateChannelAssignments()
     
     // === REAL API (uncomment when API is ready) ===
     // const response = await api.get('/api/tlsmanager/certificates')
@@ -80,6 +144,7 @@ export async function fetchCertificates() {
     if (data.certificates) {
       for (const cert of data.certificates) {
         const parsed = await parseCertificate(cert.certificate)
+        const channelsInUse = getChannelsForCertificate('trusted', cert.alias, channelAssignments)
         certificates.push({
           alias: cert.alias,
           name: parsed.subject?.CN || cert.alias,
@@ -91,7 +156,7 @@ export async function fetchCertificates() {
           fingerprintSha1: parsed.fingerprintSha1,
           hasPrivateKey: false,
           store: 'trusted',
-          channelsInUse: cert.channelsInUse || [],
+          channelsInUse: channelsInUse,
           rawCertificate: cert.certificate,
           parsedCertificate: parsed,
         })
@@ -102,6 +167,7 @@ export async function fetchCertificates() {
     if (data.pairs) {
       for (const pair of data.pairs) {
         const parsed = await parseCertificate(pair.certificate)
+        const channelsInUse = getChannelsForCertificate('private', pair.alias, channelAssignments)
         certificates.push({
           alias: pair.alias,
           name: parsed.subject?.CN || pair.alias,
@@ -113,7 +179,7 @@ export async function fetchCertificates() {
           fingerprintSha1: parsed.fingerprintSha1,
           hasPrivateKey: true,
           store: 'private',
-          channelsInUse: pair.channelsInUse || [],
+          channelsInUse: channelsInUse,
           rawCertificate: pair.certificate,
           rawPrivateKey: pair.privateKey, // Include private key in response
           parsedCertificate: parsed,
@@ -151,6 +217,13 @@ export async function updateCertificates(targetStore, certificateData) {
         internalStore.certificates[existing] = cert
       } else {
         internalStore.certificates.push(cert)
+        // Initialize new certificate with no channels
+        const channelAssignments = getOrCreateChannelAssignments()
+        if (!channelAssignments.trusted) {
+          channelAssignments.trusted = {}
+        }
+        channelAssignments.trusted[alias] = []
+        saveChannelAssignments(channelAssignments)
       }
     } else if (targetStore === 'private') {
       // Add to private key pairs
@@ -167,6 +240,13 @@ export async function updateCertificates(targetStore, certificateData) {
         internalStore.pairs[existing] = pair
       } else {
         internalStore.pairs.push(pair)
+        // Initialize new certificate with no channels
+        const channelAssignments = getOrCreateChannelAssignments()
+        if (!channelAssignments.private) {
+          channelAssignments.private = {}
+        }
+        channelAssignments.private[alias] = []
+        saveChannelAssignments(channelAssignments)
       }
     }
     
@@ -227,6 +307,14 @@ export async function updateCertificateAlias(store, oldAlias, newAlias) {
       throw new Error('Invalid store type')
     }
     
+    // Update channel assignments to use new alias
+    const channelAssignments = getOrCreateChannelAssignments()
+    if (channelAssignments[store] && channelAssignments[store][oldAlias]) {
+      channelAssignments[store][newAlias] = channelAssignments[store][oldAlias]
+      delete channelAssignments[store][oldAlias]
+      saveChannelAssignments(channelAssignments)
+    }
+    
     // Save to localStorage
     saveToStorage()
     
@@ -268,6 +356,13 @@ export async function removeCertificate(store, alias) {
       }
     } else {
       throw new Error('Invalid store type')
+    }
+    
+    // Clean up channel assignments
+    const channelAssignments = getOrCreateChannelAssignments()
+    if (channelAssignments[store] && channelAssignments[store][alias]) {
+      delete channelAssignments[store][alias]
+      saveChannelAssignments(channelAssignments)
     }
     
     // Save to localStorage
