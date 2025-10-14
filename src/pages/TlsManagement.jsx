@@ -133,7 +133,7 @@ export default function TlsManagement() {
   const tabs = [
     { key: 'native', label: 'Native Java Certificate Store', count: counts.native, icon: <ShieldOutlinedIcon fontSize="small" /> },
     { key: 'trusted', label: 'Additional Trusted Certificates', count: counts.trusted, icon: <CheckCircleOutlineIcon fontSize="small" /> },
-    { key: 'private', label: 'Private Key Store', count: counts.private, icon: <VpnKeyIcon fontSize="small" /> },
+    { key: 'private', label: 'Local Certificates', count: counts.private, icon: <VpnKeyIcon fontSize="small" /> },
   ]
 
   const toolbarByTab = {
@@ -150,7 +150,7 @@ export default function TlsManagement() {
       ],
     },
     private: {
-      title: 'Private Key Store',
+      title: 'Local Certificates',
       actions: [
         { key: 'show-private-keys', label: showPrivateKeys ? 'Hide Private Keys' : 'Show Private Keys', color: 'warning', onClick: handleTogglePrivateKeys },
         { key: 'import-cert', label: 'Import Certificate', color: 'info', onClick: () => openImportDialog() },
