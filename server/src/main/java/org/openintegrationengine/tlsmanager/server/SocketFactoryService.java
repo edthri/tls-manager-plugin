@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.openintegrationengine.tlsmanager.server.revocation.DualCheckerTrustManager;
+import org.openintegrationengine.tlsmanager.shared.models.WeirdIntermediaryContextContainer;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import javax.net.ssl.KeyManager;
@@ -36,6 +37,23 @@ public class SocketFactoryService {
     }
 
     public SSLConnectionSocketFactory getConnectorSocketFactory(DestinationConnector connector, TLSConnectorProperties properties) {
+        var contextContainer = generateSSLContext(connector, properties);
+        return getConnectorSocketFactory(contextContainer);
+    }
+
+    public SSLConnectionSocketFactory getConnectorSocketFactory(WeirdIntermediaryContextContainer contextContainer) {
+        // Return null to trigger building the connection with OIE's internal logic
+        if (contextContainer == null) return null;
+
+        return new SSLConnectionSocketFactory(
+            contextContainer.sslContext(),
+            contextContainer.protocols(),
+            contextContainer.ciphers(),
+            contextContainer.hostnameVerifier()
+        );
+    }
+
+    public WeirdIntermediaryContextContainer generateSSLContext(DestinationConnector connector, TLSConnectorProperties properties) {
         try {
             var truststore = certificateService.getTrustStoreFromProperties(
                 properties.isTrustSystemTruststore(),
@@ -80,14 +98,14 @@ public class SocketFactoryService {
                 ? SSLConnectionSocketFactory.getDefaultHostnameVerifier()
                 : NoopHostnameVerifier.INSTANCE;
 
-            return new SSLConnectionSocketFactory(
+            return new WeirdIntermediaryContextContainer(
                 sslContext,
                 protocolArray,
                 cipherArray,
                 hostnameVerificationStrategy
             );
         } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException e) {
-            log.error("Error generating SSLConnectionSocketFactory", e);
+            log.error("Error generating SSLContext", e);
             throw new RuntimeException(e);
         }
     }

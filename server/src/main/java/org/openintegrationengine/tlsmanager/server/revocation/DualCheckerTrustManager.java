@@ -2,8 +2,6 @@ package org.openintegrationengine.tlsmanager.server.revocation;
 
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.x509.AccessDescription;
-import org.bouncycastle.asn1.x509.AuthorityInformationAccess;
 import org.bouncycastle.asn1.x509.CRLDistPoint;
 import org.bouncycastle.asn1.x509.DistributionPoint;
 import org.bouncycastle.asn1.x509.DistributionPointName;
@@ -24,7 +22,6 @@ import java.security.KeyStoreException;
 import java.security.cert.CRL;
 import java.security.cert.CertPath;
 import java.security.cert.CertPathValidator;
-import java.security.cert.CertPathValidatorException;
 import java.security.cert.CertStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -35,7 +32,6 @@ import java.security.cert.PKIXRevocationChecker;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -80,7 +76,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
             }
 
             var certificateFactory = CertificateFactory.getInstance("X.509");
-            var certPath = certificateFactory.generateCertPath(Arrays.asList(chain));
+            var certPath = certificateFactory.generateCertPath(List.of(chain));
 
             // Baseline chain sanity (revocation OFF) to get clean path errors early.
             var base = new PKIXParameters(anchors);
