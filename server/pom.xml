@@ -73,6 +73,20 @@
         </dependency>
 
         <dependency>
+            <groupId>com.mirth.connect.connectors</groupId>
+            <artifactId>ws-server</artifactId>
+            <version>${mirth.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mirth.connect.connectors</groupId>
+            <artifactId>ws-shared</artifactId>
+            <version>${mirth.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.5.13</version>

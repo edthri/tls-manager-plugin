@@ -54,7 +54,7 @@ public class TLSConnectorPropertiesPlugin extends ConnectorPropertiesPlugin {
     @Override
     public boolean isSupported(String transportName) {
         return Set
-            .of("HTTP Sender", "TCP Sender")
+            .of("HTTP Sender", "TCP Sender", "Web Service Sender")
             .contains(transportName);
     }
 
