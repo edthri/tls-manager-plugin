@@ -190,7 +190,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
                             try (InputStream in = URI.create(uri).toURL().openStream()) {
                                 byte[] bytes = in.readAllBytes();
-                                byte[] der = maybeDecodePem(bytes, "CRL");
+                                byte[] der = maybeDecodePem(bytes, "X509 CRL");
                                 out.add(certificateFactory.generateCRL(new ByteArrayInputStream(der)));
                             } catch (Exception ignoreOne) {}
                         }
