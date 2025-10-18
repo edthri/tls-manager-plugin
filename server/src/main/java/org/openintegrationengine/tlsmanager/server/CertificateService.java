@@ -23,6 +23,10 @@ import com.mirth.connect.server.util.TemplateValueReplacer;
 import com.mirth.connect.util.ConnectionTestResponse;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.openintegrationengine.tlsmanager.server.backend.DatabaseTrustStoreBackend;
 import org.openintegrationengine.tlsmanager.server.backend.FileTrustStoreBackend;
 import org.openintegrationengine.tlsmanager.server.backend.SystemTrustStoreBackend;
@@ -35,14 +39,30 @@ import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProper
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.URL;
+import java.security.Key;
+import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.openintegrationengine.tlsmanager.shared.TLSPluginConstants.PKCS12;
@@ -218,7 +238,17 @@ public final class CertificateService {
         }
     }
 
-    public Set<String> getPublicCertificates() {
+    public void storeExtraKeyStore(byte[] keystoreBytes, char[] password) {
+        try (var bais = new ByteArrayInputStream(keystoreBytes)) {
+            externalKeyStore.load(bais, password);
+            extraKeyStoreBackend.persist(keystoreBytes);
+        } catch (CertificateException | IOException | NoSuchAlgorithmException e) {
+            log.error("Error overwriting keystore", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Set<String> getTrustedCertificateAliases() {
         try {
             return new HashSet<>(Collections.list(externalTrustStore.aliases()));
         } catch (KeyStoreException e) {
@@ -227,13 +257,189 @@ public final class CertificateService {
         }
     }
 
-    public Set<String> getClientCertificates() {
+    public Set<String> getLocalCertificateAliases() {
         try {
             return new HashSet<>(Collections.list(externalKeyStore.aliases()));
         } catch (KeyStoreException e) {
             log.error("Error reading alias list from loaded keystore", e);
             throw new RuntimeException(e);
         }
+    }
+
+    public List<Map<String, String>> getEncodedTrustedCertificates() {
+        return getEncodedCertificates(externalTrustStore);
+    }
+
+    public List<Map<String, String>> getEncodedLocalCertificates() {
+        return getEncodedCertificates(externalKeyStore);
+    }
+
+    private List<Map<String, String>> getEncodedCertificates(KeyStore keyStore) {
+        List<Map<String, String>> certificates = new ArrayList<>();
+        Map<String, String> certificateMap = new HashMap<>();
+
+        try {
+            Enumeration<String> aliases = keyStore.aliases();
+
+            while (aliases.hasMoreElements()) {
+                String alias = aliases.nextElement();
+                certificateMap.put("alias", alias);
+
+                if (keyStore.isKeyEntry(alias)) {
+                    String certificate = encodeCertificates(keyStore.getCertificateChain(alias));
+                    certificateMap.put("certificate", certificate);
+                    String key = encodeKey(keyStore.getKey(alias, "changeit".toCharArray()));
+                    certificateMap.put("key", key);
+                } else if (keyStore.isCertificateEntry(alias)) {
+                    String certificate = encodeCertificates(keyStore.getCertificate(alias));
+                    certificateMap.put("certificate", certificate);
+                }
+            }
+            certificates.add(certificateMap);
+            return certificates;
+        } catch (KeyStoreException | CertificateEncodingException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String encodeCertificates(Certificate... chain) throws CertificateEncodingException {
+        StringBuilder pem = new StringBuilder();
+
+        for (Certificate cert : chain) {
+            String base64Cert = Base64.getMimeEncoder(64, "\n".getBytes())
+                .encodeToString(cert.getEncoded());
+            pem.append("-----BEGIN CERTIFICATE-----\n")
+                .append(base64Cert)
+                .append("\n-----END CERTIFICATE-----\n\n");
+        }
+        return pem.toString();
+    }
+
+    private String encodeKey(Key key) throws CertificateEncodingException {
+        StringBuilder pem = new StringBuilder();
+
+        if (key instanceof PrivateKey) {
+            String base64Key = Base64.getMimeEncoder(64, "\n".getBytes())
+                .encodeToString(key.getEncoded());
+            pem.append("-----BEGIN PRIVATE KEY-----\n")
+                .append(base64Key)
+                .append("\n-----END PRIVATE KEY-----\n\n");
+        }
+        return pem.toString();
+    }
+
+    public void setTrustedCertificates(List<Map<String, String>> trustedCertificates) {
+        try {
+            KeyStore ks = KeyStore.getInstance("PKCS12");
+            char[] password = "changeit".toCharArray();
+            ks.load(null, password);
+
+            for (Map<String, String> trustedCertificate : trustedCertificates) {
+                String alias = extractAlias(trustedCertificate);
+                String certificate = extractCertificate(trustedCertificate);
+
+                X509Certificate cert = decodeCertificate(certificate);
+                ks.setCertificateEntry(alias, cert);
+            }
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ks.store(out, password);
+            byte[] keystoreBytes = out.toByteArray();
+            storeExtraTrustStore(keystoreBytes, password);
+        } catch (CertificateException | IOException | KeyStoreException | NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private X509Certificate decodeCertificate(String certificate) throws CertificateException {
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        String certContent = certificate
+            .replaceAll("-----BEGIN CERTIFICATE-----", "")
+            .replaceAll("-----END CERTIFICATE-----", "")
+            .replaceAll("\\s+", "");
+        byte[] certBytes = Base64.getDecoder().decode(certContent);
+        return (X509Certificate) cf.generateCertificate(
+            new java.io.ByteArrayInputStream(certBytes));
+    }
+
+    private PrivateKey decodeKey(String key) throws CertificateException, NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+        String keyContent = key
+            .replaceAll("-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----", "")
+            .replaceAll("-----END [A-Z0-9 ]*PRIVATE KEY-----", "")
+            .replaceAll("\\s+", "");
+        byte[] keyBytes = Base64.getDecoder().decode(keyContent);
+        PrivateKey privateKey;
+        try {
+            privateKey = KeyFactory.getInstance("RSA")
+                .generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
+        } catch (InvalidKeySpecException e) {
+            if (e.getMessage().equals("java.security.InvalidKeyException: IOException : algid parse error, not a sequence")) {
+                // Attempt to convert to PKCS#8
+                return attemptPkcs8Conversion(key);
+            }
+            throw e;
+        }
+        return privateKey;
+    }
+
+    private PrivateKey attemptPkcs8Conversion(String key) throws InvalidKeySpecException, IOException {
+        try (PEMParser parser = new PEMParser(new StringReader(key))) {
+            Object obj = parser.readObject();
+            JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+
+            if (obj instanceof PEMKeyPair) {
+                return converter.getKeyPair((PEMKeyPair) obj).getPrivate();
+            } else if (obj instanceof PrivateKeyInfo) {
+                return converter.getPrivateKey((PrivateKeyInfo) obj);
+            } else {
+                throw new IllegalArgumentException("Unsupported PEM object: " + obj.getClass());
+            }
+        }
+    }
+
+    public void setLocalCertificates(List<Map<String, String>> localCertificates) {
+        try {
+            KeyStore ks = KeyStore.getInstance("PKCS12");
+            char[] password = "changeit".toCharArray();
+            ks.load(null, password);
+
+            for (Map<String, String> trustedCertificate : localCertificates) {
+                String alias = extractAlias(trustedCertificate);
+                String certificate = extractCertificate(trustedCertificate);
+                String key = extractKey(trustedCertificate);
+
+                X509Certificate cert = decodeCertificate(certificate);
+                PrivateKey privateKey = decodeKey(key);
+                ks.setKeyEntry(alias, privateKey, password, new Certificate[]{cert});
+            }
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ks.store(out, password);
+            byte[] keystoreBytes = out.toByteArray();
+            storeExtraKeyStore(keystoreBytes, password);
+        } catch (CertificateException | InvalidKeySpecException | IOException | KeyStoreException |
+                 NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String extractAlias(Map<String, String> certificate) {
+        return extractField(certificate, "alias");
+    }
+
+    String extractField(Map<String, String> certificate, String field) {
+        String fieldValue = certificate.get(field);
+
+        if (fieldValue == null) {
+            throw new RuntimeException("Missing " + field);
+        }
+        return fieldValue;
+    }
+
+    private String extractCertificate(Map<String, String> certificate) {
+        return extractField(certificate, "certificate");
+    }
+
+    private String extractKey(Map<String, String> certificate) {
+        return extractField(certificate, "key");
     }
 
     public ConnectionTestResponse testConnection(

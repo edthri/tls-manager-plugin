@@ -40,6 +40,8 @@ import java.io.InputStream;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -68,12 +70,12 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
 
     @Override
     public Set<String> getPublicCertificates() {
-        return certificateService.getPublicCertificates();
+        return certificateService.getTrustedCertificateAliases();
     }
 
     @Override
     public Set<String> getClientCertificates() {
-        return certificateService.getClientCertificates();
+        return certificateService.getLocalCertificateAliases();
     }
 
     @Override
@@ -109,8 +111,43 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
     }
 
     @Override
+    public List<Map<String, String>> getLocalCertificates() {
+        if (!isUserAuthorized(false)) {
+            isUserAuthorized(true);
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+        return certificateService.getEncodedLocalCertificates();
+    }
+
+    @Override
+    public void setLocalCertificates(List<Map<String, String>> localCertificates) {
+        if (!isUserAuthorized(false)) {
+            isUserAuthorized(true);
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+        certificateService.setLocalCertificates(localCertificates);
+    }
+
+    @Override
+    public List<Map<String, String>> getTrustedCertificates() {
+        if (!isUserAuthorized(false)) {
+            isUserAuthorized(true);
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+        return certificateService.getEncodedTrustedCertificates();
+    }
+
+    @Override
+    public void setTrustedCertificates(List<Map<String, String>> trustedCertificates) {
+        if (!isUserAuthorized(false)) {
+            isUserAuthorized(true);
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+        certificateService.setTrustedCertificates(trustedCertificates);
+    }
+
+    @Override
     public ConnectionTestResponse testConnection(String channelId, String channelName, HttpDispatcherProperties dispatcherProperties) throws ClientException {
         return certificateService.testConnection(channelId, channelName, dispatcherProperties);
     }
 }
-
