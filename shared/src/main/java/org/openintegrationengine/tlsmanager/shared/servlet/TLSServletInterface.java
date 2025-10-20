@@ -32,6 +32,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
+import org.openintegrationengine.tlsmanager.shared.models.LocalCertificate;
+import org.openintegrationengine.tlsmanager.shared.models.TrustedCertificate;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -42,7 +44,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.*;
@@ -141,7 +142,7 @@ public interface TLSServletInterface extends BaseServletInterface, HttpConnector
         display = "Get the certificate/key pairs from the keystore",
         type = Operation.ExecuteType.ASYNC
     )
-    List<Map<String, String>> getLocalCertificates();
+    List<TrustedCertificate> getLocalCertificates();
 
     @PUT
     @Path("/localCertificates")
@@ -160,7 +161,7 @@ public interface TLSServletInterface extends BaseServletInterface, HttpConnector
             @Content(mediaType = MediaType.APPLICATION_XML),
             @Content(mediaType = MediaType.APPLICATION_JSON)
         })
-        List<Map<String, String>> localCertificates
+        List<LocalCertificate> localCertificates
     );
 
     @GET
@@ -178,7 +179,7 @@ public interface TLSServletInterface extends BaseServletInterface, HttpConnector
         display = "Get the certificates from the truststore",
         type = Operation.ExecuteType.ASYNC
     )
-    List<Map<String, String>> getTrustedCertificates();
+    List<TrustedCertificate> getTrustedCertificates();
 
     @PUT
     @Path("/trustedCertificates")
@@ -197,6 +198,6 @@ public interface TLSServletInterface extends BaseServletInterface, HttpConnector
             @Content(mediaType = MediaType.APPLICATION_XML),
             @Content(mediaType = MediaType.APPLICATION_JSON)
         })
-        List<Map<String, String>> trustedCertificates
+        List<TrustedCertificate> trustedCertificates
     );
 }

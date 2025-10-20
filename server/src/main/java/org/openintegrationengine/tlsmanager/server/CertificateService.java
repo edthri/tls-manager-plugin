@@ -33,7 +33,9 @@ import org.openintegrationengine.tlsmanager.server.backend.SystemTrustStoreBacke
 import org.openintegrationengine.tlsmanager.server.backend.TrustStoreBackend;
 import org.openintegrationengine.tlsmanager.server.util.ConnectionUtils;
 import org.openintegrationengine.tlsmanager.shared.PersistenceMode;
+import org.openintegrationengine.tlsmanager.shared.models.LocalCertificate;
 import org.openintegrationengine.tlsmanager.shared.models.TLSPluginConfiguration;
+import org.openintegrationengine.tlsmanager.shared.models.TrustedCertificate;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import java.io.ByteArrayInputStream;
@@ -59,7 +61,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -266,35 +267,36 @@ public final class CertificateService {
         }
     }
 
-    public List<Map<String, String>> getEncodedTrustedCertificates() {
+    public List<TrustedCertificate> getEncodedTrustedCertificates() {
         return getEncodedCertificates(externalTrustStore, extraTrustStoreBackend.loadPassword());
     }
 
-    public List<Map<String, String>> getEncodedLocalCertificates() {
+    public List<TrustedCertificate> getEncodedLocalCertificates() {
         return getEncodedCertificates(externalKeyStore, extraKeyStoreBackend.loadPassword());
     }
 
-    private List<Map<String, String>> getEncodedCertificates(KeyStore keyStore, char[] password) {
-        List<Map<String, String>> certificates = new ArrayList<>();
+    private List<TrustedCertificate> getEncodedCertificates(KeyStore keyStore, char[] password) {
+        List<TrustedCertificate> certificates = new ArrayList<>();
 
         try {
             Enumeration<String> aliases = keyStore.aliases();
 
             while (aliases.hasMoreElements()) {
-                Map<String, String> certificateMap = new HashMap<>();
                 String alias = aliases.nextElement();
-                certificateMap.put("alias", alias);
 
                 if (keyStore.isKeyEntry(alias)) {
-                    String certificate = encodeCertificates(keyStore.getCertificateChain(alias));
-                    certificateMap.put("certificate", certificate);
-                    String key = encodeKey(keyStore.getKey(alias, password));
-                    certificateMap.put("key", key);
+                    LocalCertificate certificate = new LocalCertificate(alias);
+                    String encodedCertificate = encodeCertificateChain(keyStore.getCertificateChain(alias));
+                    String encodedKey = encodeKey(keyStore.getKey(alias, password));
+                    certificate.setCertificate(encodedCertificate);
+                    certificate.setKey(encodedKey);
+                    certificates.add(certificate);
                 } else if (keyStore.isCertificateEntry(alias)) {
-                    String certificate = encodeCertificates(keyStore.getCertificate(alias));
-                    certificateMap.put("certificate", certificate);
+                    TrustedCertificate certificate = new TrustedCertificate(alias);
+                    String encodedCertificate = encodeCertificateChain(keyStore.getCertificate(alias));
+                    certificate.setCertificate(encodedCertificate);
+                    certificates.add(certificate);
                 }
-                certificates.add(certificateMap);
             }
             return certificates;
         } catch (KeyStoreException | CertificateEncodingException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
@@ -302,7 +304,7 @@ public final class CertificateService {
         }
     }
 
-    private String encodeCertificates(Certificate... chain) throws CertificateEncodingException {
+    private String encodeCertificateChain(Certificate... chain) throws CertificateEncodingException {
         StringBuilder pem = new StringBuilder();
 
         for (Certificate cert : chain) {
@@ -328,18 +330,15 @@ public final class CertificateService {
         return pem.toString();
     }
 
-    public void setTrustedCertificates(List<Map<String, String>> trustedCertificates) {
+    public void setTrustedCertificates(List<TrustedCertificate> trustedCertificates) {
         try {
             KeyStore ks = KeyStore.getInstance("PKCS12");
             char[] password = extraTrustStoreBackend.loadPassword();
             ks.load(null, password);
 
-            for (Map<String, String> trustedCertificate : trustedCertificates) {
-                String alias = extractAlias(trustedCertificate);
-                String certificate = extractCertificate(trustedCertificate);
-
-                X509Certificate cert = decodeCertificate(certificate);
-                ks.setCertificateEntry(alias, cert);
+            for (TrustedCertificate certificate : trustedCertificates) {
+                X509Certificate cert = decodeCertificate(certificate.getCertificate());
+                ks.setCertificateEntry(certificate.getAlias(), cert);
             }
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             ks.store(out, password);
@@ -396,20 +395,16 @@ public final class CertificateService {
         }
     }
 
-    public void setLocalCertificates(List<Map<String, String>> localCertificates) {
+    public void setLocalCertificates(List<LocalCertificate> localCertificates) {
         try {
             KeyStore ks = KeyStore.getInstance("PKCS12");
             char[] password = extraKeyStoreBackend.loadPassword();
             ks.load(null, password);
 
-            for (Map<String, String> trustedCertificate : localCertificates) {
-                String alias = extractAlias(trustedCertificate);
-                String certificate = extractCertificate(trustedCertificate);
-                String key = extractKey(trustedCertificate);
-
-                X509Certificate cert = decodeCertificate(certificate);
-                PrivateKey privateKey = decodeKey(key);
-                ks.setKeyEntry(alias, privateKey, password, new Certificate[]{cert});
+            for (LocalCertificate certificate : localCertificates) {
+                X509Certificate cert = decodeCertificate(certificate.getCertificate());
+                PrivateKey privateKey = decodeKey(certificate.getKey());
+                ks.setKeyEntry(certificate.getAlias(), privateKey, password, new Certificate[]{cert});
             }
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             ks.store(out, password);

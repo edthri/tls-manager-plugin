@@ -27,6 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.openintegrationengine.tlsmanager.server.CertificateService;
 import org.openintegrationengine.tlsmanager.server.TLSServicePlugin;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
+import org.openintegrationengine.tlsmanager.shared.models.LocalCertificate;
+import org.openintegrationengine.tlsmanager.shared.models.TrustedCertificate;
 import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
 import javax.servlet.http.HttpServletRequest;
@@ -41,7 +43,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -111,7 +112,7 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
     }
 
     @Override
-    public List<Map<String, String>> getLocalCertificates() {
+    public List<TrustedCertificate> getLocalCertificates() {
         if (!isUserAuthorized(false)) {
             isUserAuthorized(true);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -120,17 +121,17 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
     }
 
     @Override
-    public void setLocalCertificates(List<Map<String, String>> localCertificates) {
+    public void setLocalCertificates(List<LocalCertificate> localCertificates) {
         certificateService.setLocalCertificates(localCertificates);
     }
 
     @Override
-    public List<Map<String, String>> getTrustedCertificates() {
+    public List<TrustedCertificate> getTrustedCertificates() {
         return certificateService.getEncodedTrustedCertificates();
     }
 
     @Override
-    public void setTrustedCertificates(List<Map<String, String>> trustedCertificates) {
+    public void setTrustedCertificates(List<TrustedCertificate> trustedCertificates) {
         certificateService.setTrustedCertificates(trustedCertificates);
     }
 
