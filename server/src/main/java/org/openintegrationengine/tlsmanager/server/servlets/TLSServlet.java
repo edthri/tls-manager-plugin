@@ -121,28 +121,16 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
 
     @Override
     public void setLocalCertificates(List<Map<String, String>> localCertificates) {
-        if (!isUserAuthorized(false)) {
-            isUserAuthorized(true);
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
         certificateService.setLocalCertificates(localCertificates);
     }
 
     @Override
     public List<Map<String, String>> getTrustedCertificates() {
-        if (!isUserAuthorized(false)) {
-            isUserAuthorized(true);
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
         return certificateService.getEncodedTrustedCertificates();
     }
 
     @Override
     public void setTrustedCertificates(List<Map<String, String>> trustedCertificates) {
-        if (!isUserAuthorized(false)) {
-            isUserAuthorized(true);
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
         certificateService.setTrustedCertificates(trustedCertificates);
     }
 
