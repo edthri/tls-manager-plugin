@@ -276,12 +276,12 @@ public final class CertificateService {
 
     private List<Map<String, String>> getEncodedCertificates(KeyStore keyStore) {
         List<Map<String, String>> certificates = new ArrayList<>();
-        Map<String, String> certificateMap = new HashMap<>();
 
         try {
             Enumeration<String> aliases = keyStore.aliases();
 
             while (aliases.hasMoreElements()) {
+                Map<String, String> certificateMap = new HashMap<>();
                 String alias = aliases.nextElement();
                 certificateMap.put("alias", alias);
 
@@ -294,8 +294,8 @@ public final class CertificateService {
                     String certificate = encodeCertificates(keyStore.getCertificate(alias));
                     certificateMap.put("certificate", certificate);
                 }
+                certificates.add(certificateMap);
             }
-            certificates.add(certificateMap);
             return certificates;
         } catch (KeyStoreException | CertificateEncodingException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
             throw new RuntimeException(e);
