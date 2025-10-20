@@ -267,14 +267,14 @@ public final class CertificateService {
     }
 
     public List<Map<String, String>> getEncodedTrustedCertificates() {
-        return getEncodedCertificates(externalTrustStore);
+        return getEncodedCertificates(externalTrustStore, extraTrustStoreBackend.loadPassword());
     }
 
     public List<Map<String, String>> getEncodedLocalCertificates() {
-        return getEncodedCertificates(externalKeyStore);
+        return getEncodedCertificates(externalKeyStore, extraKeyStoreBackend.loadPassword());
     }
 
-    private List<Map<String, String>> getEncodedCertificates(KeyStore keyStore) {
+    private List<Map<String, String>> getEncodedCertificates(KeyStore keyStore, char[] password) {
         List<Map<String, String>> certificates = new ArrayList<>();
 
         try {
@@ -288,7 +288,7 @@ public final class CertificateService {
                 if (keyStore.isKeyEntry(alias)) {
                     String certificate = encodeCertificates(keyStore.getCertificateChain(alias));
                     certificateMap.put("certificate", certificate);
-                    String key = encodeKey(keyStore.getKey(alias, "changeit".toCharArray()));
+                    String key = encodeKey(keyStore.getKey(alias, password));
                     certificateMap.put("key", key);
                 } else if (keyStore.isCertificateEntry(alias)) {
                     String certificate = encodeCertificates(keyStore.getCertificate(alias));
@@ -331,7 +331,7 @@ public final class CertificateService {
     public void setTrustedCertificates(List<Map<String, String>> trustedCertificates) {
         try {
             KeyStore ks = KeyStore.getInstance("PKCS12");
-            char[] password = "changeit".toCharArray();
+            char[] password = extraTrustStoreBackend.loadPassword();
             ks.load(null, password);
 
             for (Map<String, String> trustedCertificate : trustedCertificates) {
@@ -399,7 +399,7 @@ public final class CertificateService {
     public void setLocalCertificates(List<Map<String, String>> localCertificates) {
         try {
             KeyStore ks = KeyStore.getInstance("PKCS12");
-            char[] password = "changeit".toCharArray();
+            char[] password = extraKeyStoreBackend.loadPassword();
             ks.load(null, password);
 
             for (Map<String, String> trustedCertificate : localCertificates) {
