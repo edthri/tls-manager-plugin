@@ -141,6 +141,13 @@ public class TLSServicePlugin implements ServicePlugin {
         var webappsPath = Path.of(configurationController.getBaseDir(), "webapps");
         var warPath = Path.of(webappsPath.toString(), "tls-manager.war");
 
+        if (!webappsPath.toFile().exists()) {
+            log.debug("Webapps directory does not exist. Creating...");
+            if (!webappsPath.toFile().mkdirs()) {
+                throw new IllegalStateException("Failed to create webapps directory at " + webappsPath);
+            }
+        }
+
         var warFile = warPath.toFile();
 
         if (warFile.exists()) {
