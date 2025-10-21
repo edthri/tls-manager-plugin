@@ -16,8 +16,11 @@ public class StateAwareTLSSocket extends StateAwareSocket {
 
     private Socket sslSocket;
 
+    private boolean isClosing;
+
     public StateAwareTLSSocket(SSLConnectionSocketFactory socketFactory) {
         this.socketFactory = socketFactory;
+        this.isClosing = false;
     }
 
     @Override
@@ -60,10 +63,21 @@ public class StateAwareTLSSocket extends StateAwareSocket {
 
     @Override
     public void close() throws IOException {
-        if (sslSocket != null) {
-            sslSocket.close();
-        } else {
+        if (isClosing) {
+            // Prevent re-entry when sslSocket tries to close the underlying socket
             super.close();
+            return;
+        }
+
+        isClosing = true;
+        try {
+            if (sslSocket != null) {
+                sslSocket.close();
+            } else {
+                super.close();
+            }
+        } finally {
+            isClosing = false;
         }
     }
 
