@@ -17,7 +17,10 @@
 package org.openintegrationengine.tlsmanager.server;
 
 import com.kaurpalang.mirth.annotationsplugin.annotation.MirthServerClass;
+import com.mirth.connect.server.controllers.ConfigurationController;
+import com.mirth.connect.server.controllers.ExtensionController;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.openintegrationengine.tlsmanager.server.connectorconfig.TLSHttpConfiguration;
 import org.openintegrationengine.tlsmanager.server.connectorconfig.TLSTcpConfiguration;
 import org.openintegrationengine.tlsmanager.server.connectorconfig.TLSWebServiceConfiguration;
@@ -28,11 +31,15 @@ import com.mirth.connect.server.controllers.ControllerFactory;
 import org.openintegrationengine.tlsmanager.shared.SerializationController;
 import org.openintegrationengine.tlsmanager.shared.models.TLSPluginConfiguration;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
 @MirthServerClass
+@Slf4j
 public class TLSServicePlugin implements ServicePlugin {
 
     @Getter
@@ -70,6 +77,8 @@ public class TLSServicePlugin implements ServicePlugin {
         );
 
         SerializationController.registerSerializableClasses();
+
+        installWar(configurationController);
     }
 
     @Override
@@ -124,6 +133,33 @@ public class TLSServicePlugin implements ServicePlugin {
                     TLSPluginConstants.PLUGIN_POINTNAME,
                     TLSServicePlugin.class.getCanonicalName()
                 )
+            );
+        }
+    }
+
+    private void installWar(ConfigurationController configurationController) {
+        var webappsPath = Path.of(configurationController.getBaseDir(), "webapps");
+        var warPath = Path.of(webappsPath.toString(), "tls-manager.war");
+
+        var warFile = warPath.toFile();
+
+        if (warFile.exists()) {
+            log.debug("TLS Manager WAR already exists at {}. Deleting...", warPath);
+            if (!warFile.delete()) {
+                throw new IllegalStateException("Failed to delete TLS Manager WAR at " + warPath);
+            }
+        }
+
+        var pluginDirectoryPath = Path.of(ExtensionController.getExtensionsPath(), "tls-manager", "tls-manager.war");
+
+        log.debug("Copying TLS Manager WAR from {} to {}", pluginDirectoryPath, warPath);
+        try {
+            Files.copy(pluginDirectoryPath, warPath);
+            log.debug("TLS Manager WAR copied successfully");
+        } catch (IOException e) {
+            throw new RuntimeException(
+                "Failed to copy TLS Manager WAR from %s to %s".formatted(pluginDirectoryPath, warPath),
+                e
             );
         }
     }
