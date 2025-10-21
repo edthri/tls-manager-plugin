@@ -17,6 +17,7 @@ import org.openintegrationengine.tlsmanager.server.util.MockConfigurationControl
 import org.openintegrationengine.tlsmanager.server.util.MockDestinationConnector;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
+import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import javax.net.ssl.SSLHandshakeException;
@@ -96,6 +97,8 @@ public class HttpSenderTest {
         var tlsProperties = new TLSConnectorProperties(
             true,
             false,
+            SubjectDnValidationMode.NONE,
+            null,
             RevocationMode.HARD_FAIL,
             RevocationMode.HARD_FAIL,
             false,
@@ -136,6 +139,8 @@ public class HttpSenderTest {
         var tlsProperties = new TLSConnectorProperties(
             true,
             false,
+            SubjectDnValidationMode.NONE,
+            null,
             RevocationMode.HARD_FAIL,
             RevocationMode.HARD_FAIL,
             true,
