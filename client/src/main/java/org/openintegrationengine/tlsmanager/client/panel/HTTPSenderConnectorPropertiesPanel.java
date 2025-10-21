@@ -237,7 +237,7 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         subjectDnValidationFilterTextField = new MirthTextField();
         subjectDnValidationFilterTextField.addKeyListener(new KeyAdapter() {
             @Override
-            public void keyTyped(KeyEvent e) {
+            public void keyReleased(KeyEvent e) {
                 properties.setSubjectDnValidationFilter(subjectDnValidationFilterTextField.getText());
             }
         });
@@ -454,6 +454,7 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
 
         subjectDnValidationModeComboBox.setSelectedItem(properties.getSubjectDnValidationMode());
         subjectDnValidationFilterTextField.setEnabled(properties.getSubjectDnValidationMode() != SubjectDnValidationMode.NONE);
+        subjectDnValidationFilterTextField.setText(properties.getSubjectDnValidationFilter());
 
         crlModeComboBox.setSelectedItem(properties.getCrlMode());
         ocspModeComboBox.setSelectedItem(properties.getOcspMode());
