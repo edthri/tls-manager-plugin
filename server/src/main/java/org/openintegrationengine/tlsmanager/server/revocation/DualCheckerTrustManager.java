@@ -14,12 +14,17 @@ import org.bouncycastle.cert.ocsp.CertificateStatus;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.bouncycastle.cert.ocsp.RevokedStatus;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
+import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
 import javax.net.ssl.ExtendedSSLSession;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509ExtendedTrustManager;
+import javax.security.auth.x500.X500Principal;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.Socket;
@@ -39,6 +44,7 @@ import java.security.cert.PKIXRevocationChecker;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -51,19 +57,40 @@ import java.util.Set;
 public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
     private final KeyStore trustStore;
+    private final SubjectDnValidationMode subjectDnValidationMode;
+    private final String subjectDnValidationFilter;
     private final RevocationMode ocspMode, crlMode;
     private final Collection<? extends CRL> preloadedCrls; // optional (in addition to CRLDP)
 
+    private final X509ExtendedTrustManager delegate;
+
     public DualCheckerTrustManager(
         KeyStore trustStore,
+        SubjectDnValidationMode subjectDnValidationMode,
+        String getSubjectDnValidationFilter,
         RevocationMode ocspMode,
         RevocationMode crlMode,
         Collection<? extends CRL> preloadedCrls
     ) {
         this.trustStore = trustStore;
+        this.subjectDnValidationMode = subjectDnValidationMode;
+        this.subjectDnValidationFilter = getSubjectDnValidationFilter;
         this.ocspMode = ocspMode;
         this.crlMode = crlMode;
         this.preloadedCrls = preloadedCrls == null ? List.of() : preloadedCrls;
+
+        try {
+            var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(trustStore);
+
+            delegate = Arrays.stream(tmf.getTrustManagers())
+                .filter(X509ExtendedTrustManager.class::isInstance)
+                .map(X509ExtendedTrustManager.class::cast)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No default X509ExtendedTrustManager found"));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize TrustManager", e);
+        }
     }
 
     // --- JSSE delegation ---
@@ -73,11 +100,13 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+        delegate.checkServerTrusted(chain, authType);
         validate(chain, null);
     }
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType, Socket s) throws CertificateException {
+        delegate.checkServerTrusted(chain, authType, s);
         validate(chain, s);
     }
 
@@ -87,25 +116,46 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     }
 
     @Override
-    public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+    public X509Certificate[] getAcceptedIssuers() { return delegate.getAcceptedIssuers(); }
 
-
-    // --- Core: run two separate PKIX passes, each with its own PKIXRevocationChecker ---
     private void validate(X509Certificate[] chain, Socket socket) throws CertificateException {
         try {
-            Set<TrustAnchor> anchors = anchorsFrom(trustStore);
-            if (anchors.isEmpty()) {
-                throw new CertificateException("No trust anchors found in truststore");
-            }
-
             var certificateFactory = CertificateFactory.getInstance("X.509");
             var certPath = certificateFactory.generateCertPath(List.of(chain));
 
-            // Baseline chain sanity (revocation OFF) to get clean path errors early.
-            var base = new PKIXParameters(anchors);
-            base.setRevocationEnabled(false);
+            if (subjectDnValidationMode != null && subjectDnValidationMode != SubjectDnValidationMode.NONE) {
+                if (subjectDnValidationFilter == null || subjectDnValidationFilter.isEmpty()) {
+                    throw new IllegalStateException("Expected Subject DN cannot be empty");
+                }
 
-            CertPathValidator.getInstance("PKIX").validate(certPath, base);
+                var subject = chain[0].getSubjectX500Principal();
+
+                var subjectDn = subject.getName(X500Principal.RFC2253);
+                var expectedDn = new X500Principal(subjectDnValidationFilter).getName(X500Principal.RFC2253);
+                if (subjectDnValidationMode == SubjectDnValidationMode.EXACT) {
+                    if (!subjectDn.equals(expectedDn)) {
+                        throw new CertificateException("Subject DN does not match filter");
+                    }
+                } else if (subjectDnValidationMode == SubjectDnValidationMode.PARTIAL) {
+
+                    LdapName subjectLdapName, expectedLdapName;
+                    try {
+                        subjectLdapName = new LdapName(subjectDn);
+                        expectedLdapName = new LdapName(expectedDn);
+                    } catch (InvalidNameException e) {
+                        throw new IllegalArgumentException("Error converting DN to LdapName", e);
+                    }
+
+                    var subjectRdns = subjectLdapName.getRdns();
+                    for (var expectedRdn : expectedLdapName.getRdns()) {
+                        if (!subjectRdns.contains(expectedRdn)) {
+                            throw new RuntimeException("Subject DN does not contain expected RDN");
+                        }
+                    }
+                } else {
+                    throw new UnsupportedOperationException("Unsupported SubjectDnValidationMode: " + subjectDnValidationMode);
+                }
+            }
 
             // OCSP-only pass (if requested)
             if (ocspMode != RevocationMode.DISABLED) {
@@ -132,9 +182,8 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
                     }
                 }
 
-
                 if (!hasStapledOcsp) {
-                    pkixOcspOnly(certPath, anchors, ocspMode == RevocationMode.SOFT_FAIL);
+                    pkixOcspOnly(certPath, ocspMode == RevocationMode.SOFT_FAIL);
                 }
             }
 
@@ -143,7 +192,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
                 // Preloaded CRLs + CRLDP-fetched CRLs (HTTP)
                 List<CRL> crls = new ArrayList<>(preloadedCrls);
                 crls.addAll(fetchCrlsFromCrlDP(chain));
-                pkixCrlOnly(certPath, anchors, crls, crlMode == RevocationMode.SOFT_FAIL);
+                pkixCrlOnly(certPath, crls, crlMode == RevocationMode.SOFT_FAIL);
             }
             // If both are HARD_FAIL, reaching here means both passes succeeded.
 
@@ -157,8 +206,8 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     }
 
     // ---- Pass A: OCSP-only ----
-    private void pkixOcspOnly(CertPath path, Set<TrustAnchor> anchors, boolean softFail) throws GeneralSecurityException {
-        var params = new PKIXParameters(anchors);
+    private void pkixOcspOnly(CertPath path, boolean softFail) throws GeneralSecurityException {
+        var params = new PKIXParameters(trustStore);
         params.setRevocationEnabled(true);
 
         var certPathValidator = CertPathValidator.getInstance("PKIX");
@@ -177,8 +226,8 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     }
 
     // ---- Pass B: CRL-only ----
-    private void pkixCrlOnly(CertPath path, Set<TrustAnchor> anchors, Collection<? extends CRL> crls, boolean softFail) throws GeneralSecurityException {
-        var params = new PKIXParameters(anchors);
+    private void pkixCrlOnly(CertPath path, Collection<? extends CRL> crls, boolean softFail) throws GeneralSecurityException {
+        var params = new PKIXParameters(trustStore);
         params.setRevocationEnabled(true);
 
         if (crls != null && !crls.isEmpty()) {
