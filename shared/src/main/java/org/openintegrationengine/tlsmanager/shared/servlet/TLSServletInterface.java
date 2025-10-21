@@ -128,6 +128,23 @@ public interface TLSServletInterface extends BaseServletInterface, HttpConnector
     ) throws ClientException;
 
     @GET
+    @Path("/systemCertificates")
+    @Produces({APPLICATION_XML, APPLICATION_JSON})
+    @ApiResponse(
+        responseCode = "200",
+        description = "Retrieve certificates from system truststore",
+        content = {
+            @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = List.class)),
+            @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = List.class))
+        })
+    @MirthOperation(
+        name = "getSystemCertificates",
+        display = "Get the certificates from the system truststore",
+        type = Operation.ExecuteType.ASYNC
+    )
+    List<TrustedCertificate> getSystemCertificates();
+
+    @GET
     @Path("/localCertificates")
     @Produces({APPLICATION_XML, APPLICATION_JSON})
     @ApiResponse(

@@ -267,12 +267,16 @@ public final class CertificateService {
         }
     }
 
-    public List<TrustedCertificate> getEncodedTrustedCertificates() {
-        return getEncodedCertificates(externalTrustStore, extraTrustStoreBackend.loadPassword());
+    public List<TrustedCertificate> getEncodedSystemCertificates() {
+        return getEncodedCertificates(systemTrustStore, systemTrustStoreBackend.loadPassword());
     }
 
     public List<TrustedCertificate> getEncodedLocalCertificates() {
         return getEncodedCertificates(externalKeyStore, extraKeyStoreBackend.loadPassword());
+    }
+
+    public List<TrustedCertificate> getEncodedTrustedCertificates() {
+        return getEncodedCertificates(externalTrustStore, extraTrustStoreBackend.loadPassword());
     }
 
     private List<TrustedCertificate> getEncodedCertificates(KeyStore keyStore, char[] password) {
