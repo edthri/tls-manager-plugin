@@ -23,13 +23,15 @@ import com.mirth.connect.client.ui.PlatformUI;
 import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.client.ui.components.MirthComboBox;
 import com.mirth.connect.client.ui.components.MirthRadioButton;
+import com.mirth.connect.client.ui.components.MirthTextField;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.model.Connector;
 import net.miginfocom.swing.MigLayout;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
-import org.openintegrationengine.tlsmanager.client.misc.RevocationModeComboBoxRenderer;
+import org.openintegrationengine.tlsmanager.client.misc.DisplayTextEnumModeComboBoxRenderer;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
+import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
@@ -41,6 +43,8 @@ import javax.swing.JLabel;
 import javax.swing.SwingWorker;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,6 +69,10 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     private JLabel hostnameValidationLabel;
     private MirthRadioButton hostnameValidationRadioYes;
     private MirthRadioButton hostnameValidationRadioNo;
+
+    private JLabel subjectDnValidationLabel;
+    private MirthComboBox<SubjectDnValidationMode> subjectDnValidationModeComboBox;
+    private MirthTextField subjectDnValidationFilterTextField;
 
     private JLabel crlModeLabel;
     private MirthComboBox<RevocationMode> crlModeComboBox;
@@ -211,7 +219,29 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         hostnameValidationRadioNo.addActionListener(e -> properties.setHostnameVerificationEnabled(false));
         hostnameValidationButtonGroup.add(hostnameValidationRadioNo);
 
-        var comboBoxRenderer = new RevocationModeComboBoxRenderer();
+
+        var comboBoxRenderer = new DisplayTextEnumModeComboBoxRenderer();
+
+        var subjectDnValidationModeModel = new SubjectDnValidationMode[]{
+            SubjectDnValidationMode.NONE,
+            SubjectDnValidationMode.PARTIAL,
+            SubjectDnValidationMode.EXACT,
+        };
+
+        subjectDnValidationLabel = new JLabel("Subject DN Validation Mode:");
+        subjectDnValidationModeComboBox = new MirthComboBox<>();
+        subjectDnValidationModeComboBox.setRenderer(comboBoxRenderer);
+        subjectDnValidationModeComboBox.setModel(new DefaultComboBoxModel<>(subjectDnValidationModeModel));
+        subjectDnValidationModeComboBox.addActionListener(evt -> handleSubjectDnValidationModeChange());
+
+        subjectDnValidationFilterTextField = new MirthTextField();
+        subjectDnValidationFilterTextField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+                properties.setSubjectDnValidationFilter(subjectDnValidationFilterTextField.getText());
+            }
+        });
+
         var revocationModeModel = new RevocationMode[]{
             RevocationMode.DISABLED,
             RevocationMode.SOFT_FAIL,
@@ -321,6 +351,10 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         add(serverCertificateValidationRadioYes, "split");
         add(serverCertificateValidationRadioNo);
 
+        add(subjectDnValidationLabel, "newline, right");
+        add(subjectDnValidationModeComboBox, "split");
+        add(subjectDnValidationFilterTextField, "w 168!");
+
         add(crlModeLabel, "newline, right");
         add(crlModeComboBox);
 
@@ -346,6 +380,13 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         add(ciphersLabel, "newline, right");
         add(ciphersButton, "h 22!, w 22!, split");
         add(ciphersText);
+    }
+
+    private void handleSubjectDnValidationModeChange() {
+        if (subjectDnValidationModeComboBox.getSelectedItem() instanceof SubjectDnValidationMode validationMode) {
+            properties.setSubjectDnValidationMode(validationMode);
+            redrawState();
+        }
     }
 
     private void handleCrlModeChange() {
@@ -375,6 +416,16 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         hostnameValidationRadioYes.setEnabled(managerEnabled);
         hostnameValidationRadioNo.setEnabled(managerEnabled);
 
+        subjectDnValidationLabel.setEnabled(managerEnabled);
+        subjectDnValidationModeComboBox.setEnabled(managerEnabled);
+        subjectDnValidationFilterTextField.setEnabled(managerEnabled);
+
+        crlModeLabel.setEnabled(managerEnabled);
+        crlModeComboBox.setEnabled(managerEnabled);
+
+        ocspModeLabel.setEnabled(managerEnabled);
+        ocspModeComboBox.setEnabled(managerEnabled);
+
         clientCertLabel.setEnabled(managerEnabled);
         clientCertButton.setEnabled(managerEnabled);
         clientCertText.setEnabled(managerEnabled);
@@ -400,6 +451,9 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         } else {
             serverCertificateValidationRadioNo.setSelected(true);
         }
+
+        subjectDnValidationModeComboBox.setSelectedItem(properties.getSubjectDnValidationMode());
+        subjectDnValidationFilterTextField.setEnabled(properties.getSubjectDnValidationMode() != SubjectDnValidationMode.NONE);
 
         crlModeComboBox.setSelectedItem(properties.getCrlMode());
         ocspModeComboBox.setSelectedItem(properties.getOcspMode());

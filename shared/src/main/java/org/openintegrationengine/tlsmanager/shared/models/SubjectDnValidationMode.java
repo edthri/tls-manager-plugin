@@ -2,15 +2,15 @@ package org.openintegrationengine.tlsmanager.shared.models;
 
 import lombok.Getter;
 
-public enum RevocationMode implements DisplayTextEnum {
-    DISABLED("Disabled"),
-    SOFT_FAIL("Soft Fail"),
-    HARD_FAIL("Hard Fail");
+public enum SubjectDnValidationMode implements DisplayTextEnum {
+    NONE("None"),
+    PARTIAL("Partial"),
+    EXACT("Exact");
 
     @Getter
     private final String displayText;
 
-    RevocationMode(String displayText) {
+    SubjectDnValidationMode(String displayText) {
         this.displayText = displayText;
     }
 }

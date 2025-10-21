@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
+import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 
 import java.util.Collections;
 import java.util.Map;
@@ -36,6 +37,9 @@ public class TLSConnectorProperties extends ConnectorPluginProperties {
 
     private boolean isTlsManagerEnabled;
     private boolean isServerCertificateValidationEnabled;
+
+    private SubjectDnValidationMode subjectDnValidationMode;
+    private String subjectDnValidationFilter;
 
     // Certificate revocation modes
     private RevocationMode crlMode;
@@ -60,6 +64,9 @@ public class TLSConnectorProperties extends ConnectorPluginProperties {
         isTlsManagerEnabled = false;
         isServerCertificateValidationEnabled = false;
 
+        subjectDnValidationMode = SubjectDnValidationMode.NONE;
+        subjectDnValidationFilter = null;
+
         crlMode = RevocationMode.HARD_FAIL;
         ocspMode = RevocationMode.HARD_FAIL;
 
@@ -79,6 +86,9 @@ public class TLSConnectorProperties extends ConnectorPluginProperties {
     public TLSConnectorProperties(TLSConnectorProperties props) {
         isTlsManagerEnabled = props.isTlsManagerEnabled();
         isServerCertificateValidationEnabled = props.isServerCertificateValidationEnabled();
+
+        subjectDnValidationMode = props.getSubjectDnValidationMode();
+        subjectDnValidationFilter = props.getSubjectDnValidationFilter();
 
         crlMode = props.getCrlMode();
         ocspMode = props.getOcspMode();
