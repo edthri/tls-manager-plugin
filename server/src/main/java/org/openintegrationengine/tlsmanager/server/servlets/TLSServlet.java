@@ -136,6 +136,12 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
         certificateService.setTrustedCertificates(trustedCertificates);
     }
 
+
+    @Override
+    public List<TrustedCertificate> getRemoteCertificates(String url) {
+        return certificateService.retrieveRemoteCertificates(url);
+    }
+
     @Override
     public ConnectionTestResponse testConnection(String channelId, String channelName, HttpDispatcherProperties dispatcherProperties) throws ClientException {
         return certificateService.testConnection(channelId, channelName, dispatcherProperties);

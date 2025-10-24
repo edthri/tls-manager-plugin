@@ -38,6 +38,7 @@ import org.openintegrationengine.tlsmanager.shared.models.TLSPluginConfiguration
 import org.openintegrationengine.tlsmanager.shared.models.TrustedCertificate;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
+import javax.net.ssl.HttpsURLConnection;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -63,7 +64,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.openintegrationengine.tlsmanager.shared.TLSPluginConstants.PKCS12;
@@ -420,25 +420,33 @@ public final class CertificateService {
         }
     }
 
-    private String extractAlias(Map<String, String> certificate) {
-        return extractField(certificate, "alias");
-    }
+    public List<TrustedCertificate> retrieveRemoteCertificates(String urlString) {
+        List<TrustedCertificate> result = new ArrayList<>();
+        HttpsURLConnection conn = null;
 
-    String extractField(Map<String, String> certificate, String field) {
-        String fieldValue = certificate.get(field);
+        try {
+            URL url = new URL(urlString);
+            conn = (HttpsURLConnection) url.openConnection();
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(5000);
+            conn.connect();
+            Certificate[] certs = conn.getServerCertificates();
 
-        if (fieldValue == null) {
-            throw new RuntimeException("Missing " + field);
+            for (Certificate cert : certs) {
+                if (cert instanceof X509Certificate x509) {
+                    TrustedCertificate certificate = new TrustedCertificate(null);
+                    certificate.setCertificate(encodeCertificateChain(x509));
+                    result.add(certificate);
+                }
+            }
+        } catch (IOException | CertificateEncodingException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
         }
-        return fieldValue;
-    }
-
-    private String extractCertificate(Map<String, String> certificate) {
-        return extractField(certificate, "certificate");
-    }
-
-    private String extractKey(Map<String, String> certificate) {
-        return extractField(certificate, "key");
+        return result;
     }
 
     public ConnectionTestResponse testConnection(

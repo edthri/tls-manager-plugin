@@ -41,6 +41,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.io.InputStream;
 import java.util.List;
@@ -216,5 +217,28 @@ public interface TLSServletInterface extends BaseServletInterface, HttpConnector
             @Content(mediaType = MediaType.APPLICATION_JSON)
         })
         List<TrustedCertificate> trustedCertificates
+    );
+
+    @GET
+    @Path("/remoteCertificates")
+    @ApiResponse(
+        responseCode = "200",
+        description = "Retrieve certificates served from a URL",
+        content = {
+            @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = List.class)),
+            @Content(mediaType = APPLICATION_XML, schema = @Schema(implementation = List.class))
+        })
+    @MirthOperation(
+        name = "getRemoteCertificates",
+        display = "Retrieve the list of certificates served at a certain URL",
+        type = Operation.ExecuteType.ASYNC
+    )
+    List<TrustedCertificate> getRemoteCertificates(
+        @Param("url")
+        @Parameter(
+            description = "The URL which to query for served certificates",
+            schema = @Schema(type = "string")
+        )
+        @QueryParam("url") String url
     );
 }
