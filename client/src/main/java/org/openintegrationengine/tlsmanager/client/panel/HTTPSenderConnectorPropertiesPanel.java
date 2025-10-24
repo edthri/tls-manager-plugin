@@ -24,12 +24,19 @@ import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.client.ui.components.MirthComboBox;
 import com.mirth.connect.client.ui.components.MirthRadioButton;
 import com.mirth.connect.client.ui.components.MirthTextField;
+import com.mirth.connect.client.ui.panels.connectors.ResponseHandler;
+import com.mirth.connect.connectors.http.HttpDispatcherProperties;
+import com.mirth.connect.connectors.http.HttpSender;
+import com.mirth.connect.connectors.tcp.TcpSender;
+import com.mirth.connect.connectors.ws.WebServiceSender;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.model.Connector;
+import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
 import org.openintegrationengine.tlsmanager.client.misc.DisplayTextEnumModeComboBoxRenderer;
+import org.openintegrationengine.tlsmanager.shared.models.ConnectionTestResult;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
@@ -45,13 +52,16 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+@Slf4j
 public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropertiesPanel {
 
     private JLabel managerEnabledLabel;
@@ -96,7 +106,12 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     private Set<String> publicCertificates;
     private Set<String> clientCertificates;
 
+    private Frame parentFrame;
+    private enum TRANSPORT { HTTP, TCP, WS };
+
     public HTTPSenderConnectorPropertiesPanel() {
+        this.parentFrame = PlatformUI.MIRTH_FRAME;
+
         this.properties = new TLSConnectorProperties();
         this.publicCertificates = new HashSet<>();
         this.clientCertificates = new HashSet<>();
@@ -104,6 +119,95 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         initComponents();
         initLayout();
         fetchData();
+    }
+
+    private Optional<JButton> getButtonByText(String text) {
+        var settingsComponents = connectorPanel
+            .getConnectorSettingsPanel()
+            .getComponents();
+
+        return Arrays
+            .stream(settingsComponents)
+            .filter(component -> component instanceof JButton)
+            .map(component -> (JButton) component)
+            .filter(button -> button.getText().equals(text))
+            .findFirst();
+    }
+
+    private void doActionListenerOverrides() {
+        var settingsPanel = connectorPanel.getConnectorSettingsPanel();
+
+        TRANSPORT transport;
+        if (settingsPanel instanceof HttpSender) {
+            transport = TRANSPORT.HTTP;
+        } else if (settingsPanel instanceof TcpSender) {
+            transport = TRANSPORT.TCP;
+        } else if (settingsPanel instanceof WebServiceSender) {
+            transport = TRANSPORT.WS;
+        } else {
+            return;
+        }
+
+        var testConnectionButton = getButtonByText("Test Connection");
+        if (testConnectionButton.isPresent()) {
+            var button = testConnectionButton.get();
+            var actionListeners = button.getActionListeners().clone();
+
+            // Replace the ActionListener
+            button.removeActionListener(actionListeners[0]); // Hope it only has a single listener
+            button.addActionListener(e -> testTlsConnection());
+        } else {
+            var message = "No test connection button found in settings panel %s".formatted(settingsPanel);
+            log(message);
+        }
+
+        if (transport == TRANSPORT.WS) {
+            var getOperationsButton = getButtonByText("Get Operations");
+            if (getOperationsButton.isPresent()) {
+                var button = getOperationsButton.get();
+                var actionListeners = button.getActionListeners().clone();
+
+                // Replace the ActionListener
+                button.removeActionListener(actionListeners[0]); // Hope it only has a single listener
+                button.addActionListener(e -> testTlsConnection());
+            } else {
+                var message = "No Get Operations button found in settings panel %s".formatted(settingsPanel);
+                log(message);
+            }
+        }
+    }
+
+    private void testTlsConnection() {
+        var testConnectionResponseHandler = new ResponseHandler() {
+            @Override
+            public void handle(Object response) {
+                var result = (ConnectionTestResult) response;
+
+                if (result == null) {
+                    parentFrame.alertError(parentFrame, "Failed to invoke service.");
+                } else {
+                    new ConnectionTestResultPanel(PlatformUI.MIRTH_FRAME, result);
+                }
+            }
+        };
+
+        try {
+            connectorPanel
+                .getConnectorSettingsPanel()
+                .getServlet(
+                    TLSServletInterface.class,
+                    "Testing connection...",
+                    "Error testing TLS connection",
+                    testConnectionResponseHandler
+                )
+                .testConnection(
+                    connectorPanel.getConnectorSettingsPanel().getChannelId(),
+                    connectorPanel.getConnectorSettingsPanel().getChannelName(),
+                    (HttpDispatcherProperties) connectorPanel.getProperties()
+                );
+        } catch (Exception e) {
+            // Should not happen?
+        }
     }
 
     @Override
@@ -131,7 +235,11 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     }
 
     @Override
-    public void resetInvalidProperties() {}
+    public void resetInvalidProperties() {
+        // This method seems to be called after other panels have been initialized.
+        // We need other panels to be initialized 'cause we'll be fiddling with one.
+        doActionListenerOverrides();
+    }
 
     @Override
     public Component[][] getLayoutComponents() {
@@ -541,5 +649,9 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
 
         publicCertWorker.execute();
         clientCertWorker.execute();
+    }
+
+    private static void log(String message) {
+        System.out.printf("%s - %s.%n", Instant.now(), message);
     }
 }

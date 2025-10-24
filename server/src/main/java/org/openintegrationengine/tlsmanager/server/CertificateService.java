@@ -20,7 +20,6 @@ import com.mirth.connect.client.core.api.MirthApiException;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
 import com.mirth.connect.donkey.server.channel.DestinationConnector;
 import com.mirth.connect.server.util.TemplateValueReplacer;
-import com.mirth.connect.util.ConnectionTestResponse;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -33,6 +32,7 @@ import org.openintegrationengine.tlsmanager.server.backend.SystemTrustStoreBacke
 import org.openintegrationengine.tlsmanager.server.backend.TrustStoreBackend;
 import org.openintegrationengine.tlsmanager.server.util.ConnectionUtils;
 import org.openintegrationengine.tlsmanager.shared.PersistenceMode;
+import org.openintegrationengine.tlsmanager.shared.models.ConnectionTestResult;
 import org.openintegrationengine.tlsmanager.shared.models.LocalCertificate;
 import org.openintegrationengine.tlsmanager.shared.models.TLSPluginConfiguration;
 import org.openintegrationengine.tlsmanager.shared.models.TrustedCertificate;
@@ -449,7 +449,7 @@ public final class CertificateService {
         return result;
     }
 
-    public ConnectionTestResponse testConnection(
+    public ConnectionTestResult testConnection(
         String channelId,
         String channelName,
         HttpDispatcherProperties dispatcherProperties
@@ -459,10 +459,8 @@ public final class CertificateService {
             .filter(TLSConnectorProperties.class::isInstance)
             .findFirst();
 
-
         if (oTlsPluginProperties.isEmpty()) {
-            log.warn("No TLS plugin properties found for testConnection");
-            return new ConnectionTestResponse(ConnectionTestResponse.Type.FAILURE, "No TLS plugin properties found for testConnection.");
+            log.debug("No TLS plugin properties found for testConnection. Doing non-TLS test");
         }
 
         var properties = (TLSConnectorProperties) oTlsPluginProperties.get();

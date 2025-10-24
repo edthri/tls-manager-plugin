@@ -23,15 +23,17 @@ import com.mirth.connect.client.core.Operation;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
-import com.mirth.connect.connectors.http.HttpConnectorServletInterface;
+import com.mirth.connect.connectors.http.HttpDispatcherProperties;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
+import org.openintegrationengine.tlsmanager.shared.models.ConnectionTestResult;
 import org.openintegrationengine.tlsmanager.shared.models.LocalCertificate;
 import org.openintegrationengine.tlsmanager.shared.models.TrustedCertificate;
 
@@ -47,14 +49,16 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
 
-import static javax.ws.rs.core.MediaType.*;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
+import static javax.ws.rs.core.MediaType.APPLICATION_XML;
 
 @Path("/tlsmanager")
 @Tag(name = TLSPluginConstants.PLUGIN_POINTNAME)
 @Consumes({APPLICATION_XML, APPLICATION_JSON})
 @Produces({APPLICATION_XML, APPLICATION_JSON})
 @MirthApiProvider(type = ApiProviderType.SERVLET_INTERFACE)
-public interface TLSServletInterface extends BaseServletInterface, HttpConnectorServletInterface {
+public interface TLSServletInterface extends BaseServletInterface {
 
     @GET
     @Path("/importedcertificates")
@@ -241,4 +245,54 @@ public interface TLSServletInterface extends BaseServletInterface, HttpConnector
         )
         @QueryParam("url") String url
     );
+
+    @POST
+    @Path("/_testConnection")
+    @io.swagger.v3.oas.annotations.Operation(
+        summary = "Tests whether a connection can be successfully established to the destination endpoint."
+    )
+    @ApiResponse(
+        content = {@Content(
+            mediaType = "application/xml",
+            examples = {@ExampleObject(
+                name = "connection_test_response_http",
+                ref = "../apiexamples/connection_test_response_http_xml"
+            )}
+        ), @Content(
+            mediaType = "application/json",
+            examples = {@ExampleObject(
+                name = "connection_test_response_http",
+                ref = "../apiexamples/connection_test_response_http_json"
+            )}
+        )}
+    )
+    @MirthOperation(
+        name = "testConnection",
+        display = "Test TLS Connection",
+        type = Operation.ExecuteType.ASYNC,
+        auditable = false
+    )
+    ConnectionTestResult testConnection(
+        @Param("channelId")
+        @Parameter(description = "The ID of the channel.", required = true)
+        @QueryParam("channelId") String channelId,
+        @Param("channelName")
+        @Parameter(description = "The name of the channel.", required = true)
+        @QueryParam("channelName") String channelName,
+        @Param("properties")
+        @RequestBody(description = "The HTTP Sender properties to use.", required = true, content = {
+            @Content(
+                mediaType = "application/xml",
+                examples = {
+                    @ExampleObject(name = "http_dispatcher_properties", ref = "../apiexamples/http_dispatcher_properties_xml")
+                }
+            ),
+            @Content(
+                mediaType = "application/json",
+                examples = {
+                    @ExampleObject(name = "http_dispatcher_properties", ref = "../apiexamples/http_dispatcher_properties_json")
+                }
+            )
+        }) HttpDispatcherProperties httpDispatcherProperties
+    ) throws ClientException;
 }

@@ -1,24 +1,26 @@
 package org.openintegrationengine.tlsmanager.server.util;
 
-import com.mirth.connect.util.ConnectionTestResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHost;
 import org.apache.http.conn.SchemePortResolver;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.conn.DefaultSchemePortResolver;
+import org.openintegrationengine.tlsmanager.shared.models.ConnectionTestResult;
 
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.time.Instant;
+import java.util.Arrays;
 
 @Slf4j
 public class ConnectionUtils {
 
     private static SchemePortResolver defaultSchemePortResolver = new DefaultSchemePortResolver();
 
-    public static ConnectionTestResponse testConnection(
+    public static ConnectionTestResult testConnection(
         SSLConnectionSocketFactory socketFactory,
         String host,
         int timeout,
@@ -35,7 +37,7 @@ public class ConnectionUtils {
         );
     }
 
-    public static ConnectionTestResponse testConnection(
+    public static ConnectionTestResult testConnection(
         SSLConnectionSocketFactory socketFactory,
         Socket socket,
         String host,
@@ -43,11 +45,16 @@ public class ConnectionUtils {
         String localAddr,
         int localPort
     ) throws IOException {
+        var startTime = Instant.now();
+
         if (
             host == null
             || host.isEmpty()
         ) {
-            return new ConnectionTestResponse(ConnectionTestResponse.Type.FAILURE, "Invalid host or port.");
+           return ConnectionTestResult.builder()
+               .timestamp(startTime)
+               .message("Invalid host or port")
+               .build();
         }
 
         var target = HttpHost.create(host);
@@ -61,7 +68,11 @@ public class ConnectionUtils {
                 || localPort <= 0
                 || localPort > 65535
             ) {
-                return new ConnectionTestResponse(ConnectionTestResponse.Type.FAILURE, "Invalid local host or port.");
+                return ConnectionTestResult.builder()
+                    .timestamp(startTime)
+                    .requestedAddress(host)
+                    .message("Invalid local host or port")
+                    .build();
             }
 
             localAddress = new InetSocketAddress(localAddr, localPort);
@@ -77,16 +88,10 @@ public class ConnectionUtils {
                 null
             )
         ) {
-            var connectionInfo = "%s:%d -> %s:%d".formatted(
-                sslSocket.getLocalAddress().getHostAddress(),
-                sslSocket.getLocalPort(),
-                remoteAddress.getAddress().getHostAddress(),
-                remoteAddress.getPort()
-            );
+            var sess = sslSocket.getSession();
 
             if (log.isDebugEnabled()) {
                 // Handshake is done if we got here. Inspect what happened:
-                var sess = sslSocket.getSession();
                 log.debug("Protocol: {}", sess.getProtocol());
                 log.debug("Cipher:   {}", sess.getCipherSuite());
                 log.debug("Peer:     {}", sess.getPeerPrincipal());
@@ -99,10 +104,43 @@ public class ConnectionUtils {
 
             isSocketAlive(sslSocket);
 
-            return new ConnectionTestResponse(ConnectionTestResponse.Type.SUCCESS, "Successfully connected to host: " + connectionInfo, connectionInfo);
+            return ConnectionTestResult.builder()
+                .success(true)
+                .timestamp(startTime)
+                .requestedAddress(host)
+                .protocol(sess.getProtocol())
+                .cipherSuite(sess.getCipherSuite())
+                .sessionId(ConnectionTestResult.bytesToHex(sess.getId()))
+                .peerHost(sess.getPeerHost())
+                .peerPort(sess.getPeerPort())
+                .sessionValid(sess.isValid())
+                .sessionCreationTime(Instant.ofEpochMilli(sess.getCreationTime()))
+                .sessionLastAccessedTime(Instant.ofEpochMilli(sess.getLastAccessedTime()))
+                .supportedProtocols(Arrays.asList(sslSocket.getSupportedProtocols()))
+                .enabledProtocols(Arrays.asList(sslSocket.getEnabledProtocols()))
+                .supportedCipherSuites(Arrays.asList(sslSocket.getSupportedCipherSuites()))
+                .enabledCipherSuites(Arrays.asList(sslSocket.getEnabledCipherSuites()))
+                .certificates(Arrays.asList(sess.getPeerCertificates()))
+                .chosenProtocol(sess.getProtocol())
+                .chosenCipherSuite(sess.getCipherSuite())
+                .build();
+
         } catch (Exception e) {
             log.error("Error connecting to host: {}", host, e);
-            throw e;
+
+            var result = ConnectionTestResult.builder()
+                .success(false)
+                .timestamp(startTime)
+                .requestedAddress(host)
+                .exceptionName(e.getClass().getCanonicalName())
+                .exceptionMessage(e.getMessage());
+
+            if (e.getCause() != null) {
+                result.causeName(e.getCause().getClass().getCanonicalName());
+                result.causeMessage(e.getCause().getMessage());
+            }
+
+            return result.build();
         }
     }
 
