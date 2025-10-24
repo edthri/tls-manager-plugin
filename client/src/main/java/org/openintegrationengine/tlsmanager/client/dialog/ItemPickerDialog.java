@@ -126,7 +126,7 @@ public class ItemPickerDialog extends MirthDialog {
                 "TLS settings",
                 TitledBorder.DEFAULT_JUSTIFICATION,
                 TitledBorder.DEFAULT_POSITION,
-                new Font("Tahoma", Font.BOLD, 11)
+                new Font(Font.SANS_SERIF, Font.BOLD, 11)
             )
         );
 

@@ -55,6 +55,27 @@
         </dependency>
 
         <dependency>
+            <groupId>com.mirth.connect.plugins</groupId>
+            <artifactId>http-client</artifactId>
+            <version>${mirth.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mirth.connect.connectors</groupId>
+            <artifactId>tcp-client</artifactId>
+            <version>${mirth.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mirth.connect.connectors</groupId>
+            <artifactId>ws-client</artifactId>
+            <version>${mirth.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>com.thoughtworks.xstream</groupId>
             <artifactId>xstream</artifactId>
             <version>1.4.20</version>
