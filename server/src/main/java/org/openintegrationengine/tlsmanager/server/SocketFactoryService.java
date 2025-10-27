@@ -18,20 +18,17 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class SocketFactoryService {
 
     private final ConfigurationController configurationController;
     private final CertificateService certificateService;
-    private final ConcurrentHashMap<String, SSLConnectionSocketFactory> socketFactories;
 
     public SocketFactoryService(
         ConfigurationController configurationController,
         CertificateService certificateService
     ) {
-        this.socketFactories = new ConcurrentHashMap<>();
         this.certificateService = certificateService;
         this.configurationController = configurationController;
     }
