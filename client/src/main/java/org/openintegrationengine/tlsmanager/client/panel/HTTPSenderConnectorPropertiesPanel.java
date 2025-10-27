@@ -16,6 +16,7 @@
 
 package org.openintegrationengine.tlsmanager.client.panel;
 
+import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.ui.AbstractConnectorPropertiesPanel;
 import com.mirth.connect.client.ui.ConnectorTypeDecoration;
 import com.mirth.connect.client.ui.Frame;
@@ -28,6 +29,7 @@ import com.mirth.connect.client.ui.panels.connectors.ResponseHandler;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
 import com.mirth.connect.connectors.http.HttpSender;
 import com.mirth.connect.connectors.tcp.TcpSender;
+import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
 import com.mirth.connect.connectors.ws.WebServiceSender;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
@@ -50,6 +52,8 @@ import javax.swing.JLabel;
 import javax.swing.SwingWorker;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.time.Instant;
@@ -57,7 +61,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Optional;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -109,6 +113,8 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     private Frame parentFrame;
     private enum TRANSPORT { HTTP, TCP, WS };
 
+    private final ResponseHandler responseHandler;
+
     public HTTPSenderConnectorPropertiesPanel() {
         this.parentFrame = PlatformUI.MIRTH_FRAME;
 
@@ -116,12 +122,25 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         this.publicCertificates = new HashSet<>();
         this.clientCertificates = new HashSet<>();
 
+        this.responseHandler = new ResponseHandler() {
+            @Override
+            public void handle(Object response) {
+                var result = (ConnectionTestResult) response;
+
+                if (result == null) {
+                    parentFrame.alertError(parentFrame, "Failed to invoke service.");
+                } else {
+                    new ConnectionTestResultPanel(PlatformUI.MIRTH_FRAME, result);
+                }
+            }
+        };
+
         initComponents();
         initLayout();
         fetchData();
     }
 
-    private Optional<JButton> getButtonByText(String text) {
+    private List<JButton> getButtonsByText(String text) {
         var settingsComponents = connectorPanel
             .getConnectorSettingsPanel()
             .getComponents();
@@ -131,7 +150,7 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
             .filter(component -> component instanceof JButton)
             .map(component -> (JButton) component)
             .filter(button -> button.getText().equals(text))
-            .findFirst();
+            .toList();
     }
 
     private void doActionListenerOverrides() {
@@ -148,28 +167,42 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
             return;
         }
 
-        var testConnectionButton = getButtonByText("Test Connection");
-        if (testConnectionButton.isPresent()) {
-            var button = testConnectionButton.get();
-            var actionListeners = button.getActionListeners().clone();
+        if (transport == TRANSPORT.HTTP || transport == TRANSPORT.TCP) {
+            var testConnectionButtons = getButtonsByText("Test Connection");
+            if (!testConnectionButtons.isEmpty()) {
+                var button = testConnectionButtons.get(0);
 
-            // Replace the ActionListener
-            button.removeActionListener(actionListeners[0]); // Hope it only has a single listener
-            button.addActionListener(e -> testTlsConnection());
-        } else {
-            var message = "No test connection button found in settings panel %s".formatted(settingsPanel);
-            log(message);
+                var actionListeners = button.getActionListeners().clone();
+
+                var previousActionListener = actionListeners[0]; // Hope it only has a single listener
+
+                // Replace the ActionListener
+                button.removeActionListener(previousActionListener);
+                button.addActionListener(e -> testTlsConnection(previousActionListener, e));
+            } else {
+                var message = "No test connection button found in settings panel %s".formatted(settingsPanel);
+                log(message);
+            }
         }
 
         if (transport == TRANSPORT.WS) {
-            var getOperationsButton = getButtonByText("Get Operations");
-            if (getOperationsButton.isPresent()) {
-                var button = getOperationsButton.get();
-                var actionListeners = button.getActionListeners().clone();
+            var testConnectionButtons = getButtonsByText("Test Connection");
+            if (!testConnectionButtons.isEmpty()) {
+                // This works on the faint hope the buttons are ordered, and the order of said buttons is not messed with during processing...
+                var testWsdlConnectionButton = testConnectionButtons.get(0);
+                var testLocationConnectionButton = testConnectionButtons.get(1);
 
-                // Replace the ActionListener
-                button.removeActionListener(actionListeners[0]); // Hope it only has a single listener
-                button.addActionListener(e -> testTlsConnection());
+                var wsdlActionListeners = testWsdlConnectionButton.getActionListeners().clone();
+                var locationActionListeners = testLocationConnectionButton.getActionListeners().clone();
+
+                var previousWsdlActionListener = wsdlActionListeners[0];
+                var previousLocationActionListener = locationActionListeners[0];
+
+                testWsdlConnectionButton.removeActionListener(previousWsdlActionListener);
+                testWsdlConnectionButton.addActionListener(e -> testWsTlsConnection(previousWsdlActionListener, e, true));
+
+                testLocationConnectionButton.removeActionListener(previousLocationActionListener);
+                testLocationConnectionButton.addActionListener(e -> testWsTlsConnection(previousLocationActionListener, e, false));
             } else {
                 var message = "No Get Operations button found in settings panel %s".formatted(settingsPanel);
                 log(message);
@@ -177,19 +210,12 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         }
     }
 
-    private void testTlsConnection() {
-        var testConnectionResponseHandler = new ResponseHandler() {
-            @Override
-            public void handle(Object response) {
-                var result = (ConnectionTestResult) response;
-
-                if (result == null) {
-                    parentFrame.alertError(parentFrame, "Failed to invoke service.");
-                } else {
-                    new ConnectionTestResultPanel(PlatformUI.MIRTH_FRAME, result);
-                }
-            }
-        };
+    private void testTlsConnection(ActionListener nonTlsActionListener, ActionEvent event) {
+        if (!properties.isTlsManagerEnabled()) {
+            // If TLS management is disabled, run the previous non-tls connection test
+            nonTlsActionListener.actionPerformed(event);
+            return;
+        }
 
         try {
             connectorPanel
@@ -198,9 +224,9 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
                     TLSServletInterface.class,
                     "Testing connection...",
                     "Error testing TLS connection",
-                    testConnectionResponseHandler
+                    this.responseHandler
                 )
-                .testConnection(
+                .testTcpConnection(
                     connectorPanel.getConnectorSettingsPanel().getChannelId(),
                     connectorPanel.getConnectorSettingsPanel().getChannelName(),
                     (HttpDispatcherProperties) connectorPanel.getProperties()
@@ -208,6 +234,61 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         } catch (Exception e) {
             // Should not happen?
         }
+    }
+
+    private void testWsTlsConnection(ActionListener nonTlsActionListener, ActionEvent event, boolean isWsdlUrlBeingTested) {
+        if (!properties.isTlsManagerEnabled()) {
+            // If TLS management is disabled, run the previous non-tls connection test
+            // The <code>isWsdlUrlBeingTested</code> hopefully doesn't matter here as the listeners are already defined
+            // by the sender panel.
+            nonTlsActionListener.actionPerformed(event);
+            return;
+        }
+
+        if (!canTestConnection(isWsdlUrlBeingTested)) {
+            return;
+        }
+
+        var wsProperties = (WebServiceDispatcherProperties) connectorPanel.getProperties();
+
+        // Blank out the other property so that it isn't tested
+        if (isWsdlUrlBeingTested) {
+            wsProperties.setLocationURI("");
+        } else {
+            wsProperties.setWsdlUrl("");
+        }
+
+        try {
+            connectorPanel
+                .getConnectorSettingsPanel()
+                .getServlet(
+                    TLSServletInterface.class,
+                    "Testing connection...",
+                    "Error testing Web Service connection: ",
+                    this.responseHandler
+                ).testWsConnection(
+                    connectorPanel.getConnectorSettingsPanel().getChannelId(),
+                    connectorPanel.getConnectorSettingsPanel().getChannelName(),
+                    wsProperties
+                );
+        } catch (ClientException e) {
+            // Should not happen
+        }
+    }
+
+    private boolean canTestConnection(boolean isWsdlUrlBeingTested) {
+        var wsProperties = (WebServiceDispatcherProperties) connectorPanel.getProperties();
+
+        if (isWsdlUrlBeingTested) {
+            if (wsProperties.getWsdlUrl() == null || wsProperties.getWsdlUrl().isBlank()) {
+                parentFrame.alertError(parentFrame, "-WSDL URL is blank.");
+            }
+        } else if (wsProperties.getLocationURI() == null || wsProperties.getLocationURI().isBlank()) {
+            parentFrame.alertError(parentFrame, "-Location URI is blank.");
+            return false;
+        }
+
+        return true;
     }
 
     @Override

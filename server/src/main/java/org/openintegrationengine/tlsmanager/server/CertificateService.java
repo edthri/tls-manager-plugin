@@ -18,6 +18,7 @@ package org.openintegrationengine.tlsmanager.server;
 
 import com.mirth.connect.client.core.api.MirthApiException;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
+import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
 import com.mirth.connect.donkey.server.channel.DestinationConnector;
 import com.mirth.connect.server.util.TemplateValueReplacer;
 import lombok.Getter;
@@ -449,7 +450,29 @@ public final class CertificateService {
         return result;
     }
 
-    public ConnectionTestResult testConnection(
+    private ConnectionTestResult testConnection(
+        String channelId,
+        String channelName,
+        String host,
+        TLSConnectorProperties properties
+    ) throws IOException {
+        var url = new URL(templateValueReplacer.replaceValues(
+            host, channelId, channelName
+        ));
+
+        var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
+        var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
+
+        return ConnectionUtils.testConnection(
+            socketFactory,
+            url.toString(),
+            TEST_CONNECTION_TIMEOUT,
+            null,
+            0
+        );
+    }
+
+    public ConnectionTestResult testTcpConnection(
         String channelId,
         String channelName,
         HttpDispatcherProperties dispatcherProperties
@@ -460,26 +483,44 @@ public final class CertificateService {
             .findFirst();
 
         if (oTlsPluginProperties.isEmpty()) {
-            log.debug("No TLS plugin properties found for testConnection. Doing non-TLS test");
+            log.debug("No TLS plugin properties found for testTcpConnection. Doing non-TLS test");
+            // TODO Actually do the test
+        }
+
+        var properties = (TLSConnectorProperties) oTlsPluginProperties.get();
+        try {
+            return testConnection(channelId, channelName, dispatcherProperties.getHost(), properties);
+        } catch (Exception e) {
+            throw new MirthApiException(e);
+        }
+    }
+
+    public ConnectionTestResult testWsConnection(
+        String channelId,
+        String channelName,
+        WebServiceDispatcherProperties dispatcherProperties
+    ) {
+        var oTlsPluginProperties = dispatcherProperties.getPluginProperties()
+            .stream()
+            .filter(TLSConnectorProperties.class::isInstance)
+            .findFirst();
+
+        if (oTlsPluginProperties.isEmpty()) {
+            log.debug("No TLS plugin properties found for testWsConnection. Doing non-TLS test");
+            // TODO Actually do the test
         }
 
         var properties = (TLSConnectorProperties) oTlsPluginProperties.get();
 
         try {
-            var url = new URL(templateValueReplacer.replaceValues(
-                dispatcherProperties.getHost(), channelId, channelName
-            ));
-
-            var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
-            var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
-
-            var result = ConnectionUtils.testConnection(
-                socketFactory,
-                url.toString(),
-                TEST_CONNECTION_TIMEOUT,
-                null,
-                0
-            );
+            ConnectionTestResult result;
+            if (dispatcherProperties.getLocationURI() != null && !dispatcherProperties.getLocationURI().isBlank()) {
+                result = testConnection(channelId, channelName, dispatcherProperties.getLocationURI(), properties);
+            } else if (dispatcherProperties.getWsdlUrl() != null && !dispatcherProperties.getWsdlUrl().isBlank()) {
+                result = testConnection(channelId, channelName, dispatcherProperties.getWsdlUrl(), properties);
+            } else {
+                throw new Exception("Both WSDL URL and Location URI are blank. At least one must be populated in order to test connection.");
+            }
 
             return result;
         } catch (Exception e) {

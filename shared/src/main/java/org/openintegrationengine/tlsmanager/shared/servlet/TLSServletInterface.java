@@ -24,6 +24,7 @@ import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
+import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -247,7 +248,7 @@ public interface TLSServletInterface extends BaseServletInterface {
     );
 
     @POST
-    @Path("/_testConnection")
+    @Path("/testTcpConnection")
     @io.swagger.v3.oas.annotations.Operation(
         summary = "Tests whether a connection can be successfully established to the destination endpoint."
     )
@@ -267,12 +268,12 @@ public interface TLSServletInterface extends BaseServletInterface {
         )}
     )
     @MirthOperation(
-        name = "testConnection",
-        display = "Test TLS Connection",
+        name = "testTcpConnection",
+        display = "Test TLS Connection in HTTP and TCP Senders",
         type = Operation.ExecuteType.ASYNC,
         auditable = false
     )
-    ConnectionTestResult testConnection(
+    ConnectionTestResult testTcpConnection(
         @Param("channelId")
         @Parameter(description = "The ID of the channel.", required = true)
         @QueryParam("channelId") String channelId,
@@ -294,5 +295,42 @@ public interface TLSServletInterface extends BaseServletInterface {
                 }
             )
         }) HttpDispatcherProperties httpDispatcherProperties
+    ) throws ClientException;
+
+    @POST
+    @Path("/testWsConnection")
+    @io.swagger.v3.oas.annotations.Operation(
+        summary = "Tests whether a connection can be successfully established to the destination endpoint."
+    )
+    @ApiResponse(
+        content = {@Content(
+            mediaType = "application/xml",
+            examples = {@ExampleObject(
+                name = "connection_test_response_http",
+                ref = "../apiexamples/connection_test_response_http_xml"
+            )}
+        ), @Content(
+            mediaType = "application/json",
+            examples = {@ExampleObject(
+                name = "connection_test_response_http",
+                ref = "../apiexamples/connection_test_response_http_json"
+            )}
+        )}
+    )
+    @MirthOperation(
+        name = "testWsConnection",
+        display = "Test TLS Connection in Web Service Sender",
+        type = Operation.ExecuteType.ASYNC,
+        auditable = false
+    )
+    ConnectionTestResult testWsConnection(
+        @Param("channelId")
+        @Parameter(description = "The ID of the channel.", required = true)
+        @QueryParam("channelId") String channelId,
+        @Param("channelName")
+        @Parameter(description = "The name of the channel.", required = true)
+        @QueryParam("channelName") String channelName,
+        @Param("properties")
+        @RequestBody(description = "The WebService Sender properties to use.", required = true) WebServiceDispatcherProperties wsDispatcherProperties
     ) throws ClientException;
 }

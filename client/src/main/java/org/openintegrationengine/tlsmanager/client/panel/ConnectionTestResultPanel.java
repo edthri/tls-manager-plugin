@@ -16,6 +16,7 @@ import javax.swing.JTextArea;
 import javax.swing.WindowConstants;
 import javax.swing.border.TitledBorder;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Window;
 import java.security.cert.Certificate;
@@ -32,14 +33,14 @@ public class ConnectionTestResultPanel extends MirthDialog {
     private JTextArea resultArea;
     private JButton okButton;
 
-    private final Color RED = new Color(179, 0, 0);
-    private final Color GREEN = new Color(76, 174, 79);
+    private static final Color RED = new Color(179, 0, 0);
+    private static final Color GREEN = new Color(76, 174, 79);
 
     // https://github.com/phosphor-icons/core/blob/main/raw/duotone/seal-check-duotone.svg
-    private final String CHECK_ICON_PATH = "images/tls_plugin_check.png";
+    private static final String CHECK_ICON_PATH = "images/tls_plugin_check.png";
 
     // https://github.com/phosphor-icons/core/blob/main/raw/duotone/seal-warning-duotone.svg
-    private final String ERROR_ICON_PATH = "images/tls_plugin_error.png";
+    private static final String ERROR_ICON_PATH = "images/tls_plugin_error.png";
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.RFC_1123_DATE_TIME.withZone(ZoneOffset.systemDefault());
 
@@ -56,8 +57,10 @@ public class ConnectionTestResultPanel extends MirthDialog {
         initLayout();
 
         if (result.getSuccess()) {
+            setPreferredSize(new Dimension(900, 1000));
             resultArea.setText(renderSuccess());
         } else {
+            setPreferredSize(new Dimension(600, 400));
             resultArea.setText(renderFailure());
         }
 
@@ -67,7 +70,6 @@ public class ConnectionTestResultPanel extends MirthDialog {
     }
 
     private void initComponents() {
-
         var iconPath = result.getSuccess() ? CHECK_ICON_PATH : ERROR_ICON_PATH;
         var iconUrl = this.getClass().getClassLoader().getResource(iconPath);
 
@@ -97,7 +99,7 @@ public class ConnectionTestResultPanel extends MirthDialog {
     }
 
     private void initLayout() {
-        setLayout(new MigLayout("insets 8, novisualpadding, hidemode 3, fill", "", "[grow][][]"));
+        setLayout(new MigLayout("insets 8, novisualpadding, hidemode 3, fillx", "[grow, fill]", "[][grow][]"));
 
         if (iconLabel != null) {
             add(iconLabel, "w 64!, split");

@@ -63,6 +63,18 @@
         </dependency>
 
         <dependency>
+            <groupId>com.mirth.connect.connectors</groupId>
+            <artifactId>tcp-shared</artifactId>
+            <version>${mirth.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mirth.connect.connectors</groupId>
+            <artifactId>ws-shared</artifactId>
+            <version>${mirth.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.mirth.connect</groupId>
             <artifactId>donkey-model</artifactId>
             <version>${mirth.version}</version>

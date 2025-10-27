@@ -18,7 +18,9 @@ package org.openintegrationengine.tlsmanager.server.servlets;
 
 import com.kaurpalang.mirth.annotationsplugin.annotation.MirthApiProvider;
 import com.kaurpalang.mirth.annotationsplugin.type.ApiProviderType;
+import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
+import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
 import com.mirth.connect.server.api.DontCheckAuthorized;
 import com.mirth.connect.server.api.MirthServlet;
 import lombok.extern.slf4j.Slf4j;
@@ -142,7 +144,12 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
     }
 
     @Override
-    public ConnectionTestResult testConnection(String channelId, String channelName, HttpDispatcherProperties dispatcherProperties) {
-        return certificateService.testConnection(channelId, channelName, dispatcherProperties);
+    public ConnectionTestResult testTcpConnection(String channelId, String channelName, HttpDispatcherProperties dispatcherProperties) {
+        return certificateService.testTcpConnection(channelId, channelName, dispatcherProperties);
+    }
+
+    @Override
+    public ConnectionTestResult testWsConnection(String channelId, String channelName, WebServiceDispatcherProperties wsDispatcherProperties) throws ClientException {
+        return certificateService.testWsConnection(channelId, channelName, wsDispatcherProperties);
     }
 }
