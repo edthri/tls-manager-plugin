@@ -49,6 +49,9 @@ public class TLSTcpConfiguration extends DefaultTcpConfiguration {
         if (tlsConnectorProperties == null || !tlsConnectorProperties.isTlsManagerEnabled()) {
             return new StateAwareSocket();
         } else {
+            if (socketFactory == null) {
+                throw new IllegalStateException("TLS for TCP connections is enabled, but socket factory is null. Possibly because no trust anchors were found.");
+            }
             return new StateAwareTLSSocket(socketFactory);
         }
     }
