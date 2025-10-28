@@ -18,19 +18,20 @@ import java.util.Arrays;
 @Slf4j
 public class ConnectionUtils {
 
-    private static SchemePortResolver defaultSchemePortResolver = new DefaultSchemePortResolver();
 
     public static ConnectionTestResult testConnection(
         SSLConnectionSocketFactory socketFactory,
         String host,
+        int port,
         int timeout,
         String localAddr,
         int localPort
-    ) throws IOException {
+    ) {
         return testConnection(
             socketFactory,
             null,
             host,
+            port,
             timeout,
             localAddr,
             localPort
@@ -41,15 +42,18 @@ public class ConnectionUtils {
         SSLConnectionSocketFactory socketFactory,
         Socket socket,
         String host,
+        int port,
         int timeout,
         String localAddr,
         int localPort
-    ) throws IOException {
+    ) {
         var startTime = Instant.now();
 
         if (
             host == null
             || host.isEmpty()
+            || (port < 0)
+            || (port > 65534)
         ) {
            return ConnectionTestResult.builder()
                .timestamp(startTime)
@@ -59,7 +63,7 @@ public class ConnectionUtils {
 
         var target = HttpHost.create(host);
 
-        InetSocketAddress remoteAddress = new InetSocketAddress(target.getHostName(), defaultSchemePortResolver.resolve(target));
+        InetSocketAddress remoteAddress = new InetSocketAddress(host, port);
 
         InetSocketAddress localAddress = null;
         if (localAddr != null) {

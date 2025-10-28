@@ -20,6 +20,7 @@ import com.kaurpalang.mirth.annotationsplugin.annotation.MirthApiProvider;
 import com.kaurpalang.mirth.annotationsplugin.type.ApiProviderType;
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
+import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
 import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
 import com.mirth.connect.server.api.DontCheckAuthorized;
 import com.mirth.connect.server.api.MirthServlet;
@@ -144,8 +145,13 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
     }
 
     @Override
-    public ConnectionTestResult testTcpConnection(String channelId, String channelName, HttpDispatcherProperties dispatcherProperties) {
+    public ConnectionTestResult testTcpConnection(String channelId, String channelName, TcpDispatcherProperties dispatcherProperties) throws ClientException {
         return certificateService.testTcpConnection(channelId, channelName, dispatcherProperties);
+    }
+
+    @Override
+    public ConnectionTestResult testHttpsConnection(String channelId, String channelName, HttpDispatcherProperties dispatcherProperties) throws ClientException {
+        return certificateService.testHttpConnection(channelId, channelName, dispatcherProperties);
     }
 
     @Override

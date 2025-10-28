@@ -18,6 +18,7 @@ package org.openintegrationengine.tlsmanager.server;
 
 import com.mirth.connect.client.core.api.MirthApiException;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
+import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
 import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
 import com.mirth.connect.donkey.server.channel.DestinationConnector;
 import com.mirth.connect.server.util.TemplateValueReplacer;
@@ -85,9 +86,7 @@ public final class CertificateService {
     private TrustStoreBackend extraTrustStoreBackend;
     private TrustStoreBackend extraKeyStoreBackend;
 
-    private TemplateValueReplacer templateValueReplacer;
-
-    private static int TEST_CONNECTION_TIMEOUT = 5_000;
+    private final TemplateValueReplacer templateValueReplacer;
 
     public CertificateService() {
         this(new TemplateValueReplacer());
@@ -450,32 +449,10 @@ public final class CertificateService {
         return result;
     }
 
-    private ConnectionTestResult testConnection(
-        String channelId,
-        String channelName,
-        String host,
-        TLSConnectorProperties properties
-    ) throws IOException {
-        var url = new URL(templateValueReplacer.replaceValues(
-            host, channelId, channelName
-        ));
-
-        var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
-        var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
-
-        return ConnectionUtils.testConnection(
-            socketFactory,
-            url.toString(),
-            TEST_CONNECTION_TIMEOUT,
-            null,
-            0
-        );
-    }
-
     public ConnectionTestResult testTcpConnection(
         String channelId,
         String channelName,
-        HttpDispatcherProperties dispatcherProperties
+        TcpDispatcherProperties dispatcherProperties
     ) {
         var oTlsPluginProperties = dispatcherProperties.getPluginProperties()
             .stream()
@@ -488,8 +465,83 @@ public final class CertificateService {
         }
 
         var properties = (TLSConnectorProperties) oTlsPluginProperties.get();
+
+        var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
+        var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
         try {
-            return testConnection(channelId, channelName, dispatcherProperties.getHost(), properties);
+
+            String host = templateValueReplacer.replaceValues(dispatcherProperties.getRemoteAddress(), channelId, channelName);
+            int port = Integer.parseInt(templateValueReplacer.replaceValues(dispatcherProperties.getRemotePort(), channelId, channelName));
+            int timeout = Integer.parseInt(templateValueReplacer.replaceValues(dispatcherProperties.getResponseTimeout(), channelId, channelName));
+
+            if (!dispatcherProperties.isOverrideLocalBinding()) {
+                return ConnectionUtils.testConnection(
+                    socketFactory,
+                    host,
+                    port,
+                    timeout,
+                    null,
+                    0
+                );
+            } else {
+                String localAddr = templateValueReplacer.replaceValues(dispatcherProperties.getLocalAddress(), channelId, channelName);
+                int localPort = Integer.parseInt(templateValueReplacer.replaceValues(dispatcherProperties.getLocalPort(), channelId, channelName));
+
+                return ConnectionUtils.testConnection(
+                    socketFactory,
+                    host,
+                    port,
+                    timeout,
+                    localAddr,
+                    localPort
+                );
+            }
+        } catch (Exception e) {
+            throw new MirthApiException(e);
+        }
+    }
+
+    public ConnectionTestResult testHttpConnection(
+        String channelId,
+        String channelName,
+        HttpDispatcherProperties dispatcherProperties
+    ) {
+        final int TIMEOUT = 5000;
+
+        var oTlsPluginProperties = dispatcherProperties.getPluginProperties()
+            .stream()
+            .filter(TLSConnectorProperties.class::isInstance)
+            .findFirst();
+
+        if (oTlsPluginProperties.isEmpty()) {
+            log.debug("No TLS plugin properties found for testTcpConnection. Doing non-TLS test");
+            // TODO Actually do the test
+        }
+
+        var properties = (TLSConnectorProperties) oTlsPluginProperties.get();
+
+        var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
+        var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
+
+        try {
+            var url = new URL(templateValueReplacer.replaceValues(dispatcherProperties.getHost(), channelId, channelName));
+            var port = url.getPort();
+
+            int computedPort;
+            if (port == -1)
+                // If no port was provided, default to port 80 or 443.
+                computedPort = "https".equalsIgnoreCase(url.getProtocol()) ? 443 : 80;
+            else
+                computedPort = port;
+
+            return ConnectionUtils.testConnection(
+                socketFactory,
+                url.getHost(),
+                computedPort,
+                TIMEOUT,
+                null,
+                0
+            );
         } catch (Exception e) {
             throw new MirthApiException(e);
         }
@@ -500,6 +552,8 @@ public final class CertificateService {
         String channelName,
         WebServiceDispatcherProperties dispatcherProperties
     ) {
+        final int MAX_TIMEOUT = 300_000; // 5 minutes???
+
         var oTlsPluginProperties = dispatcherProperties.getPluginProperties()
             .stream()
             .filter(TLSConnectorProperties.class::isInstance)
@@ -512,17 +566,37 @@ public final class CertificateService {
 
         var properties = (TLSConnectorProperties) oTlsPluginProperties.get();
 
+        var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
+        var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
+
         try {
-            ConnectionTestResult result;
+            String host;
             if (dispatcherProperties.getLocationURI() != null && !dispatcherProperties.getLocationURI().isBlank()) {
-                result = testConnection(channelId, channelName, dispatcherProperties.getLocationURI(), properties);
+                host = dispatcherProperties.getLocationURI();
             } else if (dispatcherProperties.getWsdlUrl() != null && !dispatcherProperties.getWsdlUrl().isBlank()) {
-                result = testConnection(channelId, channelName, dispatcherProperties.getWsdlUrl(), properties);
+                host = dispatcherProperties.getWsdlUrl();
             } else {
                 throw new Exception("Both WSDL URL and Location URI are blank. At least one must be populated in order to test connection.");
             }
 
-            return result;
+            var url = new URL(templateValueReplacer.replaceValues(host, channelId, channelName));
+            var port = url.getPort();
+
+            int computedPort;
+            if (port == -1)
+                // If no port was provided, default to port 80 or 443.
+                computedPort = "https".equalsIgnoreCase(url.getProtocol()) ? 443 : 80;
+            else
+                computedPort = port;
+
+            return ConnectionUtils.testConnection(
+                socketFactory,
+                url.getHost(),
+                computedPort,
+                MAX_TIMEOUT,
+                null,
+                0
+            );
         } catch (Exception e) {
             throw new MirthApiException(e);
         }

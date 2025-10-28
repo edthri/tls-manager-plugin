@@ -24,6 +24,7 @@ import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
+import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
 import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -269,11 +270,61 @@ public interface TLSServletInterface extends BaseServletInterface {
     )
     @MirthOperation(
         name = "testTcpConnection",
-        display = "Test TLS Connection in HTTP and TCP Senders",
+        display = "Test TLS Connection in TCP Senders",
         type = Operation.ExecuteType.ASYNC,
         auditable = false
     )
     ConnectionTestResult testTcpConnection(
+        @Param("channelId")
+        @Parameter(description = "The ID of the channel.", required = true)
+        @QueryParam("channelId") String channelId,
+        @Param("channelName")
+        @Parameter(description = "The name of the channel.", required = true)
+        @QueryParam("channelName") String channelName,
+        @Param("properties")
+        @RequestBody(description = "The TCP Sender properties to use.", required = true, content = {
+            @Content(
+                mediaType = "application/xml",
+                examples = {
+                    @ExampleObject(name = "http_dispatcher_properties", ref = "../apiexamples/http_dispatcher_properties_xml")
+                }
+            ),
+            @Content(
+                mediaType = "application/json",
+                examples = {
+                    @ExampleObject(name = "http_dispatcher_properties", ref = "../apiexamples/http_dispatcher_properties_json")
+                }
+            )
+        }) TcpDispatcherProperties httpDispatcherProperties
+    ) throws ClientException;
+
+    @POST
+    @Path("/testHttpsConnection")
+    @io.swagger.v3.oas.annotations.Operation(
+        summary = "Tests whether a connection can be successfully established to the destination endpoint."
+    )
+    @ApiResponse(
+        content = {@Content(
+            mediaType = "application/xml",
+            examples = {@ExampleObject(
+                name = "connection_test_response_http",
+                ref = "../apiexamples/connection_test_response_http_xml"
+            )}
+        ), @Content(
+            mediaType = "application/json",
+            examples = {@ExampleObject(
+                name = "connection_test_response_http",
+                ref = "../apiexamples/connection_test_response_http_json"
+            )}
+        )}
+    )
+    @MirthOperation(
+        name = "testHttpsConnection",
+        display = "Test TLS Connection in HTTP Senders",
+        type = Operation.ExecuteType.ASYNC,
+        auditable = false
+    )
+    ConnectionTestResult testHttpsConnection(
         @Param("channelId")
         @Parameter(description = "The ID of the channel.", required = true)
         @QueryParam("channelId") String channelId,

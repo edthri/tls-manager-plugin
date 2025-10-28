@@ -28,6 +28,7 @@ import com.mirth.connect.client.ui.components.MirthTextField;
 import com.mirth.connect.client.ui.panels.connectors.ResponseHandler;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
 import com.mirth.connect.connectors.http.HttpSender;
+import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
 import com.mirth.connect.connectors.tcp.TcpSender;
 import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
 import com.mirth.connect.connectors.ws.WebServiceSender;
@@ -111,7 +112,7 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     private Set<String> clientCertificates;
 
     private Frame parentFrame;
-    private enum TRANSPORT { HTTP, TCP, WS };
+    private enum Transport { HTTP, TCP, WS };
 
     private final ResponseHandler responseHandler;
 
@@ -156,18 +157,18 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     private void doActionListenerOverrides() {
         var settingsPanel = connectorPanel.getConnectorSettingsPanel();
 
-        TRANSPORT transport;
+        Transport transport;
         if (settingsPanel instanceof HttpSender) {
-            transport = TRANSPORT.HTTP;
+            transport = Transport.HTTP;
         } else if (settingsPanel instanceof TcpSender) {
-            transport = TRANSPORT.TCP;
+            transport = Transport.TCP;
         } else if (settingsPanel instanceof WebServiceSender) {
-            transport = TRANSPORT.WS;
+            transport = Transport.WS;
         } else {
             return;
         }
 
-        if (transport == TRANSPORT.HTTP || transport == TRANSPORT.TCP) {
+        if (transport == Transport.HTTP || transport == Transport.TCP) {
             var testConnectionButtons = getButtonsByText("Test Connection");
             if (!testConnectionButtons.isEmpty()) {
                 var button = testConnectionButtons.get(0);
@@ -178,14 +179,14 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
 
                 // Replace the ActionListener
                 button.removeActionListener(previousActionListener);
-                button.addActionListener(e -> testTlsConnection(previousActionListener, e));
+                button.addActionListener(e -> testTlsConnection(previousActionListener, e, transport));
             } else {
                 var message = "No test connection button found in settings panel %s".formatted(settingsPanel);
                 log(message);
             }
         }
 
-        if (transport == TRANSPORT.WS) {
+        if (transport == Transport.WS) {
             var testConnectionButtons = getButtonsByText("Test Connection");
             if (!testConnectionButtons.isEmpty()) {
                 // This works on the faint hope the buttons are ordered, and the order of said buttons is not messed with during processing...
@@ -218,20 +219,31 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         }
 
         try {
-            connectorPanel
+            var servletInterface = connectorPanel
                 .getConnectorSettingsPanel()
                 .getServlet(
                     TLSServletInterface.class,
                     "Testing connection...",
                     "Error testing TLS connection",
                     this.responseHandler
-                )
-                .testTcpConnection(
+                );
+
+            if (transport == Transport.HTTP) {
+                servletInterface.testHttpsConnection(
                     connectorPanel.getConnectorSettingsPanel().getChannelId(),
                     connectorPanel.getConnectorSettingsPanel().getChannelName(),
                     (HttpDispatcherProperties) connectorPanel.getProperties()
                 );
+            } else if (transport == Transport.TCP) {
+                servletInterface.testTcpConnection(
+                    connectorPanel.getConnectorSettingsPanel().getChannelId(),
+                    connectorPanel.getConnectorSettingsPanel().getChannelName(),
+                    (TcpDispatcherProperties) connectorPanel.getProperties()
+                );
+            }
+
         } catch (Exception e) {
+            e.printStackTrace();
             // Should not happen?
         }
     }
