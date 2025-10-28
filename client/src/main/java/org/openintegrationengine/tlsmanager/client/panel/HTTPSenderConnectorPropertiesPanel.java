@@ -211,7 +211,7 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
         }
     }
 
-    private void testTlsConnection(ActionListener nonTlsActionListener, ActionEvent event) {
+    private void testTlsConnection(ActionListener nonTlsActionListener, ActionEvent event, Transport transport) {
         if (!properties.isTlsManagerEnabled()) {
             // If TLS management is disabled, run the previous non-tls connection test
             nonTlsActionListener.actionPerformed(event);
