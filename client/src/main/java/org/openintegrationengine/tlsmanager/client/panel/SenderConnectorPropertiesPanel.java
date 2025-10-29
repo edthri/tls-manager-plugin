@@ -67,7 +67,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 @Slf4j
-public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropertiesPanel {
+public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesPanel {
 
     private JLabel managerEnabledLabel;
     private MirthRadioButton managerEnabledRadioYes;
@@ -111,12 +111,12 @@ public class HTTPSenderConnectorPropertiesPanel extends AbstractConnectorPropert
     private Set<String> publicCertificates;
     private Set<String> clientCertificates;
 
-    private Frame parentFrame;
+    private final Frame parentFrame;
     private enum Transport { HTTP, TCP, WS };
 
     private final ResponseHandler responseHandler;
 
-    public HTTPSenderConnectorPropertiesPanel() {
+    public SenderConnectorPropertiesPanel() {
         this.parentFrame = PlatformUI.MIRTH_FRAME;
 
         this.properties = new TLSConnectorProperties();

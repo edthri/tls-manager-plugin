@@ -19,7 +19,7 @@ package org.openintegrationengine.tlsmanager.client;
 import com.kaurpalang.mirth.annotationsplugin.annotation.MirthClientClass;
 import com.mirth.connect.client.ui.AbstractConnectorPropertiesPanel;
 import com.mirth.connect.plugins.ConnectorPropertiesPlugin;
-import org.openintegrationengine.tlsmanager.client.panel.HTTPSenderConnectorPropertiesPanel;
+import org.openintegrationengine.tlsmanager.client.panel.SenderConnectorPropertiesPanel;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.SerializationController;
 
@@ -48,7 +48,7 @@ public class TLSConnectorPropertiesPlugin extends ConnectorPropertiesPlugin {
 
     @Override
     public AbstractConnectorPropertiesPanel getConnectorPropertiesPanel() {
-        return new HTTPSenderConnectorPropertiesPanel();
+        return new SenderConnectorPropertiesPanel();
     }
 
     @Override
