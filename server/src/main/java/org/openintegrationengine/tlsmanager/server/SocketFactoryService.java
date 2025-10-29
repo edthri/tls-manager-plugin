@@ -9,7 +9,7 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.openintegrationengine.tlsmanager.server.revocation.DualCheckerTrustManager;
 import org.openintegrationengine.tlsmanager.shared.models.WeirdIntermediaryContextContainer;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -34,7 +34,7 @@ public class SocketFactoryService {
         this.configurationController = configurationController;
     }
 
-    public SSLConnectionSocketFactory getConnectorSocketFactory(DestinationConnector connector, TLSConnectorProperties properties) {
+    public SSLConnectionSocketFactory getConnectorSocketFactory(DestinationConnector connector, TLSSenderProperties properties) {
         var contextContainer = generateTLSContext(connector, properties);
         return getConnectorSocketFactory(contextContainer);
     }
@@ -51,7 +51,7 @@ public class SocketFactoryService {
         );
     }
 
-    public WeirdIntermediaryContextContainer generateTLSContext(Connector connector, TLSConnectorProperties properties) {
+    public WeirdIntermediaryContextContainer generateTLSContext(Connector connector, TLSSenderProperties properties) {
         try {
             var truststore = certificateService.getTrustStoreFromProperties(
                 properties.isTrustSystemTruststore(),

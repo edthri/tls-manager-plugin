@@ -20,14 +20,14 @@ import com.mirth.connect.model.converters.ObjectXMLSerializer;
 import org.openintegrationengine.tlsmanager.shared.models.ConnectionTestResult;
 import org.openintegrationengine.tlsmanager.shared.models.LocalCertificate;
 import org.openintegrationengine.tlsmanager.shared.models.TrustedCertificate;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
 
 import java.util.List;
 
 public class SerializationController {
 
     private static final List<String> types = List.of(
-        TLSConnectorProperties.class.getCanonicalName(),
+        TLSSenderProperties.class.getCanonicalName(),
         TrustedCertificate.class.getCanonicalName(),
         LocalCertificate.class.getCanonicalName(),
         ConnectionTestResult.class.getCanonicalName()

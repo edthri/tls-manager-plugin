@@ -42,7 +42,7 @@ import org.openintegrationengine.tlsmanager.client.misc.DisplayTextEnumModeCombo
 import org.openintegrationengine.tlsmanager.shared.models.ConnectionTestResult;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
 import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
 import javax.swing.ButtonGroup;
@@ -107,7 +107,7 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
     private JButton ciphersButton;
     private JLabel ciphersText;
 
-    private TLSConnectorProperties properties;
+    private TLSSenderProperties properties;
     private Set<String> publicCertificates;
     private Set<String> clientCertificates;
 
@@ -119,7 +119,7 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
     public SenderConnectorPropertiesPanel() {
         this.parentFrame = PlatformUI.MIRTH_FRAME;
 
-        this.properties = new TLSConnectorProperties();
+        this.properties = new TLSSenderProperties();
         this.publicCertificates = new HashSet<>();
         this.clientCertificates = new HashSet<>();
 
@@ -304,22 +304,22 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
     }
 
     @Override
-    public TLSConnectorProperties getProperties() {
+    public TLSSenderProperties getProperties() {
         return properties.clone();
     }
 
     @Override
     public void setProperties(ConnectorProperties connectorProperties, ConnectorPluginProperties connectorPluginProperties, Connector.Mode mode, String s) {
-        if (connectorPluginProperties instanceof TLSConnectorProperties TLSConnectorProperties) {
-            this.properties = TLSConnectorProperties;
+        if (connectorPluginProperties instanceof TLSSenderProperties TLSSenderProperties) {
+            this.properties = TLSSenderProperties;
             redrawState();
-            handleManagerEnabledButton(TLSConnectorProperties.isTlsManagerEnabled());
+            handleManagerEnabledButton(TLSSenderProperties.isTlsManagerEnabled());
         }
     }
 
     @Override
     public ConnectorPluginProperties getDefaults() {
-        return new TLSConnectorProperties();
+        return new TLSSenderProperties();
     }
 
     @Override

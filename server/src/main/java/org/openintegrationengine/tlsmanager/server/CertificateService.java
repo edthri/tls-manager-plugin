@@ -38,7 +38,7 @@ import org.openintegrationengine.tlsmanager.shared.models.ConnectionTestResult;
 import org.openintegrationengine.tlsmanager.shared.models.LocalCertificate;
 import org.openintegrationengine.tlsmanager.shared.models.TLSPluginConfiguration;
 import org.openintegrationengine.tlsmanager.shared.models.TrustedCertificate;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.ByteArrayInputStream;
@@ -456,7 +456,7 @@ public final class CertificateService {
     ) {
         var oTlsPluginProperties = dispatcherProperties.getPluginProperties()
             .stream()
-            .filter(TLSConnectorProperties.class::isInstance)
+            .filter(TLSSenderProperties.class::isInstance)
             .findFirst();
 
         if (oTlsPluginProperties.isEmpty()) {
@@ -464,7 +464,7 @@ public final class CertificateService {
             // TODO Actually do the test
         }
 
-        var properties = (TLSConnectorProperties) oTlsPluginProperties.get();
+        var properties = (TLSSenderProperties) oTlsPluginProperties.get();
 
         var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
         var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
@@ -510,7 +510,7 @@ public final class CertificateService {
 
         var oTlsPluginProperties = dispatcherProperties.getPluginProperties()
             .stream()
-            .filter(TLSConnectorProperties.class::isInstance)
+            .filter(TLSSenderProperties.class::isInstance)
             .findFirst();
 
         if (oTlsPluginProperties.isEmpty()) {
@@ -518,7 +518,7 @@ public final class CertificateService {
             // TODO Actually do the test
         }
 
-        var properties = (TLSConnectorProperties) oTlsPluginProperties.get();
+        var properties = (TLSSenderProperties) oTlsPluginProperties.get();
 
         var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
         var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
@@ -556,7 +556,7 @@ public final class CertificateService {
 
         var oTlsPluginProperties = dispatcherProperties.getPluginProperties()
             .stream()
-            .filter(TLSConnectorProperties.class::isInstance)
+            .filter(TLSSenderProperties.class::isInstance)
             .findFirst();
 
         if (oTlsPluginProperties.isEmpty()) {
@@ -564,7 +564,7 @@ public final class CertificateService {
             // TODO Actually do the test
         }
 
-        var properties = (TLSConnectorProperties) oTlsPluginProperties.get();
+        var properties = (TLSSenderProperties) oTlsPluginProperties.get();
 
         var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
         var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
