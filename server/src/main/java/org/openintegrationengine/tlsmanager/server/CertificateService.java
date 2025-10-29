@@ -20,7 +20,7 @@ import com.mirth.connect.client.core.api.MirthApiException;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
 import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
 import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
-import com.mirth.connect.donkey.server.channel.DestinationConnector;
+import com.mirth.connect.donkey.server.channel.Connector;
 import com.mirth.connect.server.util.TemplateValueReplacer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -138,7 +138,7 @@ public final class CertificateService {
         loadKeyStore(externalKeyStore, extraKeyStoreBytes, extraKeyStoreBackend.loadPassword());
     }
 
-    KeyStore getKeyStore(String alias, DestinationConnector connector) {
+    KeyStore getKeyStore(String alias) {
         try {
             var keystore = KeyStore.getInstance(PKCS12);
             keystore.load(null, new char[0]);
@@ -164,7 +164,7 @@ public final class CertificateService {
         }
     }
 
-    KeyStore getTrustStoreFromProperties(boolean isTrustSystem, Set<String> aliasSet, DestinationConnector connector) {
+    KeyStore getTrustStoreFromProperties(boolean isTrustSystem, Set<String> aliasSet, Connector connector) {
         try {
             KeyStore finalTrustStore;
 
@@ -199,7 +199,7 @@ public final class CertificateService {
             if (!presentInSystem.isEmpty()) {
                 log.warn(
                     "Generating effective TrustStore for connector ({}) in channel ({}). Found and ignored aliases present in system truststore: {}",
-                    connector == null ? "testConnection" : connector.getDestinationName(),
+                    connector == null ? "testConnection" : connector.getConnectorProperties().getName(),
                     connector == null ? "testConnection" : connector.getChannel().getName(),
                     presentInSystem
                 );
@@ -208,7 +208,7 @@ public final class CertificateService {
             if (!unknownAliases.isEmpty()) {
                 log.warn(
                     "Generating effective TrustStore for connector ({}) in channel ({}). Found aliases not present in additional truststore: {}",
-                    connector == null ? "testConnection" : connector.getDestinationName(),
+                    connector == null ? "testConnection" : connector.getConnectorProperties().getName(),
                     connector == null ? "testConnection" : connector.getChannel().getName(),
                     presentInSystem
                 );

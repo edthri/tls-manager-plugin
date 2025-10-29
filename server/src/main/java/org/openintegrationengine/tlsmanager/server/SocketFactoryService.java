@@ -1,5 +1,6 @@
 package org.openintegrationengine.tlsmanager.server;
 
+import com.mirth.connect.donkey.server.channel.Connector;
 import com.mirth.connect.donkey.server.channel.DestinationConnector;
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.util.MirthSSLUtil;
@@ -34,7 +35,7 @@ public class SocketFactoryService {
     }
 
     public SSLConnectionSocketFactory getConnectorSocketFactory(DestinationConnector connector, TLSConnectorProperties properties) {
-        var contextContainer = generateSSLContext(connector, properties);
+        var contextContainer = generateTLSContext(connector, properties);
         return getConnectorSocketFactory(contextContainer);
     }
 
@@ -50,7 +51,7 @@ public class SocketFactoryService {
         );
     }
 
-    public WeirdIntermediaryContextContainer generateSSLContext(DestinationConnector connector, TLSConnectorProperties properties) {
+    public WeirdIntermediaryContextContainer generateTLSContext(Connector connector, TLSConnectorProperties properties) {
         try {
             var truststore = certificateService.getTrustStoreFromProperties(
                 properties.isTrustSystemTruststore(),
@@ -75,7 +76,7 @@ public class SocketFactoryService {
             KeyManager[] keyManagers = null;
             var clientAlias = properties.getClientCertificateAlias();
             if (clientAlias != null && !clientAlias.isBlank()) {
-                var keystore = certificateService.getKeyStore(clientAlias, connector);
+                var keystore = certificateService.getKeyStore(clientAlias);
 
                 var keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
                 keyManagerFactory.init(keystore, new char[0]);

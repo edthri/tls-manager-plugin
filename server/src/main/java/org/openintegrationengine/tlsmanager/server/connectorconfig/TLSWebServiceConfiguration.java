@@ -59,7 +59,7 @@ public class TLSWebServiceConfiguration extends DefaultWebServiceConfiguration {
             .orElse(null);
 
         if (tlsConnectorProperties != null && tlsConnectorProperties.isTlsManagerEnabled()) {
-            contextContainer = socketFactoryService.generateSSLContext(connector, tlsConnectorProperties);
+            contextContainer = socketFactoryService.generateTLSContext(connector, tlsConnectorProperties);
 
             var socketConnectionFactory = socketFactoryService.getConnectorSocketFactory(contextContainer);
             if (socketConnectionFactory != null) {
