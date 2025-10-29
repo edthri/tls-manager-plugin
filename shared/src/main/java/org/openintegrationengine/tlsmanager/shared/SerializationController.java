@@ -21,6 +21,7 @@ import org.openintegrationengine.tlsmanager.shared.models.ConnectionTestResult;
 import org.openintegrationengine.tlsmanager.shared.models.LocalCertificate;
 import org.openintegrationengine.tlsmanager.shared.models.TrustedCertificate;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSListenerProperties;
 
 import java.util.List;
 
@@ -28,6 +29,7 @@ public class SerializationController {
 
     private static final List<String> types = List.of(
         TLSSenderProperties.class.getCanonicalName(),
+        TLSListenerProperties.class.getCanonicalName(),
         TrustedCertificate.class.getCanonicalName(),
         LocalCertificate.class.getCanonicalName(),
         ConnectionTestResult.class.getCanonicalName()
