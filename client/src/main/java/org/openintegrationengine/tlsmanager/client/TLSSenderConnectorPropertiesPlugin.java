@@ -26,9 +26,9 @@ import org.openintegrationengine.tlsmanager.shared.SerializationController;
 import java.util.Set;
 
 @MirthClientClass
-public class TLSConnectorPropertiesPlugin extends ConnectorPropertiesPlugin {
+public class TLSSenderConnectorPropertiesPlugin extends ConnectorPropertiesPlugin {
 
-    public TLSConnectorPropertiesPlugin(String name) {
+    public TLSSenderConnectorPropertiesPlugin(String name) {
         super(name);
         SerializationController.registerSerializableClasses();
     }
