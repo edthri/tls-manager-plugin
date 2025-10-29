@@ -23,22 +23,14 @@ import org.openintegrationengine.tlsmanager.client.panel.SenderConnectorProperti
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.SerializationController;
 
-import java.util.List;
 import java.util.Set;
 
 @MirthClientClass
 public class TLSConnectorPropertiesPlugin extends ConnectorPropertiesPlugin {
 
-    private final List<String> supportedConnectors;
-
     public TLSConnectorPropertiesPlugin(String name) {
         super(name);
-
         SerializationController.registerSerializableClasses();
-
-        supportedConnectors = List.of(
-            "HTTP Auth Connector Plugin Properties"
-        );
     }
 
     @Override
@@ -60,7 +52,7 @@ public class TLSConnectorPropertiesPlugin extends ConnectorPropertiesPlugin {
 
     @Override
     public boolean isConnectorPropertiesPluginSupported(String pluginPointName) {
-        return supportedConnectors.contains(pluginPointName);
+        return false;
     }
 
     @Override
