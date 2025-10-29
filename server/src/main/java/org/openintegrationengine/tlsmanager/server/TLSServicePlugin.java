@@ -42,6 +42,8 @@ import java.util.Properties;
 @Slf4j
 public class TLSServicePlugin implements ServicePlugin {
 
+    public static final String PLUGIN_POINT_NAME = "TLS Manager Service Plugin";
+
     @Getter
     private CertificateService certificateService;
 
@@ -106,7 +108,7 @@ public class TLSServicePlugin implements ServicePlugin {
 
     @Override
     public String getPluginPointName() {
-        return TLSPluginConstants.PLUGIN_POINTNAME;
+        return PLUGIN_POINT_NAME;
     }
 
     @Override
@@ -122,18 +124,21 @@ public class TLSServicePlugin implements ServicePlugin {
         var servicePlugin = ControllerFactory.getFactory()
             .createExtensionController()
             .getServicePlugins()
-            .get(TLSPluginConstants.PLUGIN_POINTNAME);
+            .get(PLUGIN_POINT_NAME);
 
         if (servicePlugin instanceof TLSServicePlugin tlsServicePlugin) {
             return tlsServicePlugin;
         } else {
             // well we shouldn't really get here
-            throw new RuntimeException(
+            var ex = new RuntimeException(
                 "Plugin pointname '%s' does not point to an instance of %s class".formatted(
-                    TLSPluginConstants.PLUGIN_POINTNAME,
+                    PLUGIN_POINT_NAME,
                     TLSServicePlugin.class.getCanonicalName()
                 )
             );
+
+            log.error("Error fetching plugin instance", ex);
+            throw ex;
         }
     }
 
