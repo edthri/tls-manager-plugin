@@ -5,7 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
+import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 
@@ -17,12 +19,17 @@ import java.util.Set;
 @Setter
 @EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor
+@ToString(callSuper = true)
 public class TLSListenerProperties extends ConnectorPluginProperties {
 
     private boolean isTlsManagerEnabled;
 
+    private String serverCertificateAlias;
+
     private SubjectDnValidationMode subjectDnValidationMode;
     private String subjectDnValidationFilter;
+
+    private ClientAuthMode clientAuthMode;
 
     // Certificate revocation modes
     private RevocationMode crlMode;
@@ -39,8 +46,12 @@ public class TLSListenerProperties extends ConnectorPluginProperties {
     public TLSListenerProperties() {
         isTlsManagerEnabled = false;
 
+        serverCertificateAlias = null;
+
         subjectDnValidationMode = SubjectDnValidationMode.NONE;
         subjectDnValidationFilter = null;
+
+        clientAuthMode = ClientAuthMode.NONE;
 
         crlMode = RevocationMode.HARD_FAIL;
         ocspMode = RevocationMode.HARD_FAIL;
@@ -54,6 +65,10 @@ public class TLSListenerProperties extends ConnectorPluginProperties {
 
     public TLSListenerProperties(TLSListenerProperties props) {
         isTlsManagerEnabled = props.isTlsManagerEnabled();
+
+        serverCertificateAlias = props.getServerCertificateAlias();
+
+        clientAuthMode = props.getClientAuthMode();
 
         subjectDnValidationMode = props.getSubjectDnValidationMode();
         subjectDnValidationFilter = props.getSubjectDnValidationFilter();
@@ -74,7 +89,7 @@ public class TLSListenerProperties extends ConnectorPluginProperties {
     }
 
     @Override
-    public ConnectorPluginProperties clone() {
+    public TLSListenerProperties clone() {
         return new TLSListenerProperties(this);
     }
 

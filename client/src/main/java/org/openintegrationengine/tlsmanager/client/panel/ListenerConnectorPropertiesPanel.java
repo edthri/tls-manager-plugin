@@ -10,24 +10,30 @@ import com.mirth.connect.client.ui.components.MirthTextField;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.model.Connector;
+import com.mirth.connect.util.MirthSSLUtil;
 import net.miginfocom.swing.MigLayout;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
 import org.openintegrationengine.tlsmanager.client.misc.DisplayTextEnumModeComboBoxRenderer;
+import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSListenerProperties;
+import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.SwingWorker;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.util.Arrays;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -41,6 +47,10 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     private MirthRadioButton clientAuthRadioNone;
     private MirthRadioButton clientAuthRadioRequested;
     private MirthRadioButton clientAuthRadioRequired;
+
+    private JLabel serverCertificateLabel;
+    private JButton serverCertificateButton;
+    private JLabel serverCertificateText;
 
     // Trusted client certs picker
 
@@ -65,12 +75,14 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     private final Frame parentFrame;
     private TLSListenerProperties properties;
 
+    private Set<String> serverCertificates;
     private Set<String> supportedProtocols;
     private Set<String> supportedCiphers;
 
     public ListenerConnectorPropertiesPanel() {
         this.parentFrame = PlatformUI.MIRTH_FRAME;
         this.properties = new TLSListenerProperties();
+        this.serverCertificates = new HashSet<>();
 
         this.supportedProtocols = new HashSet<>();
         this.supportedCiphers = new HashSet<>();
@@ -81,7 +93,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     }
 
     @Override
-    public ConnectorPluginProperties getProperties() {
+    public TLSListenerProperties getProperties() {
         return properties.clone();
     }
 
@@ -89,6 +101,8 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     public void setProperties(ConnectorProperties connectorProperties, ConnectorPluginProperties connectorPluginProperties, Connector.Mode mode, String s) {
         if (connectorPluginProperties instanceof TLSListenerProperties tlsListenerProperties) {
             this.properties = tlsListenerProperties;
+            redrawState();
+            handleManagerEnabledButton(tlsListenerProperties.isTlsManagerEnabled());
         }
     }
 
@@ -135,22 +149,50 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         managerEnabledRadioNo.addActionListener(e -> handleManagerEnabledButton(false));
         managerEnabledButtonGroup.add(managerEnabledRadioNo);
 
+        serverCertificateLabel = new JLabel("Server Certificate:");
+        serverCertificateButton = new JButton(wrenchIcon);
+        serverCertificateButton.addActionListener(e -> {
+            BiConsumer<Boolean, Set<String>> completionConsumer = (unused, selectedCertificate) -> {
+                var selectedAlias = selectedCertificate.stream().findFirst().orElse(null);
+                properties.setServerCertificateAlias(selectedAlias);
+
+                redrawState();
+                PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
+            };
+
+            Set<String> currentCerts = properties.getServerCertificateAlias() == null ?  Collections.emptySet() : Set.of(properties.getServerCertificateAlias());
+
+            new ItemPickerDialog(
+                PlatformUI.MIRTH_FRAME,
+                "Server Certificate Picker",
+                serverCertificates,
+                currentCerts,
+                false,
+                null,
+                completionConsumer
+            );
+        });
+        serverCertificateText = new JLabel();
+
         clientAuthLabel = new JLabel("Client Authentication Mode");
 
         var clientAuthModeButtonGroup = new ButtonGroup();
         clientAuthRadioNone = new MirthRadioButton();
         clientAuthRadioNone.setText("None");
         clientAuthRadioNone.setBackground(Color.white);
+        clientAuthRadioNone.addActionListener(e -> properties.setClientAuthMode(ClientAuthMode.NONE));
         clientAuthModeButtonGroup.add(clientAuthRadioNone);
 
         clientAuthRadioRequested = new MirthRadioButton();
         clientAuthRadioRequested.setText("Requested");
         clientAuthRadioRequested.setBackground(Color.white);
+        clientAuthRadioRequested.addActionListener(e -> properties.setClientAuthMode(ClientAuthMode.REQUESTED));
         clientAuthModeButtonGroup.add(clientAuthRadioRequested);
 
         clientAuthRadioRequired = new MirthRadioButton();
         clientAuthRadioRequired.setText("Required");
         clientAuthRadioRequired.setBackground(Color.white);
+        clientAuthRadioRequired.addActionListener(e -> properties.setClientAuthMode(ClientAuthMode.REQUIRED));
         clientAuthModeButtonGroup.add(clientAuthRadioRequired);
 
         var comboBoxRenderer = new DisplayTextEnumModeComboBoxRenderer();
@@ -255,6 +297,10 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         add(managerEnabledRadioYes, "split");
         add(managerEnabledRadioNo);
 
+        add(serverCertificateLabel, "newline, right");
+        add(serverCertificateButton, "h 22!, w 22!, split");
+        add(serverCertificateText);
+
         add(clientAuthLabel, "newline, right");
         add(clientAuthRadioNone, "split");
         add(clientAuthRadioRequested, "split");
@@ -301,6 +347,15 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     private void handleManagerEnabledButton(boolean managerEnabled) {
         properties.setTlsManagerEnabled(managerEnabled);
 
+        serverCertificateLabel.setEnabled(managerEnabled);
+        serverCertificateButton.setEnabled(managerEnabled);
+        serverCertificateText.setEnabled(managerEnabled);
+
+        clientAuthLabel.setEnabled(managerEnabled);
+        clientAuthRadioNone.setEnabled(managerEnabled);
+        clientAuthRadioRequested.setEnabled(managerEnabled);
+        clientAuthRadioRequired.setEnabled(managerEnabled);
+
         subjectDnValidationLabel.setEnabled(managerEnabled);
         subjectDnValidationModeComboBox.setEnabled(managerEnabled);
         subjectDnValidationFilterTextField.setEnabled(managerEnabled);
@@ -325,6 +380,19 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
             managerEnabledRadioYes.setSelected(true);
         } else {
             managerEnabledRadioNo.setSelected(true);
+        }
+
+        serverCertificateText.setText(properties.getServerCertificateAlias());
+
+        if (properties.getClientAuthMode() == ClientAuthMode.NONE) {
+            clientAuthRadioNone.setSelected(true);
+        } else if (properties.getClientAuthMode() == ClientAuthMode.REQUESTED) {
+            clientAuthRadioRequested.setSelected(true);
+        } else if (properties.getClientAuthMode() == ClientAuthMode.REQUIRED) {
+            clientAuthRadioRequired.setSelected(true);
+        } else {
+            clientAuthRadioNone.setSelected(true);
+            log("Unable to determine client auth mode: %s. Using NONE");
         }
 
         subjectDnValidationModeComboBox.setSelectedItem(properties.getSubjectDnValidationMode());
@@ -380,5 +448,9 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         };
 
         worker.execute();
+    }
+
+    private static void log(String message) {
+        System.out.printf("%s - %s.%n", Instant.now(), message);
     }
 }

@@ -21,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
@@ -33,6 +34,7 @@ import java.util.Set;
 @Setter
 @EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor
+@ToString(callSuper = true)
 public class TLSSenderProperties extends ConnectorPluginProperties {
 
     private boolean isTlsManagerEnabled;
