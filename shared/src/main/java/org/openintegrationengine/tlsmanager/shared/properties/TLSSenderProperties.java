@@ -108,7 +108,7 @@ public class TLSSenderProperties extends ConnectorPluginProperties {
 
     @Override
     public String getName() {
-        return TLSPluginConstants.PLUGIN_POINTNAME;
+        return TLSPluginConstants.TLS_SENDER_CONNECTOR_PROPERTIES_PLUGIN_POINT_NAME;
     }
 
     @Override

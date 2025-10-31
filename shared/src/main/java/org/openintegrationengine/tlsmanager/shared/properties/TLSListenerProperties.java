@@ -70,7 +70,7 @@ public class TLSListenerProperties extends ConnectorPluginProperties {
 
     @Override
     public String getName() {
-        return TLSPluginConstants.PLUGIN_POINTNAME;
+        return TLSPluginConstants.TLS_LISTENER_CONNECTOR_PROPERTIES_PLUGIN_POINT_NAME;
     }
 
     @Override

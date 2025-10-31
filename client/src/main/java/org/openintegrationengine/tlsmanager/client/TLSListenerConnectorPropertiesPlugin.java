@@ -21,6 +21,7 @@ import com.mirth.connect.client.ui.AbstractConnectorPropertiesPanel;
 import com.mirth.connect.plugins.ConnectorPropertiesPlugin;
 import org.openintegrationengine.tlsmanager.client.panel.ListenerConnectorPropertiesPanel;
 import org.openintegrationengine.tlsmanager.shared.SerializationController;
+import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 
 import java.util.Set;
 
@@ -56,6 +57,6 @@ public class TLSListenerConnectorPropertiesPlugin extends ConnectorPropertiesPlu
 
     @Override
     public String getPluginPointName() {
-        return "TLS Listener Connector Properties Plugin";
+        return TLSPluginConstants.TLS_LISTENER_CONNECTOR_PROPERTIES_PLUGIN_POINT_NAME;
     }
 }

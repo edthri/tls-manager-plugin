@@ -31,5 +31,9 @@ public final class TLSPluginConstants {
 
     public static final String PKCS12 = "PKCS12";
 
+    // This ain't no joke
+    public static final String TLS_SENDER_CONNECTOR_PROPERTIES_PLUGIN_POINT_NAME = "TLS Sender Connector Properties Plugin";
+    public static final String TLS_LISTENER_CONNECTOR_PROPERTIES_PLUGIN_POINT_NAME = "TLS Listener Connector Properties Plugin";
+
     private TLSPluginConstants() {}
 }

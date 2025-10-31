@@ -21,6 +21,7 @@ import com.mirth.connect.client.ui.AbstractConnectorPropertiesPanel;
 import com.mirth.connect.plugins.ConnectorPropertiesPlugin;
 import org.openintegrationengine.tlsmanager.client.panel.SenderConnectorPropertiesPanel;
 import org.openintegrationengine.tlsmanager.shared.SerializationController;
+import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 
 import java.util.Set;
 
@@ -56,6 +57,6 @@ public class TLSSenderConnectorPropertiesPlugin extends ConnectorPropertiesPlugi
 
     @Override
     public String getPluginPointName() {
-        return "TLS Sender Connector Properties Plugin";
+        return TLSPluginConstants.TLS_SENDER_CONNECTOR_PROPERTIES_PLUGIN_POINT_NAME;
     }
 }
