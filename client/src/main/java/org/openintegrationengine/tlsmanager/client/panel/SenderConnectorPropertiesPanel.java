@@ -314,10 +314,10 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
 
     @Override
     public void setProperties(ConnectorProperties connectorProperties, ConnectorPluginProperties connectorPluginProperties, Connector.Mode mode, String s) {
-        if (connectorPluginProperties instanceof TLSSenderProperties TLSSenderProperties) {
-            this.properties = TLSSenderProperties;
+        if (connectorPluginProperties instanceof TLSSenderProperties tlsSenderProperties) {
+            this.properties = tlsSenderProperties;
             redrawState();
-            handleManagerEnabledButton(TLSSenderProperties.isTlsManagerEnabled());
+            handleManagerEnabledButton(tlsSenderProperties.isTlsManagerEnabled());
         }
     }
 

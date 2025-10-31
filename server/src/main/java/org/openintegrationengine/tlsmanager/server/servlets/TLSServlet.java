@@ -138,7 +138,6 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
         certificateService.setTrustedCertificates(trustedCertificates);
     }
 
-
     @Override
     public List<TrustedCertificate> getRemoteCertificates(String url) {
         return certificateService.retrieveRemoteCertificates(url);
