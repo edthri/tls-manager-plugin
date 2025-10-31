@@ -65,12 +65,19 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     private final Frame parentFrame;
     private TLSListenerProperties properties;
 
+    private Set<String> supportedProtocols;
+    private Set<String> supportedCiphers;
+
     public ListenerConnectorPropertiesPanel() {
         this.parentFrame = PlatformUI.MIRTH_FRAME;
         this.properties = new TLSListenerProperties();
 
+        this.supportedProtocols = new HashSet<>();
+        this.supportedCiphers = new HashSet<>();
+
         initComponents();
         initLayout();
+        fetchData();
     }
 
     @Override
@@ -204,7 +211,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
             new ItemPickerDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Protocols Picker",
-                Set.of(PlatformUI.SERVER_HTTPS_SUPPORTED_PROTOCOLS),
+                supportedProtocols,
                 properties.getUsedProtocols(),
                 properties.isUseServerDefaultProtocols(),
                 "[Server default]",
@@ -231,7 +238,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
             new ItemPickerDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Ciphers Picker",
-                Set.of(PlatformUI.SERVER_HTTPS_SUPPORTED_CIPHER_SUITES),
+                supportedCiphers,
                 properties.getUsedCiphers(),
                 properties.isUseServerDefaultCiphers(),
                 "[Server default]",
@@ -328,19 +335,50 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         ocspModeComboBox.setSelectedItem(properties.getOcspMode());
 
         var protocolsString = properties.isUseServerDefaultProtocols()
-            ? "Server default: %s".formatted(Arrays.toString(PlatformUI.HTTPS_PROTOCOLS))
+            ? "Server default: %s".formatted(supportedProtocols)
             : "%d selected".formatted(properties.getUsedProtocols().size());
 
         protocolsText.setText(protocolsString);
 
         var ciphersString = properties.isUseServerDefaultCiphers()
-            ? "Server default: %d selected".formatted(PlatformUI.HTTPS_CIPHER_SUITES.length)
+            ? "Server default: %d selected".formatted(supportedCiphers.size())
             : "%d selected".formatted(properties.getUsedCiphers().size());
 
         ciphersText.setText(ciphersString);
     }
 
     private void fetchData() {
+        final var workerId = PlatformUI.MIRTH_FRAME.startWorking("Fetching data...");
 
+        var worker = new SwingWorker<Void, Void>() {
+            private Set<String> aliasSet;
+            private Map<String, String[]> cryptoMap;
+
+            public Void doInBackground() {
+                try {
+                    aliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
+                    cryptoMap = PlatformUI.MIRTH_FRAME.mirthClient.getProtocolsAndCipherSuites();
+                } catch (Exception e) {
+                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported client certificates failed");
+                }
+
+                return null;
+            }
+
+            public void done() {
+                serverCertificates = aliasSet;
+                supportedProtocols = Set.of(
+                    cryptoMap.get(MirthSSLUtil.KEY_ENABLED_SERVER_PROTOCOLS)
+                );
+
+                supportedCiphers = Set.of(
+                    cryptoMap.get(MirthSSLUtil.KEY_ENABLED_CIPHER_SUITES)
+                );
+
+                PlatformUI.MIRTH_FRAME.stopWorking(workerId);
+            }
+        };
+
+        worker.execute();
     }
 }

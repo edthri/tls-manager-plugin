@@ -35,6 +35,7 @@ import com.mirth.connect.connectors.ws.WebServiceSender;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.model.Connector;
+import com.mirth.connect.util.MirthSSLUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
@@ -63,6 +64,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -110,6 +112,8 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
     private TLSSenderProperties properties;
     private Set<String> publicCertificates;
     private Set<String> clientCertificates;
+    private Set<String> supportedProtocols;
+    private Set<String> supportedCiphers;
 
     private final Frame parentFrame;
     private enum Transport { HTTP, TCP, WS };
@@ -504,14 +508,14 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
             new ItemPickerDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Protocols Picker",
-                Set.of(PlatformUI.HTTPS_PROTOCOLS),
+                supportedProtocols,
                 properties.getUsedProtocols(),
                 properties.isUseServerDefaultProtocols(),
                 "[Server default]",
                 completionConsumer
             );
         });
-        protocolsText = new JLabel("Server default: TLSv4.6");
+        protocolsText = new JLabel();
 
         ciphersLabel = new JLabel("Enabled Ciphers:");
         ciphersButton = new JButton(wrenchIcon);
@@ -531,14 +535,14 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
             new ItemPickerDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Ciphers Picker",
-                Set.of(PlatformUI.HTTPS_CIPHER_SUITES),
+                supportedCiphers,
                 properties.getUsedCiphers(),
                 properties.isUseServerDefaultCiphers(),
                 "[Server default]",
                 completionConsumer
             );
         });
-        ciphersText = new JLabel("Server default: 22 enabled");
+        ciphersText = new JLabel();
     }
 
     private void initLayout() {
@@ -687,13 +691,13 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
         clientCertText.setText(properties.getClientCertificateAlias());
 
         var protocolsString = properties.isUseServerDefaultProtocols()
-            ? "Server default: %s".formatted(Arrays.toString(PlatformUI.HTTPS_PROTOCOLS))
+            ? "Server default: %s".formatted(supportedProtocols)
             : "%d selected".formatted(properties.getUsedProtocols().size());
 
         protocolsText.setText(protocolsString);
 
         var ciphersString = properties.isUseServerDefaultCiphers()
-            ? "Server default: %d selected".formatted(PlatformUI.HTTPS_CIPHER_SUITES.length)
+            ? "Server default: %d selected".formatted(supportedCiphers.size())
             : "%d selected".formatted(properties.getUsedCiphers().size());
 
         ciphersText.setText(ciphersString);
@@ -702,46 +706,41 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
     private void fetchData() {
         final var workingId = PlatformUI.MIRTH_FRAME.startWorking("Fetching certificates...");
 
-        var publicCertWorker = new SwingWorker<Void, Void>() {
-            private Set<String> aliasSet;
+        var worker = new SwingWorker<Void, Void>() {
+            private Set<String> publicCertAliasSet;
+            private Set<String> clientCertAliasSet;
+            private Map<String, String[]> cryptoMap;
 
             public Void doInBackground() {
                 try {
-                    aliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getPublicCertificates();
+                    publicCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getPublicCertificates();
+                    clientCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
+                    cryptoMap = PlatformUI.MIRTH_FRAME.mirthClient.getProtocolsAndCipherSuites();
                 } catch (Exception e) {
-                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported public certificates failed");
+                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported certificates failed");
                 }
 
                 return null;
             }
 
             public void done() {
-                publicCertificates = aliasSet;
+                publicCertificates = publicCertAliasSet;
+                clientCertificates = clientCertAliasSet;
+
+                supportedProtocols = Set.of(
+                    cryptoMap.get(MirthSSLUtil.KEY_ENABLED_SERVER_PROTOCOLS)
+                );
+
+                supportedCiphers = Set.of(
+                    cryptoMap.get(MirthSSLUtil.KEY_ENABLED_CIPHER_SUITES)
+                );
+
+
                 PlatformUI.MIRTH_FRAME.stopWorking(workingId);
             }
         };
 
-        var clientCertWorker = new SwingWorker<Void, Void>() {
-            private Set<String> aliasSet;
-
-            public Void doInBackground() {
-                try {
-                    aliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
-                } catch (Exception e) {
-                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported client certificates failed");
-                }
-
-                return null;
-            }
-
-            public void done() {
-                clientCertificates = aliasSet;
-                PlatformUI.MIRTH_FRAME.stopWorking(workingId);
-            }
-        };
-
-        publicCertWorker.execute();
-        clientCertWorker.execute();
+        worker.execute();
     }
 
     private static void log(String message) {
