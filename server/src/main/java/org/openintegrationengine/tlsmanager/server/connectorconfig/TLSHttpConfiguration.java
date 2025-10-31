@@ -24,21 +24,24 @@ import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.server.channel.Connector;
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.server.controllers.ControllerFactory;
-import com.mirth.connect.util.MirthSSLUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.DetectorConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.openintegrationengine.tlsmanager.server.CertificateService;
 import org.openintegrationengine.tlsmanager.server.SocketFactoryService;
 import org.openintegrationengine.tlsmanager.server.TLSServicePlugin;
+import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSListenerProperties;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
+
+import static org.openintegrationengine.tlsmanager.shared.TLSPluginConstants.PKCS12;
 
 @Slf4j
 public class TLSHttpConfiguration extends DefaultHttpConfiguration {
@@ -81,44 +84,47 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
 
     @Override
     public void configureReceiver(HttpReceiver connector) throws Exception {
-        super.configureReceiver(connector);
-        /*
-        String[] enabledProtocols = MirthSSLUtil.getEnabledHttpsProtocols(configurationController.getHttpsServerProtocols());
-        String[] cipherSuites = MirthSSLUtil.getEnabledHttpsProtocols(configurationController.getHttpsCipherSuites());
+        var tlsConnectorProperties = getSenderProperties(TLSListenerProperties.class, connector);
 
-        var httpConfig = new HttpConfiguration();
-        httpConfig.setSendServerVersion(true);
-        httpConfig.setSendXPoweredBy(true);
+        // If TLS manager is not enabled, delegate to OIE default
+        if (tlsConnectorProperties == null || !tlsConnectorProperties.isTlsManagerEnabled()) {
+            super.configureReceiver(connector);
 
-        var ssl = new SslContextFactory.Server();
-        ssl.setIncludeProtocols(enabledProtocols);
-        ssl.setIncludeCipherSuites(cipherSuites);
+        } else {
+            var tlsContext = socketFactoryService.generateTLSContext(connector, tlsConnectorProperties);
 
-        ssl.setKeyStore(certificateService.getTruststore());
-        ssl.setKeyStorePassword("changeit");
-        ssl.setKeyManagerPassword("changeit");
+            var httpConfig = new HttpConfiguration();
+            httpConfig.addCustomizer(new SecureRequestCustomizer());
+            httpConfig.setSendServerVersion(false);
+            httpConfig.setSendXPoweredBy(false);
 
-        var http11 = new HttpConnectionFactory(httpConfig);
-        var tls = new SslConnectionFactory(ssl, HttpVersion.HTTP_1_1.asString());
+            var ssl = new SslContextFactory.Server();
+            ssl.setIncludeProtocols(tlsContext.protocols());
+            ssl.setIncludeCipherSuites(tlsContext.ciphers());
 
-        var detectorConnectionFactory = new DetectorConnectionFactory(tls);
+            ssl.setWantClientAuth(ClientAuthMode.REQUIRED == tlsConnectorProperties.getClientAuthMode());
+            ssl.setNeedClientAuth(ClientAuthMode.REQUIRED == tlsConnectorProperties.getClientAuthMode());
 
-        var listener = new ServerConnector(connector.getServer(), detectorConnectionFactory, http11);
+            ssl.setKeyStore(tlsContext.keyStore());
+            ssl.setKeyStoreType(PKCS12);
+            ssl.setCertAlias(tlsConnectorProperties.getServerCertificateAlias());
+            ssl.setKeyStorePassword("");
 
-        listener.setHost(connector.getHost());
-        listener.setPort(connector.getPort());
-        listener.setIdleTimeout(connector.getTimeout());
-        connector.getServer().addConnector(listener);
-         */
+            var http11 = new HttpConnectionFactory(httpConfig);
+            var tls = new SslConnectionFactory(ssl, HttpVersion.HTTP_1_1.asString());
+
+            var listener = new ServerConnector(connector.getServer(), tls, http11);
+
+            listener.setHost(connector.getHost());
+            listener.setPort(connector.getPort());
+            listener.setIdleTimeout(connector.getTimeout());
+
+            connector.getServer().setConnectors(new org.eclipse.jetty.server.Connector[] { listener });
+        }
     }
 
     private void configureSocketFactory(HttpDispatcher connector) {
-        var tlsConnectorProperties = connector.getConnectorProperties().getPluginProperties()
-            .stream()
-            .filter(TLSSenderProperties.class::isInstance)
-            .findFirst()
-            .map(TLSSenderProperties.class::cast)
-            .orElse(null);
+        var tlsConnectorProperties = getSenderProperties(TLSSenderProperties.class, connector);
 
         if (tlsConnectorProperties != null && tlsConnectorProperties.isTlsManagerEnabled()) {
             var sslSocketFactory = socketFactoryService.getConnectorSocketFactory(connector, tlsConnectorProperties);
@@ -134,5 +140,14 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private <T> T getSenderProperties(Class<T> propertiesClass, Connector connector) {
+        return connector.getConnectorProperties().getPluginProperties()
+            .stream()
+            .filter(propertiesClass::isInstance)
+            .findFirst()
+            .map(propertiesClass::cast)
+            .orElse(null);
     }
 }

@@ -9,6 +9,8 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.openintegrationengine.tlsmanager.server.revocation.DualCheckerTrustManager;
 import org.openintegrationengine.tlsmanager.shared.models.WeirdIntermediaryContextContainer;
+import org.openintegrationengine.tlsmanager.shared.models.WeirdIntermediaryListenerContextContainer;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSListenerProperties;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
 
 import javax.net.ssl.KeyManager;
@@ -108,5 +110,28 @@ public class SocketFactoryService {
             log.error("Error generating SSLContext", e);
             throw new RuntimeException(e);
         }
+    }
+
+    public WeirdIntermediaryListenerContextContainer generateTLSContext(Connector connector, TLSListenerProperties properties) {
+        var protocolArray = properties.isUseServerDefaultProtocols()
+            ? MirthSSLUtil.getEnabledHttpsProtocols(configurationController.getHttpsServerProtocols())
+            : MirthSSLUtil.getEnabledHttpsProtocols(properties.getUsedProtocols().toArray(new String[0]));
+
+        var cipherArray = properties.isUseServerDefaultCiphers()
+            ? MirthSSLUtil.getEnabledHttpsCipherSuites(configurationController.getHttpsCipherSuites())
+            : MirthSSLUtil.getEnabledHttpsCipherSuites(properties.getUsedCiphers().toArray(new String[0]));
+
+        var hostnameVerificationStrategy = true // TODO
+            ? SSLConnectionSocketFactory.getDefaultHostnameVerifier()
+            : NoopHostnameVerifier.INSTANCE;
+
+        var keystore = certificateService.getKeyStore(properties.getServerCertificateAlias());
+
+        return new WeirdIntermediaryListenerContextContainer(
+            protocolArray,
+            cipherArray,
+            hostnameVerificationStrategy,
+            keystore
+        );
     }
 }
