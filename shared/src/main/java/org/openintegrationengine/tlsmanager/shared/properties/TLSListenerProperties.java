@@ -13,6 +13,7 @@ import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMod
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 @Getter
@@ -64,23 +65,37 @@ public class TLSListenerProperties extends ConnectorPluginProperties {
     }
 
     public TLSListenerProperties(TLSListenerProperties props) {
+        var defaults = new TLSListenerProperties();
+
         isTlsManagerEnabled = props.isTlsManagerEnabled();
 
         serverCertificateAlias = props.getServerCertificateAlias();
 
-        clientAuthMode = props.getClientAuthMode();
-
-        subjectDnValidationMode = props.getSubjectDnValidationMode();
+        subjectDnValidationMode = Objects.requireNonNullElse(
+            props.getSubjectDnValidationMode(),
+            defaults.getSubjectDnValidationMode()
+        );
         subjectDnValidationFilter = props.getSubjectDnValidationFilter();
 
-        crlMode = props.getCrlMode();
-        ocspMode = props.getOcspMode();
+        clientAuthMode = Objects.requireNonNullElse(
+            props.getClientAuthMode(),
+            defaults.getClientAuthMode()
+        );
+
+        crlMode = Objects.requireNonNullElse(props.getCrlMode(), defaults.getCrlMode());
+        ocspMode = Objects.requireNonNullElse(props.getOcspMode(), defaults.getOcspMode());
 
         isUseServerDefaultProtocols = props.isUseServerDefaultProtocols();
-        usedProtocols = props.getUsedProtocols();
+        usedProtocols = Objects.requireNonNullElse(
+            props.getUsedProtocols(),
+            defaults.getUsedProtocols()
+        );
 
         isUseServerDefaultCiphers = props.isUseServerDefaultCiphers();
-        usedCiphers = props.getUsedCiphers();
+        usedCiphers = Objects.requireNonNullElse(
+            props.getUsedCiphers(),
+            defaults.getUsedCiphers()
+        );
     }
 
     @Override

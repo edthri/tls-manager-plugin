@@ -28,6 +28,7 @@ import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMod
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 @Getter
@@ -86,23 +87,37 @@ public class TLSSenderProperties extends ConnectorPluginProperties {
     }
 
     public TLSSenderProperties(TLSSenderProperties props) {
+        var defaults = new TLSSenderProperties();
+
         isTlsManagerEnabled = props.isTlsManagerEnabled();
         isServerCertificateValidationEnabled = props.isServerCertificateValidationEnabled();
 
-        subjectDnValidationMode = props.getSubjectDnValidationMode();
+        subjectDnValidationMode = Objects.requireNonNullElse(
+            props.getSubjectDnValidationMode(),
+            defaults.getSubjectDnValidationMode()
+        );
         subjectDnValidationFilter = props.getSubjectDnValidationFilter();
 
-        crlMode = props.getCrlMode();
-        ocspMode = props.getOcspMode();
+        crlMode = Objects.requireNonNullElse(props.getCrlMode(), defaults.getCrlMode());
+        ocspMode = Objects.requireNonNullElse(props.getOcspMode(), defaults.getOcspMode());
 
         trustSystemTruststore = props.isTrustSystemTruststore();
-        trustedServerCertificates = props.getTrustedServerCertificates();
+        trustedServerCertificates = Objects.requireNonNullElse(
+            props.getTrustedServerCertificates(),
+            defaults.getTrustedServerCertificates()
+        );
 
         isUseServerDefaultProtocols = props.isUseServerDefaultProtocols();
-        usedProtocols = props.getUsedProtocols();
+        usedProtocols = Objects.requireNonNullElse(
+            props.getUsedProtocols(),
+            defaults.getUsedProtocols()
+        );
 
         isUseServerDefaultCiphers = props.isUseServerDefaultCiphers();
-        usedCiphers = props.getUsedCiphers();
+        usedCiphers = Objects.requireNonNullElse(
+            props.getUsedCiphers(),
+            defaults.getUsedCiphers()
+        );
 
         isHostnameVerificationEnabled = props.isHostnameVerificationEnabled();
         clientCertificateAlias = props.getClientCertificateAlias();
