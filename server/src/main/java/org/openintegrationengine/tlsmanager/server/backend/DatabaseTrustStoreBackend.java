@@ -18,13 +18,21 @@ package org.openintegrationengine.tlsmanager.server.backend;
 
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.server.controllers.ControllerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.util.Base64;
 
+@Slf4j
 public class DatabaseTrustStoreBackend implements TrustStoreBackend {
 
-    private ConfigurationController configurationController;
+    private final ConfigurationController configurationController;
 
     private final String databaseColumn;
 
@@ -43,7 +51,25 @@ public class DatabaseTrustStoreBackend implements TrustStoreBackend {
 
     @Override
     public void init() {
-        // TODO
+        var keystoreBytes = configurationController.getProperty(TLSPluginConstants.PLUGIN_POINTNAME, databaseColumn);
+        if (keystoreBytes != null) {
+            log.debug("Using existing keystore from config column {}", databaseColumn);
+            return;
+        }
+
+        try {
+            var keystore = KeyStore.getInstance(TLSPluginConstants.PKCS12);
+            keystore.load(null, new char[] {});
+
+            try (var baos = new ByteArrayOutputStream()) {
+                keystore.store(baos, new char[] {});
+                persist(baos.toByteArray());
+            }
+
+        } catch (IOException | KeyStoreException | CertificateException | NoSuchAlgorithmException e) {
+            log.error("Error initializing keystore", e);
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

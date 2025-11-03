@@ -35,7 +35,7 @@ import java.security.cert.CertificateException;
 public class FileTrustStoreBackend implements TrustStoreBackend {
 
     private final Path keystorePath;
-    private char[] storepass;
+    private final char[] storepass;
 
     public FileTrustStoreBackend(String keystorePath) {
         this(keystorePath, System.getenv(TLSPluginConstants.ENV_PERSISTENCE_FS_TRUSTSTOREPASS));
