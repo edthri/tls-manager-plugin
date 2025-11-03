@@ -94,9 +94,20 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     }
 
     // --- JSSE delegation ---
-    @Override public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {  }
-    @Override public void checkClientTrusted(X509Certificate[] chain, String authType, Socket s) throws CertificateException { }
-    @Override public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine e) throws CertificateException { }
+    @Override
+    public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+        delegate.checkClientTrusted(chain, authType);
+    }
+
+    @Override
+    public void checkClientTrusted(X509Certificate[] chain, String authType, Socket s) throws CertificateException {
+        delegate.checkClientTrusted(chain, authType, s);
+    }
+
+    @Override
+    public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine e) throws CertificateException {
+        delegate.checkClientTrusted(chain, authType, e);
+    }
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
