@@ -59,10 +59,10 @@ public class DatabaseTrustStoreBackend implements TrustStoreBackend {
 
         try {
             var keystore = KeyStore.getInstance(TLSPluginConstants.PKCS12);
-            keystore.load(null, new char[] {});
+            keystore.load(null, new char[0]);
 
             try (var baos = new ByteArrayOutputStream()) {
-                keystore.store(baos, new char[] {});
+                keystore.store(baos, new char[0]);
                 persist(baos.toByteArray());
             }
 
