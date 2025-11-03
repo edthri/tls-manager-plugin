@@ -32,6 +32,10 @@ public class TLSListenerProperties extends ConnectorPluginProperties {
 
     private ClientAuthMode clientAuthMode;
 
+    // Truststore to use for mtls client cert validation
+    private boolean trustSystemTruststore;
+    private Set<String> trustedServerCertificates;
+
     // Certificate revocation modes
     private RevocationMode crlMode;
     private RevocationMode ocspMode;
@@ -53,6 +57,9 @@ public class TLSListenerProperties extends ConnectorPluginProperties {
         subjectDnValidationFilter = null;
 
         clientAuthMode = ClientAuthMode.NONE;
+
+        trustSystemTruststore = true;
+        trustedServerCertificates = Collections.emptySet();
 
         crlMode = RevocationMode.HARD_FAIL;
         ocspMode = RevocationMode.HARD_FAIL;
@@ -80,6 +87,12 @@ public class TLSListenerProperties extends ConnectorPluginProperties {
         clientAuthMode = Objects.requireNonNullElse(
             props.getClientAuthMode(),
             defaults.getClientAuthMode()
+        );
+
+        trustSystemTruststore = props.isTrustSystemTruststore();
+        trustedServerCertificates = Objects.requireNonNullElse(
+            props.getTrustedServerCertificates(),
+            defaults.getTrustedServerCertificates()
         );
 
         crlMode = Objects.requireNonNullElse(props.getCrlMode(), defaults.getCrlMode());

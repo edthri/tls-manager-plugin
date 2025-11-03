@@ -98,20 +98,29 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
             httpConfig.setSendServerVersion(false);
             httpConfig.setSendXPoweredBy(false);
 
-            var ssl = new SslContextFactory.Server();
-            ssl.setIncludeProtocols(tlsContext.protocols());
-            ssl.setIncludeCipherSuites(tlsContext.ciphers());
+            var sslContextFactory = new SslContextFactory.Server();
+            sslContextFactory.setSslContext(tlsContext.sslContext());
 
-            ssl.setWantClientAuth(ClientAuthMode.REQUIRED == tlsConnectorProperties.getClientAuthMode());
-            ssl.setNeedClientAuth(ClientAuthMode.REQUIRED == tlsConnectorProperties.getClientAuthMode());
+            // Clear Jetty defaults
+            sslContextFactory.setExcludeProtocols();
+            sslContextFactory.setExcludeCipherSuites();
 
-            ssl.setKeyStore(tlsContext.keyStore());
-            ssl.setKeyStoreType(PKCS12);
-            ssl.setCertAlias(tlsConnectorProperties.getServerCertificateAlias());
-            ssl.setKeyStorePassword("");
+            sslContextFactory.setIncludeProtocols(tlsContext.protocols());
+            sslContextFactory.setIncludeCipherSuites(tlsContext.ciphers());
+
+            if (ClientAuthMode.REQUESTED == tlsConnectorProperties.getClientAuthMode()) {
+                sslContextFactory.setWantClientAuth(true);
+            } else if (ClientAuthMode.REQUIRED == tlsConnectorProperties.getClientAuthMode()) {
+                sslContextFactory.setNeedClientAuth(true);
+            }
+
+            sslContextFactory.setKeyStore(tlsContext.keyStore());
+            sslContextFactory.setKeyStoreType(PKCS12);
+            sslContextFactory.setKeyStorePassword("");
+            sslContextFactory.setCertAlias(tlsConnectorProperties.getServerCertificateAlias());
 
             var http11 = new HttpConnectionFactory(httpConfig);
-            var tls = new SslConnectionFactory(ssl, HttpVersion.HTTP_1_1.asString());
+            var tls = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
 
             var listener = new ServerConnector(connector.getServer(), tls, http11);
 

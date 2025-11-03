@@ -31,6 +31,7 @@ import java.awt.Component;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -48,11 +49,13 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     private MirthRadioButton clientAuthRadioRequested;
     private MirthRadioButton clientAuthRadioRequired;
 
+    private JLabel trustedIssuersLabel;
+    private JButton trustedIssuersButton;
+    private JLabel trustedIssuersText;
+
     private JLabel serverCertificateLabel;
     private JButton serverCertificateButton;
     private JLabel serverCertificateText;
-
-    // Trusted client certs picker
 
     private JLabel subjectDnValidationLabel;
     private MirthComboBox<SubjectDnValidationMode> subjectDnValidationModeComboBox;
@@ -75,6 +78,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     private final Frame parentFrame;
     private TLSListenerProperties properties;
 
+    private Set<String> publicCertificates;
     private Set<String> serverCertificates;
     private Set<String> supportedProtocols;
     private Set<String> supportedCiphers;
@@ -82,8 +86,9 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     public ListenerConnectorPropertiesPanel() {
         this.parentFrame = PlatformUI.MIRTH_FRAME;
         this.properties = new TLSListenerProperties();
-        this.serverCertificates = new HashSet<>();
 
+        this.publicCertificates = new HashSet<>();
+        this.serverCertificates = new HashSet<>();
         this.supportedProtocols = new HashSet<>();
         this.supportedCiphers = new HashSet<>();
 
@@ -180,20 +185,47 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         clientAuthRadioNone = new MirthRadioButton();
         clientAuthRadioNone.setText("None");
         clientAuthRadioNone.setBackground(Color.white);
-        clientAuthRadioNone.addActionListener(e -> properties.setClientAuthMode(ClientAuthMode.NONE));
+        clientAuthRadioNone.addActionListener(e -> handleClientAuthModeChange(ClientAuthMode.NONE, true));
         clientAuthModeButtonGroup.add(clientAuthRadioNone);
 
         clientAuthRadioRequested = new MirthRadioButton();
         clientAuthRadioRequested.setText("Requested");
         clientAuthRadioRequested.setBackground(Color.white);
-        clientAuthRadioRequested.addActionListener(e -> properties.setClientAuthMode(ClientAuthMode.REQUESTED));
+        clientAuthRadioRequested.addActionListener(e -> handleClientAuthModeChange(ClientAuthMode.REQUESTED, true));
         clientAuthModeButtonGroup.add(clientAuthRadioRequested);
 
         clientAuthRadioRequired = new MirthRadioButton();
         clientAuthRadioRequired.setText("Required");
         clientAuthRadioRequired.setBackground(Color.white);
-        clientAuthRadioRequired.addActionListener(e -> properties.setClientAuthMode(ClientAuthMode.REQUIRED));
+        clientAuthRadioRequired.addActionListener(e -> handleClientAuthModeChange(ClientAuthMode.REQUIRED, true));
         clientAuthModeButtonGroup.add(clientAuthRadioRequired);
+
+        trustedIssuersLabel = new JLabel("Trusted Issuers:");
+        trustedIssuersButton = new JButton(wrenchIcon);
+        trustedIssuersButton.addActionListener(e -> {
+            BiConsumer<Boolean, Set<String>> completionConsumer = (isTrustSystemTrustStoreEnabled, selectedCertificates) -> {
+                properties.setTrustSystemTruststore(isTrustSystemTrustStoreEnabled);
+                if (isTrustSystemTrustStoreEnabled) {
+                    properties.setTrustedServerCertificates(Collections.emptySet());
+                } else {
+                    properties.setTrustedServerCertificates(selectedCertificates);
+                }
+
+                redrawState();
+                PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
+            };
+
+            new ItemPickerDialog(
+                PlatformUI.MIRTH_FRAME,
+                "Trusted Issuers Picker",
+                publicCertificates,
+                properties.getTrustedServerCertificates(),
+                properties.isTrustSystemTruststore(),
+                "[Server default]",
+                completionConsumer
+            );
+        });
+        trustedIssuersText = new JLabel();
 
         var comboBoxRenderer = new DisplayTextEnumModeComboBoxRenderer();
 
@@ -306,6 +338,10 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         add(clientAuthRadioRequested, "split");
         add(clientAuthRadioRequired);
 
+        add(trustedIssuersLabel, "newline, right");
+        add(trustedIssuersButton, "h 22!, w 22!, split");
+        add(trustedIssuersText);
+
         add(subjectDnValidationLabel, "newline, right");
         add(subjectDnValidationModeComboBox, "split");
         add(subjectDnValidationFilterTextField, "w 168!");
@@ -323,6 +359,17 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         add(ciphersLabel, "newline, right");
         add(ciphersButton, "h 22!, w 22!, split");
         add(ciphersText);
+    }
+
+    private void handleClientAuthModeChange(ClientAuthMode authMode, boolean persistChanges) {
+        if (persistChanges) {
+            properties.setClientAuthMode(authMode);
+        }
+
+        var issuerSelectorEnabled = authMode != ClientAuthMode.NONE;
+        trustedIssuersLabel.setEnabled(issuerSelectorEnabled);
+        trustedIssuersButton.setEnabled(issuerSelectorEnabled);
+        trustedIssuersText.setEnabled(issuerSelectorEnabled);
     }
 
     private void handleSubjectDnValidationModeChange() {
@@ -355,6 +402,14 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         clientAuthRadioNone.setEnabled(managerEnabled);
         clientAuthRadioRequested.setEnabled(managerEnabled);
         clientAuthRadioRequired.setEnabled(managerEnabled);
+
+        if (managerEnabled) {
+            handleClientAuthModeChange(properties.getClientAuthMode(), false);
+        } else {
+            trustedIssuersLabel.setEnabled(false);
+            trustedIssuersButton.setEnabled(false);
+            trustedIssuersText.setEnabled(false);
+        }
 
         subjectDnValidationLabel.setEnabled(managerEnabled);
         subjectDnValidationModeComboBox.setEnabled(managerEnabled);
@@ -395,6 +450,26 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
             log("Unable to determine client auth mode: %s. Using NONE");
         }
 
+        handleClientAuthModeChange(properties.getClientAuthMode(), false);
+
+        var thingsToTrust = new ArrayList<String>();
+        if (properties.isTrustSystemTruststore()) {
+            thingsToTrust.add("System Truststore");
+        }
+
+        if (properties.getTrustedServerCertificates() != null && !properties.getTrustedServerCertificates().isEmpty()) {
+            var count = properties.getTrustedServerCertificates().size();
+            var plural = (count == 1) ? "" : "s";
+            thingsToTrust.add("%d certificate%s".formatted(count, plural));
+        }
+
+        var serverCertificatesText = "Trusting %s".formatted(
+            thingsToTrust.isEmpty()
+                ? "no one >:C"
+                : String.join(" and ", thingsToTrust)
+        );
+        trustedIssuersText.setText(serverCertificatesText);
+
         subjectDnValidationModeComboBox.setSelectedItem(properties.getSubjectDnValidationMode());
         subjectDnValidationFilterTextField.setEnabled(properties.getSubjectDnValidationMode() != SubjectDnValidationMode.NONE);
         subjectDnValidationFilterTextField.setText(properties.getSubjectDnValidationFilter());
@@ -419,22 +494,25 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         final var workerId = PlatformUI.MIRTH_FRAME.startWorking("Fetching data...");
 
         var worker = new SwingWorker<Void, Void>() {
-            private Set<String> aliasSet;
+            private Set<String> publicCertAliasSet;
+            private Set<String> clientCertAliasSet;
             private Map<String, String[]> cryptoMap;
 
             public Void doInBackground() {
                 try {
-                    aliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
+                    publicCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getPublicCertificates();
+                    clientCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
                     cryptoMap = PlatformUI.MIRTH_FRAME.mirthClient.getProtocolsAndCipherSuites();
                 } catch (Exception e) {
-                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported client certificates failed");
+                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported certificates failed");
                 }
 
                 return null;
             }
 
             public void done() {
-                serverCertificates = aliasSet;
+                serverCertificates = clientCertAliasSet;
+                publicCertificates = publicCertAliasSet;
                 supportedProtocols = Set.of(
                     cryptoMap.get(MirthSSLUtil.KEY_ENABLED_SERVER_PROTOCOLS)
                 );

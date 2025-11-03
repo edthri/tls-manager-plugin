@@ -68,6 +68,7 @@ public class SocketFactoryService {
 
             var dualcheckerTrustManager = new DualCheckerTrustManager(
                 truststore,
+                null,
                 properties.getSubjectDnValidationMode(),
                 properties.getSubjectDnValidationFilter(),
                 properties.getOcspMode(),
@@ -113,6 +114,19 @@ public class SocketFactoryService {
     }
 
     public WeirdIntermediaryListenerContextContainer generateTLSContext(Connector connector, TLSListenerProperties properties) {
+        var keystore = certificateService.getKeyStore(properties.getServerCertificateAlias());
+        var truststore = certificateService.getTrustStoreFromProperties(properties.isTrustSystemTruststore(), properties.getTrustedServerCertificates(), connector);
+
+        var dualcheckerTrustManager = new DualCheckerTrustManager(
+            truststore,
+            keystore,
+            properties.getSubjectDnValidationMode(),
+            properties.getSubjectDnValidationFilter(),
+            properties.getOcspMode(),
+            properties.getCrlMode(),
+            null
+        );
+
         var protocolArray = properties.isUseServerDefaultProtocols()
             ? MirthSSLUtil.getEnabledHttpsProtocols(configurationController.getHttpsServerProtocols())
             : MirthSSLUtil.getEnabledHttpsProtocols(properties.getUsedProtocols().toArray(new String[0]));
@@ -125,13 +139,23 @@ public class SocketFactoryService {
             ? SSLConnectionSocketFactory.getDefaultHostnameVerifier()
             : NoopHostnameVerifier.INSTANCE;
 
-        var keystore = certificateService.getKeyStore(properties.getServerCertificateAlias());
+        try {
+            var keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            keyManagerFactory.init(keystore, new char[0]);
 
-        return new WeirdIntermediaryListenerContextContainer(
-            protocolArray,
-            cipherArray,
-            hostnameVerificationStrategy,
-            keystore
-        );
+            var sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(keyManagerFactory.getKeyManagers(), new TrustManager[] { dualcheckerTrustManager }, null);
+
+            return new WeirdIntermediaryListenerContextContainer(
+                protocolArray,
+                cipherArray,
+                hostnameVerificationStrategy,
+                keystore,
+                sslContext
+            );
+        } catch (Exception e) {
+            log.error("Error generating SSLContext", e);
+            throw new RuntimeException(e);
+        }
     }
 }

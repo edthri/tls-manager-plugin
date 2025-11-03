@@ -669,7 +669,7 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
             thingsToTrust.add("System Truststore");
         }
 
-        if (!properties.getTrustedServerCertificates().isEmpty()) {
+        if (properties.getTrustedServerCertificates() != null && !properties.getTrustedServerCertificates().isEmpty()) {
             var count = properties.getTrustedServerCertificates().size();
             var plural = (count == 1) ? "" : "s";
             thingsToTrust.add("%d certificate%s".formatted(count, plural));
@@ -734,7 +734,6 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
                 supportedCiphers = Set.of(
                     cryptoMap.get(MirthSSLUtil.KEY_ENABLED_CIPHER_SUITES)
                 );
-
 
                 PlatformUI.MIRTH_FRAME.stopWorking(workingId);
             }
