@@ -8,7 +8,7 @@ import forge from 'node-forge'
 export function parseCertificate(base64Pem) {
   try {
 
-    const pemString = base64ToPem(base64Pem)
+    const pemString = base64Pem
     
     // Parse the PEM certificate
     const cert = forge.pki.certificateFromPem(pemString)

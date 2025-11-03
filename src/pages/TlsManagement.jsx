@@ -17,12 +17,12 @@ import RemoveCertificateDialog from '../components/RemoveCertificateDialog'
 import { useNotification } from '../context/NotificationContext'
 
 export default function TlsManagement() {
-  const { all, counts, filterBy, loading, error, refetch } = useCertificates()
-  const { showSuccess, showError } = useNotification()
   const [params, setParams] = useSearchParams()
   const tabKeys = ['native', 'trusted', 'private']
   const initialKey = params.get('tab') && tabKeys.includes(params.get('tab')) ? params.get('tab') : 'native'
   const [tabKey, setTabKey] = useState(initialKey)
+  const { all, counts, filterBy, loading, error, refetch } = useCertificates(tabKey)
+  const { showSuccess, showError } = useNotification()
   const [search, setSearch] = useState('')
 
   const [dialogOpen, setDialogOpen] = useState(false)

@@ -11,7 +11,7 @@
  */
 
 import { parseCertificate, pemToBase64, privateKeyPemToBase64 } from '../utils/certificateUtils.js'
-// import { api } from './api.js' // Uncomment when API is ready
+import { api } from './api.js'
 
 // === INTERNAL STORE (remove when switching to real API) ===
 // Internal store to simulate API - starts empty
@@ -102,6 +102,244 @@ function getChannelsForCertificate(store, alias, assignments) {
   return storeAssignments[alias] || []
 }
 
+/**
+ * Fetch system certificates (native store)
+ * @returns {Promise<Array>} Array of parsed certificate objects
+ */
+export async function fetchSystemCertificates() {
+  try {
+    const response = await api.get('/api/tlsmanager/systemCertificates')
+    const data = response.data
+    
+    // Handle response structure: { list: { trustedCertificate: [{ alias, certificate }] } } or { list: { trustedCertificate: {} } }
+    const certificates = []
+    const certList = data?.list?.trustedCertificate
+    
+    // Handle both array and object formats
+    let certArray = []
+    if (Array.isArray(certList)) {
+      certArray = certList
+    } else if (certList && typeof certList === 'object') {
+      // If it's a single object, wrap it in an array
+      certArray = [certList]
+    }
+    
+    for (const cert of certArray) {
+      // Skip certificates with missing or empty certificate data
+      if (!cert.certificate || !cert.certificate.trim()) {
+        console.warn(`Skipping certificate with empty certificate data for alias: ${cert.alias || 'unknown'}`)
+        continue
+      }
+      
+      const parsed = await parseCertificate(cert.certificate)
+      
+      // Skip certificates that failed to parse (they have an error field)
+      if (parsed.error) {
+        console.warn(`Failed to parse certificate for alias "${cert.alias}": ${parsed.error}`)
+        // Still include it in the list but mark it as invalid
+        certificates.push({
+          alias: cert.alias,
+          name: cert.alias,
+          type: 'Invalid',
+          subject: `Parse Error: ${parsed.error}`,
+          issuer: 'Unknown',
+          validFrom: 'Unknown',
+          validTo: 'Unknown',
+          fingerprintSha1: 'Unknown',
+          hasPrivateKey: false,
+          store: 'native',
+          rawCertificate: cert.certificate,
+          parsedCertificate: parsed,
+        })
+        continue
+      }
+      
+      certificates.push({
+        alias: cert.alias,
+        name: parsed.subject?.CN || cert.alias,
+        type: parsed.type || 'Unknown',
+        subject: parsed.subjectStr || 'Unknown',
+        issuer: parsed.issuerStr || 'Unknown',
+        validFrom: parsed.validFrom,
+        validTo: parsed.validTo,
+        fingerprintSha1: parsed.fingerprintSha1,
+        hasPrivateKey: false,
+        store: 'native',
+        rawCertificate: cert.certificate,
+        parsedCertificate: parsed,
+      })
+    }
+    
+    return certificates
+  } catch (error) {
+    console.error('Failed to fetch system certificates:', error)
+    throw new Error('Failed to fetch system certificates from server')
+  }
+}
+
+/**
+ * Fetch trusted certificates
+ * @returns {Promise<Array>} Array of parsed certificate objects
+ */
+export async function fetchTrustedCertificates() {
+  try {
+    const response = await api.get('/api/tlsmanager/trustedCertificates')
+    const data = response.data
+    
+    // Handle response structure: { list: { trustedCertificate: [{ alias, certificate }] } }
+    const certificates = []
+    const certList = data?.list?.trustedCertificate || []
+
+    // Handle both array and object formats
+    let certArray = []
+    if (Array.isArray(certList)) {
+      certArray = certList
+    } else if (certList && typeof certList === 'object') {
+      // If it's a single object, wrap it in an array
+      certArray = [certList]
+    }
+    
+    // Get channel assignments (still using mock for now)
+    const channelAssignments = getOrCreateChannelAssignments()
+    
+    for (const cert of certArray) {
+      // Skip certificates with missing or empty certificate data
+      if (!cert.certificate || !cert.certificate.trim()) {
+        console.warn(`Skipping trusted certificate with empty certificate data for alias: ${cert.alias || 'unknown'}`)
+        continue
+      }
+      
+      const parsed = await parseCertificate(cert.certificate)
+      const channelsInUse = getChannelsForCertificate('trusted', cert.alias, channelAssignments)
+      
+      // Handle parse errors gracefully
+      if (parsed.error) {
+        console.warn(`Failed to parse trusted certificate for alias "${cert.alias}": ${parsed.error}`)
+        certificates.push({
+          alias: cert.alias,
+          name: cert.alias,
+          type: 'Invalid',
+          subject: `Parse Error: ${parsed.error}`,
+          issuer: 'Unknown',
+          validFrom: 'Unknown',
+          validTo: 'Unknown',
+          fingerprintSha1: 'Unknown',
+          hasPrivateKey: false,
+          store: 'trusted',
+          channelsInUse: channelsInUse,
+          rawCertificate: cert.certificate,
+          parsedCertificate: parsed,
+        })
+        continue
+      }
+      
+      certificates.push({
+        alias: cert.alias,
+        name: parsed.subject?.CN || cert.alias,
+        type: parsed.type || 'Unknown',
+        subject: parsed.subjectStr || 'Unknown',
+        issuer: parsed.issuerStr || 'Unknown',
+        validFrom: parsed.validFrom,
+        validTo: parsed.validTo,
+        fingerprintSha1: parsed.fingerprintSha1,
+        hasPrivateKey: false,
+        store: 'trusted',
+        channelsInUse: channelsInUse,
+        rawCertificate: cert.certificate,
+        parsedCertificate: parsed,
+      })
+    }
+    
+    return certificates
+  } catch (error) {
+    console.error('Failed to fetch trusted certificates:', error)
+    throw new Error('Failed to fetch trusted certificates from server')
+  }
+}
+
+/**
+ * Fetch local certificates (private store)
+ * @returns {Promise<Array>} Array of parsed certificate objects with private keys
+ */
+export async function fetchLocalCertificates() {
+  try {
+    const response = await api.get('/api/tlsmanager/localCertificates')
+    const data = response.data
+    
+    // Handle response structure: { list: { localCertificate: [{ alias, certificate, key }] } }
+    const certificates = []
+    const certList = data?.list?.localCertificate || []
+
+    // Handle both array and object formats
+    let certArray = []
+    if (Array.isArray(certList)) {
+      certArray = certList
+    } else if (certList && typeof certList === 'object') {
+      // If it's a single object, wrap it in an array
+      certArray = [certList]
+    }
+    
+    // Get channel assignments (still using mock for now)
+    const channelAssignments = getOrCreateChannelAssignments()
+    
+    for (const cert of certArray) {
+      // Skip certificates with missing or empty certificate data
+      if (!cert.certificate || !cert.certificate.trim()) {
+        console.warn(`Skipping local certificate with empty certificate data for alias: ${cert.alias || 'unknown'}`)
+        continue
+      }
+      
+      const parsed = await parseCertificate(cert.certificate)
+      const channelsInUse = getChannelsForCertificate('private', cert.alias, channelAssignments)
+      
+      // Handle parse errors gracefully
+      if (parsed.error) {
+        console.warn(`Failed to parse local certificate for alias "${cert.alias}": ${parsed.error}`)
+        certificates.push({
+          alias: cert.alias,
+          name: cert.alias,
+          type: 'Invalid',
+          subject: `Parse Error: ${parsed.error}`,
+          issuer: 'Unknown',
+          validFrom: 'Unknown',
+          validTo: 'Unknown',
+          fingerprintSha1: 'Unknown',
+          hasPrivateKey: true,
+          store: 'private',
+          channelsInUse: channelsInUse,
+          rawCertificate: cert.certificate,
+          rawPrivateKey: cert.key, // Include private key in response
+          parsedCertificate: parsed,
+        })
+        continue
+      }
+      
+      certificates.push({
+        alias: cert.alias,
+        name: parsed.subject?.CN || cert.alias,
+        type: parsed.type || 'Unknown',
+        subject: parsed.subjectStr || 'Unknown',
+        issuer: parsed.issuerStr || 'Unknown',
+        validFrom: parsed.validFrom,
+        validTo: parsed.validTo,
+        fingerprintSha1: parsed.fingerprintSha1,
+        hasPrivateKey: true,
+        store: 'private',
+        channelsInUse: channelsInUse,
+        rawCertificate: cert.certificate,
+        rawPrivateKey: cert.key, // Include private key in response
+        parsedCertificate: parsed,
+      })
+    }
+    
+    return certificates
+  } catch (error) {
+    console.error('Failed to fetch local certificates:', error)
+    throw new Error('Failed to fetch local certificates from server')
+  }
+}
+
+// Legacy function - kept for backward compatibility, but should use tab-specific functions instead
 export async function fetchCertificates() {
   try {
     // === INTERNAL STORE (for development) ===

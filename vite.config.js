@@ -11,7 +11,7 @@ export default defineConfig({
     allowedHosts: ['localhost', '127.0.0.1', '0.0.0.0', '778ded44be8d.ngrok-free.app'],
     proxy: {
       "/api": {
-        target: "https://oie-1.quantis.health",
+        target: "https://oie-test.quantis.health",
         changeOrigin: true,
         secure: true,
       },
