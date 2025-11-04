@@ -20,6 +20,7 @@ const UserInputsSection = ({
   errors,
   targetStore,
   aliasWarning,
+  readOnlyPem = false,
 
   // Refs
   fileInputRef,
@@ -73,22 +74,26 @@ const UserInputsSection = ({
                   }}
                 />
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={fileAccept}
-          style={{ display: 'none' }}
-          onChange={handleFileUpload}
-        />
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Button variant="outlined" onClick={() => fileInputRef.current?.click()}>
-            {file ? 'Change Certificate File' : 'Choose Certificate File'}
-          </Button>
-          <Typography variant="body2" color={errors.file ? 'error' : 'text.secondary'}>
-            {file ? file.name : 'No file selected'}
-          </Typography>
-        </Stack>
-        {errors.file && <FormHelperText error>{errors.file}</FormHelperText>}
+        {!readOnlyPem && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={fileAccept}
+              style={{ display: 'none' }}
+              onChange={handleFileUpload}
+            />
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Button variant="outlined" onClick={() => fileInputRef.current?.click()}>
+                {file ? 'Change Certificate File' : 'Choose Certificate File'}
+              </Button>
+              <Typography variant="body2" color={errors.file ? 'error' : 'text.secondary'}>
+                {file ? file.name : 'No file selected'}
+              </Typography>
+            </Stack>
+            {errors.file && <FormHelperText error>{errors.file}</FormHelperText>}
+          </>
+        )}
 
         <TextField
           label="PEM (paste contents including BEGIN/END)"
@@ -96,11 +101,12 @@ const UserInputsSection = ({
           value={pemText}
           onChange={handlePemTextChange}
           error={Boolean(errors.pemText)}
-          helperText={errors.pemText || 'Paste certificate or chain. Uploading a .pem or .key file fills this field.'}
+          helperText={errors.pemText || (readOnlyPem ? 'Certificate imported from URL' : 'Paste certificate or chain. Uploading a .pem or .key file fills this field.')}
           multiline
           minRows={4}
           maxRows={6}
           fullWidth
+          disabled={readOnlyPem}
           sx={{ marginTop: '10px' }}
         />
 

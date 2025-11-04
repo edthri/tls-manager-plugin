@@ -11,6 +11,7 @@ import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import VpnKeyIcon from '@mui/icons-material/VpnKey'
 import ImportCertificateDialogContent from '../components/ImportCertificateDialogContent'
+import ImportFromUrlDialogContent from '../components/ImportFromUrlDialogContent'
 import CertificateDetailsDialog from '../components/CertificateDetailsDialog'
 import EditAliasDialog from '../components/EditAliasDialog'
 import RemoveCertificateDialog from '../components/RemoveCertificateDialog'
@@ -146,6 +147,7 @@ export default function TlsManagement() {
       title: 'Additional Trusted Certificates',
       actions: [
         { key: 'import', label: 'Import Certificate', color: 'info', onClick: () => openImportDialog() },
+        { key: 'import-url', label: 'Import from URL', color: 'info', onClick: () => openDialog({ type: 'import-from-url', title: 'Import Certificate from URL', props: { targetStore: 'trusted' } }) },
         { key: 'add', label: 'Add New', variant: 'contained', color: 'success', onClick: () => openDialog({ type: 'text', title: 'Add New Certificate', props: { text: 'Placeholder dialog for adding a new certificate.' } }) },
       ],
     },
@@ -225,6 +227,14 @@ export default function TlsManagement() {
               currentCertificates={getCertificatesByStore(dialogProps.targetStore)}
               onCancel={closeDialog}
               onSubmit={() => closeDialog()}
+              onSuccess={handleImportSuccess}
+            />
+          )}
+          {dialogType === 'import-from-url' && (
+            <ImportFromUrlDialogContent
+              targetStore={dialogProps.targetStore}
+              currentCertificates={getCertificatesByStore(dialogProps.targetStore)}
+              onCancel={closeDialog}
               onSuccess={handleImportSuccess}
             />
           )}

@@ -10,7 +10,7 @@
  * 4. Remove or comment out the internal store variables and helper functions at the bottom
  */
 
-import { parseCertificate } from '../utils/certificateUtils.js'
+import { parseCertificate, getSuggestedAlias } from '../utils/certificateUtils.js'
 import { api } from './api.js'
 
 // === INTERNAL STORE (remove when switching to real API) ===
@@ -140,6 +140,97 @@ export async function fetchSystemCertificates() {
   } catch (error) {
     console.error('Failed to fetch system certificates:', error)
     throw new Error('Failed to fetch system certificates from server')
+  }
+}
+
+/**
+ * Fetch remote certificates from a URL
+ * @param {string} url - The URL to fetch certificates from (must be https://)
+ * @returns {Promise<Array>} Array of certificate objects with PEM text and parsed details
+ */
+export async function fetchRemoteCertificates(url) {
+  try {
+    if (!url || typeof url !== 'string' || !url.startsWith('https://')) {
+      throw new Error('URL must be a valid HTTPS URL')
+    }
+    
+    const response = await api.get('/api/tlsmanager/remoteCertificates', {
+      params: { url }
+    })
+    const data = response.data
+    
+    // Handle response structure: { list: { trustedCertificate: [{ certificate: "..." }] } }
+    const certificates = []
+    const certList = data?.list?.trustedCertificate
+    
+    // Handle both array and object formats
+    let certArray = []
+    if (Array.isArray(certList)) {
+      certArray = certList
+    } else if (certList && typeof certList === 'object') {
+      // If it's a single object, wrap it in an array
+      certArray = [certList]
+    }
+    
+    for (const cert of certArray) {
+      // Skip certificates with missing or empty certificate data
+      if (!cert.certificate || !cert.certificate.trim()) {
+        console.warn('Skipping remote certificate with empty certificate data')
+        continue
+      }
+      
+      try {
+        const parsed = await parseCertificate(cert.certificate)
+        
+        // Handle parse errors gracefully
+        if (parsed.error) {
+          certificates.push({
+            certificate: cert.certificate,
+            name: 'Invalid Certificate',
+            type: 'Invalid',
+            subject: `Parse Error: ${parsed.error}`,
+            issuer: 'Unknown',
+            validFrom: 'Unknown',
+            validTo: 'Unknown',
+            fingerprintSha1: 'Unknown',
+            parsedCertificate: parsed,
+            error: parsed.error
+          })
+          continue
+        }
+        
+        certificates.push({
+          alias: getSuggestedAlias(parsed),
+          certificate: cert.certificate,
+          name: parsed.subject?.CN || 'Unknown',
+          type: parsed.type || 'Unknown',
+          subject: parsed.subjectStr || 'Unknown',
+          issuer: parsed.issuerStr || 'Unknown',
+          validFrom: parsed.validFrom,
+          validTo: parsed.validTo,
+          fingerprintSha1: parsed.fingerprintSha1,
+          parsedCertificate: parsed
+        })
+      } catch (parseError) {
+        console.warn('Failed to parse remote certificate:', parseError)
+        certificates.push({
+          certificate: cert.certificate,
+          name: 'Parse Error',
+          type: 'Invalid',
+          subject: `Parse Error: ${parseError.message}`,
+          issuer: 'Unknown',
+          validFrom: 'Unknown',
+          validTo: 'Unknown',
+          fingerprintSha1: 'Unknown',
+          error: parseError.message
+        })
+      }
+    }
+    
+    return certificates
+  } catch (error) {
+    console.error('Failed to fetch remote certificates:', error)
+    throw new Error(error.response?.data?.message || error.message || 'Failed to fetch remote certificates from server')
   }
 }
 

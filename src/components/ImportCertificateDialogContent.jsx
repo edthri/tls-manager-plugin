@@ -23,6 +23,8 @@ export default function ImportCertificateDialogContent({
   onCancel,
   onSubmit,
   onSuccess,
+  initialPemText = null,
+  readOnlyPem = false,
 }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showValidationDialog, setShowValidationDialog] = useState(false)
@@ -52,6 +54,8 @@ export default function ImportCertificateDialogContent({
     // Actions
     setLoading,
     setApiError,
+    setPemText,
+    parseCertificateDetails,
     
     // Handlers
     handleVerifyCertificate,
@@ -69,6 +73,15 @@ export default function ImportCertificateDialogContent({
   useEffect(() => {
     loadExistingCertificates()
   }, [loadExistingCertificates])
+
+  // Pre-populate PEM text if initialPemText is provided
+  useEffect(() => {
+    if (initialPemText && initialPemText.trim() && !pemText.trim()) {
+      setPemText(initialPemText)
+      parseCertificateDetails(initialPemText)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPemText])
 
   // Reusable verification function
   const performFinalVerification = async () => {
@@ -182,6 +195,7 @@ export default function ImportCertificateDialogContent({
           handleFileUpload={handleFileUpload}
           handlePrivateKeyFileUpload={handlePrivateKeyFileUpload}
           setApiError={setApiError}
+          readOnlyPem={readOnlyPem}
         />
         {/* Right Column - Certificate Details & Verification */}
         <Box sx={{ 

@@ -1,4 +1,4 @@
-import { X509, KEYUTIL, KJUR } from 'jsrsasign'
+import { X509, KEYUTIL, KJUR, RSAKey } from 'jsrsasign'
 import { convertX509TimeToDate, parseDNString } from './certificateUtils.js'
 
 /**
@@ -159,35 +159,61 @@ export function validatePrivateKey(certObj, keyPem) {
     }
 
     // Get public key from certificate
-    const certPubKeyPem = certObj.cert.getPublicKeyPEM()
-    
-    // Extract public key from private key
-    const pubKeyFromPrivate = KEYUTIL.getPublicKeyFromPrivateKey(privateKey)
-    const pubKeyPemFromPrivate = KEYUTIL.getPEMFromPublicKey(pubKeyFromPrivate)
-
-    // Compare public keys (PEM format comparison)
-    if (certPubKeyPem === pubKeyPemFromPrivate) {
-      return { isValid: true, message: 'Private key matches the certificate!' }
+    const certPubKeyPem = certObj.cert.getPublicKey()
+    const certPubKey = KEYUTIL.getKey(certPubKeyPem)
+    if (!certPubKey) {
+      return { isValid: false, message: 'Failed to parse certificate public key' }
     }
 
-    // Alternative: Compare hex representations
-    const certPubKeyHex = KEYUTIL.getHexFromPublicKey(KEYUTIL.getKey(certPubKeyPem))
-    const privatePubKeyHex = KEYUTIL.getHexFromPublicKey(pubKeyFromPrivate)
-
-    if (certPubKeyHex === privatePubKeyHex) {
-      return { isValid: true, message: 'Private key matches the certificate!' }
+    // Extract public key from private key object
+    // For RSA: private key has n and e (public components)
+    // For EC: private key has x and y (public point coordinates)
+    let pubKeyFromPrivate = null
+    try {
+      // Try to create a public key PEM from the private key
+      // For RSA keys, we can construct a public key object from n and e
+      if (privateKey.n && privateKey.e) {
+        // RSA key - construct public key object
+        pubKeyFromPrivate = new RSAKey()
+        pubKeyFromPrivate.setPublic(privateKey.n, privateKey.e)
+        const pubKeyPemFromPrivate = KEYUTIL.getPEM(pubKeyFromPrivate)
+        
+        // Compare public keys (PEM format comparison)
+        if (certPubKeyPem === pubKeyPemFromPrivate) {
+          return { isValid: true, message: 'Private key matches the certificate!' }
+        }
+      } else if (privateKey.curve && privateKey.x && privateKey.y) {
+        // EC key - construct public key object
+        pubKeyFromPrivate = new KJUR.crypto.ECDSA({ curve: privateKey.curve, pub: { x: privateKey.x, y: privateKey.y } })
+        const pubKeyPemFromPrivate = KEYUTIL.getPEM(pubKeyFromPrivate)
+        
+        // Compare public keys (PEM format comparison)
+        if (certPubKeyPem === pubKeyPemFromPrivate) {
+          return { isValid: true, message: 'Private key matches the certificate!' }
+        }
+      }
+    } catch (constructError) {
+      // If constructing public key fails, fall through to signature verification
+      console.debug('Could not construct public key from private key:', constructError)
     }
 
-    // Last resort: Try signature verification
+    // Primary method: Signature verification (works for both RSA and EC)
     try {
       const testData = 'test-data-for-validation'
-      const sig = new KJUR.crypto.Signature({ alg: 'SHA256withRSA' })
+      
+      // Determine signature algorithm based on key type
+      let sigAlg = 'SHA256withRSA'
+      if (privateKey.curve) {
+        // EC key - use ECDSA
+        sigAlg = 'SHA256withECDSA'
+      }
+      
+      const sig = new KJUR.crypto.Signature({ alg: sigAlg })
       sig.init(privateKey)
       sig.updateString(testData)
       const signature = sig.sign()
 
-      const certPubKey = KEYUTIL.getKey(certPubKeyPem)
-      const verifier = new KJUR.crypto.Signature({ alg: 'SHA256withRSA' })
+      const verifier = new KJUR.crypto.Signature({ alg: sigAlg })
       verifier.init(certPubKey)
       verifier.updateString(testData)
       const isValid = verifier.verify(signature)
@@ -198,9 +224,8 @@ export function validatePrivateKey(certObj, keyPem) {
         return { isValid: false, message: 'Private key does not match the certificate' }
       }
     } catch (signError) {
-      // If signature verification fails (e.g., EC keys need different algorithm)
-      // Fall back to fingerprint comparison
-      const certKeyFingerprint = getPublicKeyFingerprint(KEYUTIL.getKey(certPubKeyPem))
+      // If signature verification fails, try fingerprint comparison
+      const certKeyFingerprint = getPublicKeyFingerprint(certPubKey)
       const privateKeyFingerprint = getPrivateKeyFingerprint(privateKey)
 
       if (certKeyFingerprint === privateKeyFingerprint) {
@@ -252,7 +277,8 @@ export function getFingerprint(cert, algorithm = 'sha1') {
  * @returns {Array} Array of SAN strings
  */
 export function getSANs(cert) {
-  const sans = cert.getExtSubjectAltName()
+  try { 
+    const sans = cert.getExtSubjectAltName()
   if (!sans || !Array.isArray(sans)) {
     return []
   }
@@ -268,6 +294,9 @@ export function getSANs(cert) {
       default: return 'Other: ' + value
     }
   })
+  } catch (error) {
+    return []
+  }
 }
 
 /**
@@ -277,7 +306,7 @@ export function getSANs(cert) {
  */
 export function getKeySize(cert) {
   try {
-    const pubKeyPem = cert.getPublicKeyPEM()
+    const pubKeyPem = cert.getPublicKey()
     const pubKeyObj = KEYUTIL.getKey(pubKeyPem)
     
     if (pubKeyObj) {
@@ -323,19 +352,71 @@ function getDistinguishedName(dnString) {
  * @returns {string} SHA-256 fingerprint
  */
 function getPublicKeyFingerprint(publicKey) {
-  const pubKeyHex = KEYUTIL.getHexFromPublicKey(publicKey)
-  const fingerprint = KJUR.crypto.Util.hashHex(pubKeyHex, 'sha256')
-  return fingerprint
+  try {
+    // Convert public key to PEM and then to hex for hashing
+    const pubKeyPem = KEYUTIL.getPEM(publicKey)
+    // Remove PEM headers and whitespace, then convert base64 to hex
+    const base64Content = pubKeyPem
+      .replace(/-----BEGIN PUBLIC KEY-----/g, '')
+      .replace(/-----END PUBLIC KEY-----/g, '')
+      .replace(/\s/g, '')
+    
+    // Convert base64 to hex
+    const hexContent = KJUR.crypto.Util.b64toHex(base64Content)
+    const fingerprint = KJUR.crypto.Util.hashHex(hexContent, 'sha256')
+    return fingerprint
+  } catch (error) {
+    // Fallback: use key object properties
+    try {
+      let keyHex = ''
+      if (publicKey.n && publicKey.e) {
+        // RSA key
+        keyHex = publicKey.n.toString(16) + publicKey.e.toString(16)
+      } else if (publicKey.x && publicKey.y) {
+        // EC key
+        keyHex = publicKey.x.toString(16) + publicKey.y.toString(16)
+      }
+      return KJUR.crypto.Util.hashHex(keyHex, 'sha256')
+    } catch (e) {
+      return ''
+    }
+  }
 }
 
 /**
- * Get private key fingerprint
+ * Get private key fingerprint (by extracting public key components)
  * @param {Object} privateKey - Private key object (from KEYUTIL)
  * @returns {string} SHA-256 fingerprint
  */
 function getPrivateKeyFingerprint(privateKey) {
-  const publicKey = KEYUTIL.getPublicKeyFromPrivateKey(privateKey)
-  return getPublicKeyFingerprint(publicKey)
+  try {
+    // Extract public key components from private key
+    let publicKeyComponents = null
+    
+    if (privateKey.n && privateKey.e) {
+      // RSA key - extract public components
+      publicKeyComponents = new RSAKey()
+      publicKeyComponents.setPublic(privateKey.n, privateKey.e)
+    } else if (privateKey.curve && privateKey.x && privateKey.y) {
+      // EC key - extract public point
+      publicKeyComponents = new KJUR.crypto.ECDSA({ curve: privateKey.curve, pub: { x: privateKey.x, y: privateKey.y } })
+    }
+    
+    if (publicKeyComponents) {
+      return getPublicKeyFingerprint(publicKeyComponents)
+    }
+    
+    // Fallback: use private key PEM directly
+    const privateKeyPem = KEYUTIL.getPEM(privateKey, 'PKCS8PRV')
+    const base64Content = privateKeyPem
+      .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+      .replace(/-----END PRIVATE KEY-----/g, '')
+      .replace(/\s/g, '')
+    const hexContent = KJUR.crypto.Util.b64toHex(base64Content)
+    return KJUR.crypto.Util.hashHex(hexContent, 'sha256')
+  } catch (error) {
+    return ''
+  }
 }
 
 /**
@@ -378,7 +459,7 @@ export function verifyCertificate(certText, keyText = null) {
     const sigAlg = primaryCert.getSignatureAlgorithmName() || 'Unknown'
     
     // Get public key algorithm
-    const pubKeyPem = primaryCert.getPublicKeyPEM()
+    const pubKeyPem = primaryCert.getPublicKey()
     const pubKeyObj = KEYUTIL.getKey(pubKeyPem)
     let pubKeyAlg = 'RSA'
     if (pubKeyObj) {
@@ -442,6 +523,7 @@ export function verifyCertificate(certText, keyText = null) {
     }
 
   } catch (error) {
+    console.error('Error parsing certificate:', error)
     return {
       success: false,
       error: `Error parsing certificate: ${error.message}`
