@@ -1,4 +1,100 @@
-import forge from 'node-forge'
+import { X509, KEYUTIL, KJUR, zulutodate } from 'jsrsasign'
+
+/**
+ * Convert X509 time string to Date object using jsrsasign utility
+ * @param {string} timeStr - X509 time format string (YYYYMMDDHHmmssZ or YYMMDDHHmmssZ)
+ * @returns {Date} Date object
+ */
+export function convertX509TimeToDate(timeStr) {
+  if (!timeStr) return null
+  
+  try {
+    // Convert the YYMMDDhhmmssZ string to an ISO-like format
+    const isoString = zulutodate(timeStr)
+    
+    // The t2d output is in 'YYYY/MM/DD hh:mm:ss GMT' format, which Date() can parse
+    return new Date(isoString)
+  } catch (error) {
+    console.error('Error converting X509 time to Date:', error)
+    return null
+  }
+}
+
+/**
+ * Parse Distinguished Name string to object
+ * Input: "CN=example.com, O=Org, C=US"
+ * Output: { CN: "example.com", O: "Org", C: "US" }
+ * @param {string} dnString - DN string
+ * @returns {Object} Parsed DN object
+ */
+export function parseDNString(dnString) {
+  const attrs = {}
+  if (!dnString) return attrs
+  
+  // Split by comma, but handle quoted values
+  const parts = []
+  let current = ''
+  let inQuotes = false
+  
+  for (let i = 0; i < dnString.length; i++) {
+    const char = dnString[i]
+    if (char === '"') {
+      inQuotes = !inQuotes
+      current += char
+    } else if (char === ',' && !inQuotes) {
+      parts.push(current.trim())
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  if (current.trim()) {
+    parts.push(current.trim())
+  }
+  
+  parts.forEach(part => {
+    const equalIndex = part.indexOf('=')
+    if (equalIndex > 0) {
+      const key = part.substring(0, equalIndex).trim()
+      let value = part.substring(equalIndex + 1).trim()
+      // Remove quotes if present
+      if (value.startsWith('"') && value.endsWith('"')) {
+        value = value.slice(1, -1)
+      }
+      attrs[key] = value
+    }
+  })
+  
+  return attrs
+}
+
+/**
+ * Format DN object to string (for compatibility)
+ * @param {Object} dnObj - DN object with attributes
+ * @returns {string} Formatted DN string
+ */
+export function formatDNFromObject(dnObj) {
+  if (!dnObj || typeof dnObj !== 'object') return 'Unknown'
+  
+  const parts = []
+  const attributes = ['CN', 'OU', 'O', 'L', 'ST', 'C', 'emailAddress']
+  
+  // Add preferred attributes in order
+  for (const attr of attributes) {
+    if (dnObj[attr]) {
+      parts.push(`${attr}=${dnObj[attr]}`)
+    }
+  }
+  
+  // Add any remaining attributes
+  Object.keys(dnObj).forEach(key => {
+    if (!attributes.includes(key) && dnObj[key]) {
+      parts.push(`${key}=${dnObj[key]}`)
+    }
+  })
+  
+  return parts.length > 0 ? parts.join(', ') : 'Unknown'
+}
 
 /**
  * Parse a Base64-encoded PEM certificate and extract relevant information
@@ -7,46 +103,91 @@ import forge from 'node-forge'
  */
 export function parseCertificate(base64Pem) {
   try {
-
     const pemString = base64Pem
     
     // Parse the PEM certificate
-    const cert = forge.pki.certificateFromPem(pemString)
+    const cert = new X509()
+    cert.readCertPEM(pemString)
     
     // Extract subject information
-    const subject = cert.subject
-    const subjectStr = formatDN(subject)
+    const subjectStr = cert.getSubjectString()
+    const subject = parseDNString(subjectStr)
+    const subjectFormatted = formatDNFromObject(subject)
     
     // Extract issuer information
-    const issuer = cert.issuer
-    const issuerStr = formatDN(issuer)
+    const issuerStr = cert.getIssuerString()
+    const issuer = parseDNString(issuerStr)
+    const issuerFormatted = formatDNFromObject(issuer)
     
     // Determine certificate type
     const type = determineCertificateType(cert)
     
     // Format validity dates
-    const validFrom = formatDate(cert.validity.notBefore)
-    const validTo = formatDate(cert.validity.notAfter)
+    const notBefore = convertX509TimeToDate(cert.getNotBefore())
+    const notAfter = convertX509TimeToDate(cert.getNotAfter())
+    const validFrom = formatDate(notBefore)
+    const validTo = formatDate(notAfter)
     
     // Calculate SHA-1 fingerprint
-    const fingerprintSha1 = forge.md.sha1.create()
-      .update(forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes())
-      .digest()
-      .toHex()
-      .toUpperCase()
+    const derHex = cert.hex  // DER-encoded certificate as hex string
+    const fingerprintSha1 = KJUR.crypto.Util.hashHex(derHex, 'sha1').toUpperCase()
+    
+    // Get serial number
+    const serialNumber = cert.getSerialNumberHex() || cert.getSerialNumber()
+    
+    // Get version
+    const version = cert.getVersion()
+    
+    // Get extensions (for compatibility, create a simplified structure)
+    // Wrap extension access in try-catch since some certificates may not have all extensions
+    const extensions = []
+    
+    let basicConstraints = null
+    try {
+      basicConstraints = cert.getExtBasicConstraints()
+      if (basicConstraints) {
+        extensions.push({ name: 'basicConstraints', cA: basicConstraints.ca })
+      }
+    } catch (e) {
+      // Extension doesn't exist or can't be read - skip
+    }
+    
+    let keyUsage = null
+    try {
+      keyUsage = cert.getExtKeyUsage()
+      if (keyUsage && keyUsage.names && Array.isArray(keyUsage.names)) {
+        extensions.push({ name: 'keyUsage', keyCertSign: keyUsage.names.includes('keyCertSign') })
+      }
+    } catch (e) {
+      // Extension doesn't exist or can't be read - skip
+    }
+    
+    let extKeyUsage = null
+    try {
+      extKeyUsage = cert.getExtExtKeyUsage()
+      if (extKeyUsage && Array.isArray(extKeyUsage)) {
+        extensions.push({ 
+          name: 'extKeyUsage', 
+          serverAuth: extKeyUsage.includes('1.3.6.1.5.5.7.3.1'),
+          clientAuth: extKeyUsage.includes('1.3.6.1.5.5.7.3.2')
+        })
+      }
+    } catch (e) {
+      // Extension doesn't exist or can't be read - skip
+    }
     
     return {
       subject,
-      subjectStr,
+      subjectStr: subjectFormatted,
       issuer,
-      issuerStr,
+      issuerStr: issuerFormatted,
       type,
       validFrom,
       validTo,
       fingerprintSha1,
-      serialNumber: cert.serialNumber,
-      version: cert.version,
-      extensions: cert.extensions,
+      serialNumber,
+      version,
+      extensions,
       raw: cert
     }
   } catch (error) {
@@ -67,82 +208,122 @@ export function parseCertificate(base64Pem) {
 
 /**
  * Format a Distinguished Name (DN) object to string
- * @param {Object} dn - Distinguished Name object from node-forge
+ * @param {Object} dn - Distinguished Name object (from node-forge or parsed DN object)
  * @returns {string} Formatted DN string
  */
 function formatDN(dn) {
   if (!dn) return 'Unknown'
   
-  const parts = []
-  
-  // Common DN attributes in order of preference
-  const attributes = ['CN', 'OU', 'O', 'L', 'ST', 'C', 'emailAddress']
-  
-  for (const attr of attributes) {
-    const field = dn.getField(attr)
-    if (field) {
-      // Extract the value from the field object
-      const value = field.value || field
-      parts.push(`${attr}=${value}`)
-    }
+  // If it's a string, return it directly
+  if (typeof dn === 'string') {
+    return dn
   }
   
-  // Add any remaining attributes not in our preferred list
-  const allAttrs = dn.attributes || []
-  for (const attr of allAttrs) {
-    if (!attributes.includes(attr.name)) {
-      parts.push(`${attr.name}=${attr.value}`)
+  // If it has getField method (node-forge style), use that
+  if (typeof dn.getField === 'function') {
+    const parts = []
+    const attributes = ['CN', 'OU', 'O', 'L', 'ST', 'C', 'emailAddress']
+    
+    for (const attr of attributes) {
+      const field = dn.getField(attr)
+      if (field) {
+        const value = field.value || field
+        parts.push(`${attr}=${value}`)
+      }
     }
+    
+    const allAttrs = dn.attributes || []
+    for (const attr of allAttrs) {
+      if (!attributes.includes(attr.name)) {
+        parts.push(`${attr.name}=${attr.value}`)
+      }
+    }
+    
+    return parts.join(', ')
   }
   
-  return parts.join(', ')
+  // Otherwise, treat as parsed DN object
+  return formatDNFromObject(dn)
 }
 
 /**
  * Determine certificate type based on extensions and usage
- * @param {Object} cert - Certificate object from node-forge
+ * @param {Object} cert - Certificate object (X509 from jsrsasign)
  * @returns {string} Certificate type
  */
 function determineCertificateType(cert) {
-  if (!cert.extensions) return 'End-entity'
-  
-  // Check for CA certificate
-  const basicConstraints = cert.extensions.find(ext => ext.name === 'basicConstraints')
-  if (basicConstraints && basicConstraints.cA) {
-    return 'Root CA'
-  }
-  
-  // Check for intermediate CA
-  const keyUsage = cert.extensions.find(ext => ext.name === 'keyUsage')
-  if (keyUsage && keyUsage.keyCertSign) {
-    return 'Intermediate'
-  }
-  
-  // Check for server certificate
-  const extKeyUsage = cert.extensions.find(ext => ext.name === 'extKeyUsage')
-  if (extKeyUsage && extKeyUsage.serverAuth) {
-    return 'Server Certificate'
-  }
-  
-  // Check for client certificate
-  if (extKeyUsage && extKeyUsage.clientAuth) {
-    return 'Client Certificate'
+  try {
+    // Check for CA certificate
+    // Some certificates may not have basicConstraints extension, so wrap in try-catch
+    let basicConstraints = null
+    try {
+      basicConstraints = cert.getExtBasicConstraints()
+    } catch (e) {
+      // Extension doesn't exist or can't be read - continue
+    }
+    
+    if (basicConstraints && basicConstraints.ca) {
+      return 'Root CA'
+    }
+    
+    // Check for intermediate CA
+    // getExtKeyUsage() returns object with 'names' array property
+    let keyUsage = null
+    try {
+      keyUsage = cert.getExtKeyUsage()
+    } catch (e) {
+      // Extension doesn't exist or can't be read - continue
+    }
+    
+    if (keyUsage && keyUsage.names && Array.isArray(keyUsage.names) && keyUsage.names.includes('keyCertSign')) {
+      return 'Intermediate'
+    }
+    
+    // Check for server certificate
+    // getExtExtKeyUsage() returns array of OID strings
+    let extKeyUsage = null
+    try {
+      extKeyUsage = cert.getExtExtKeyUsage()
+    } catch (e) {
+      // Extension doesn't exist or can't be read - continue
+    }
+    
+    if (extKeyUsage && Array.isArray(extKeyUsage)) {
+      if (extKeyUsage.includes('1.3.6.1.5.5.7.3.1')) {  // serverAuth OID
+        return 'Server Certificate'
+      }
+      // Check for client certificate
+      if (extKeyUsage.includes('1.3.6.1.5.5.7.3.2')) {  // clientAuth OID
+        return 'Client Certificate'
+      }
+    }
+  } catch (error) {
+    // If any unexpected error occurs, log it and return default
+    console.warn('Error determining certificate type:', error)
   }
   
   return 'End-entity'
 }
 
+
 /**
  * Format a date object to YYYY-MM-DD string
- * @param {Date} date - Date object
+ * @param {Date|string} date - Date object or ASN1 time string
  * @returns {string} Formatted date string
  */
 function formatDate(date) {
   if (!date) return 'Unknown'
   
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+  // If it's a string (X509 time), convert to Date first
+  let dateObj = date
+  if (typeof date === 'string') {
+    dateObj = convertX509TimeToDate(date)
+    if (!dateObj) return 'Unknown'
+  }
+  
+  const year = dateObj.getFullYear()
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+  const day = String(dateObj.getDate()).padStart(2, '0')
   
   return `${year}-${month}-${day}`
 }
@@ -161,7 +342,8 @@ export function isValidPemCertificate(pemString) {
     }
     
     // Try to parse it
-    const cert= forge.pki.certificateFromPem(pemString);
+    const cert = new X509()
+    cert.readCertPEM(pemString)
     
     return true
   } catch (error) {
@@ -190,9 +372,9 @@ export function isValidPemPrivateKey(pemString) {
     }
     
     // Try to parse it as a private key
-    const privateKey = forge.pki.privateKeyFromPem(pemString)
+    const privateKey = KEYUTIL.getKey(pemString)
     
-    return true
+    return !!privateKey
   } catch (error) {
     console.error('Failed to validate PEM private key:', error)
     return false

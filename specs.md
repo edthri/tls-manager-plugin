@@ -12,7 +12,7 @@ A React-based certificate management dashboard built with Vite, Material-UI, and
 - **Styling**: Tailwind CSS v4 for utilities
 - **Routing**: React Router DOM v6
 - **Date Handling**: dayjs for robust date operations
-- **Cryptography**: node-forge for certificate parsing and validation
+- **Cryptography**: jsrsasign for certificate parsing and validation (supports RSA, ECDSA, DSA, Ed25519)
 - **State Management**: React Context and custom hooks
 
 ## Architecture

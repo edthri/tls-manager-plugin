@@ -10,7 +10,7 @@
  * 4. Remove or comment out the internal store variables and helper functions at the bottom
  */
 
-import { parseCertificate, pemToBase64, privateKeyPemToBase64 } from '../utils/certificateUtils.js'
+import { parseCertificate } from '../utils/certificateUtils.js'
 import { api } from './api.js'
 
 // === INTERNAL STORE (remove when switching to real API) ===
