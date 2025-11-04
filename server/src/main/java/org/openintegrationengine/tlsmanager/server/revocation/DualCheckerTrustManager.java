@@ -233,7 +233,39 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     }
 
     private void validateClientTrusted(X509Certificate[] chain, String authType, SSLEngine sslEngine) throws CertificateException {
+        if (subjectDnValidationMode != null && subjectDnValidationMode != SubjectDnValidationMode.NONE) {
+            if (subjectDnValidationFilter == null || subjectDnValidationFilter.isEmpty()) {
+                throw new IllegalStateException("Expected Subject DN cannot be empty");
+            }
 
+            var subject = chain[0].getSubjectX500Principal();
+
+            var subjectDn = subject.getName(X500Principal.RFC2253);
+            var expectedDn = new X500Principal(subjectDnValidationFilter).getName(X500Principal.RFC2253);
+            if (subjectDnValidationMode == SubjectDnValidationMode.EXACT) {
+                if (!subjectDn.equals(expectedDn)) {
+                    throw new CertificateException("Subject DN does not match filter");
+                }
+            } else if (subjectDnValidationMode == SubjectDnValidationMode.PARTIAL) {
+
+                LdapName subjectLdapName, expectedLdapName;
+                try {
+                    subjectLdapName = new LdapName(subjectDn);
+                    expectedLdapName = new LdapName(expectedDn);
+                } catch (InvalidNameException e) {
+                    throw new IllegalArgumentException("Error converting DN to LdapName", e);
+                }
+
+                var subjectRdns = subjectLdapName.getRdns();
+                for (var expectedRdn : expectedLdapName.getRdns()) {
+                    if (!subjectRdns.contains(expectedRdn)) {
+                        throw new RuntimeException("Subject DN does not contain expected RDN");
+                    }
+                }
+            } else {
+                throw new UnsupportedOperationException("Unsupported SubjectDnValidationMode: " + subjectDnValidationMode);
+            }
+        }
     }
 
     // ---- Pass A: OCSP-only ----
