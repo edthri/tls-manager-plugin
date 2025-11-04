@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Box,
   Stack,
@@ -24,7 +24,6 @@ export default function ImportFromUrlDialogContent({
   onCancel,
   onSuccess,
 }) {
-  const [step, setStep] = useState('url-input') // 'url-input' | 'certificate-selection' | 'import'
   const [url, setUrl] = useState('')
   const [urlError, setUrlError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -69,6 +68,7 @@ export default function ImportFromUrlDialogContent({
     setFetchError(null)
     setCertificates([])
     setSelectedCertificateIndex(null)
+    setSelectedCertificatePem(null)
 
     try {
       const fetchedCerts = await fetchRemoteCertificates(url)
@@ -78,7 +78,11 @@ export default function ImportFromUrlDialogContent({
         return
       }
       setCertificates(fetchedCerts)
-      setStep('certificate-selection')
+      // Auto-select first certificate if available
+      if (fetchedCerts.length > 0) {
+        setSelectedCertificateIndex(0)
+        setSelectedCertificatePem(fetchedCerts[0].certificate)
+      }
     } catch (error) {
       setFetchError(error.message || 'Failed to fetch certificates from URL')
     } finally {
@@ -92,53 +96,40 @@ export default function ImportFromUrlDialogContent({
     setSelectedCertificatePem(selectedCert.certificate)
   }
 
-  const handleContinue = () => {
-    if (selectedCertificateIndex === null || selectedCertificatePem === null) {
-      return
+  // Update selected certificate PEM when index changes
+  useEffect(() => {
+    if (selectedCertificateIndex !== null && certificates[selectedCertificateIndex]) {
+      setSelectedCertificatePem(certificates[selectedCertificateIndex].certificate)
     }
-    setStep('import')
-  }
+  }, [selectedCertificateIndex, certificates])
 
-  const handleBack = () => {
-    if (step === 'certificate-selection') {
-      setStep('url-input')
-      setCertificates([])
-      setSelectedCertificateIndex(null)
-      setSelectedCertificatePem(null)
-    } else if (step === 'import') {
-      setStep('certificate-selection')
-    }
-  }
-
-  // Step 1: URL Input
-  if (step === 'url-input') {
-    return (
-      <Box sx={{ pt: 0.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <TextField
-          label="URL"
-          placeholder="https://example.com"
-          value={url}
-          onChange={handleUrlChange}
-          onBlur={() => validateUrl(url)}
-          error={!!urlError}
-          helperText={urlError || 'Enter a valid HTTPS URL to fetch certificates'}
-          fullWidth
-          disabled={loading}
-          autoFocus
-        />
-        
-        {fetchError && (
-          <Alert severity="error">{fetchError}</Alert>
-        )}
-
-        <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ pt: 2 }}>
-          <Button onClick={onCancel} disabled={loading}>
-            Cancel
-          </Button>
+  return (
+    <Box sx={{ 
+      pt: 0.5,
+      maxHeight: '80vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      {/* URL Input Section */}
+      <Box sx={{ mb: 3 }}>
+        <Stack direction="row" spacing={2} alignItems="flex-start">
+          <TextField
+            label="URL"
+            placeholder="https://example.com"
+            value={url}
+            onChange={handleUrlChange}
+            onBlur={() => validateUrl(url)}
+            error={!!urlError}
+            helperText={urlError || 'Enter a valid HTTPS URL to fetch certificates'}
+            fullWidth
+            disabled={loading}
+            autoFocus
+          />
           <Button
             variant="contained"
             onClick={handleFetchCertificates}
             disabled={loading || !url.trim() || !!urlError}
+            sx={{ minWidth: 150, mt: 1 }}
           >
             {loading ? (
               <>
@@ -150,27 +141,39 @@ export default function ImportFromUrlDialogContent({
             )}
           </Button>
         </Stack>
+        
+        {fetchError && (
+          <Alert severity="error" sx={{ mt: 2 }}>{fetchError}</Alert>
+        )}
       </Box>
-    )
-  }
 
-  // Step 2: Certificate Selection
-  if (step === 'certificate-selection') {
-    return (
-      <Box sx={{ pt: 0.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Typography variant="body2" color="text.secondary">
-          Select a certificate to import:
-        </Typography>
+      {/* Certificate List and Import Details - Vertical Layout */}
+      {certificates.length > 0 && (
+        <Box sx={{ 
+          flex: 1,
+          overflow: 'auto',
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3
+        }}>
+          {/* Top Section - Certificate List */}
+          <Box sx={{ 
+            flex: '0 0 auto',
+            pb: 3,
+            borderBottom: '1px solid',
+            borderColor: 'divider'
+          }}>
+            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+              Select a certificate to import:
+            </Typography>
 
-        {certificates.length === 0 ? (
-          <Alert severity="info">No certificates found</Alert>
-        ) : (
-          <FormControl component="fieldset" sx={{ width: '100%' }}>
-            <RadioGroup
-              value={selectedCertificateIndex}
-              onChange={(e) => handleCertificateSelect(parseInt(e.target.value, 10))}
-            >
-              <Stack spacing={2}>
+            <FormControl component="fieldset" sx={{ width: '100%' }}>
+              <RadioGroup
+                value={selectedCertificateIndex !== null ? selectedCertificateIndex.toString() : ''}
+                onChange={(e) => handleCertificateSelect(parseInt(e.target.value, 10))}
+                sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 2 }}
+              >
                 {certificates.map((cert, index) => (
                   <Paper
                     key={index}
@@ -180,6 +183,8 @@ export default function ImportFromUrlDialogContent({
                       borderRadius: 2,
                       cursor: 'pointer',
                       transition: 'all 0.2s',
+                      minWidth: 200,
+                      flex: '1 1 auto',
                       '&:hover': {
                         backgroundColor: 'action.hover'
                       },
@@ -192,86 +197,72 @@ export default function ImportFromUrlDialogContent({
                     onClick={() => handleCertificateSelect(index)}
                   >
                     <FormControlLabel
-                      value={index}
+                      value={index.toString()}
                       control={<Radio />}
                       label={
                         <Box sx={{ width: '100%', ml: 1 }}>
-                          <Stack spacing={1}>
-                            <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-                              <Box>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                                  {cert.alias}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {cert.type}
-                                </Typography>
-                              </Box>
-                              <StatusPill validFrom={cert.validFrom} validTo={cert.validTo} />
-                            </Stack>
-                            <Divider />
-                            <Stack spacing={0.5}>
-                              <Typography variant="body2">
-                                <strong>Subject:</strong> {cert.subject}
-                              </Typography>
-                              <Typography variant="body2">
-                                <strong>Issuer:</strong> {cert.issuer}
-                              </Typography>
-                              {cert.validFrom !== 'Unknown' && cert.validTo !== 'Unknown' && (
-                                <Typography variant="body2">
-                                  <strong>Valid:</strong> {cert.validFrom} - {cert.validTo}
-                                </Typography>
-                              )}
-                            </Stack>
-                            {cert.error && (
-                              <Alert severity="warning" sx={{ mt: 1 }}>
-                                {cert.subject}
-                              </Alert>
-                            )}
-                          </Stack>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                            {cert.alias || `Certificate ${index + 1}`}
+                          </Typography>
+                          {cert.error && (
+                            <Alert severity="warning" sx={{ mt: 1 }}>
+                              {cert.subject}
+                            </Alert>
+                          )}
                         </Box>
                       }
                       sx={{ margin: 0, width: '100%' }}
                     />
                   </Paper>
                 ))}
-              </Stack>
-            </RadioGroup>
-          </FormControl>
-        )}
+              </RadioGroup>
+            </FormControl>
+          </Box>
 
-        <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ pt: 2 }}>
-          <Button onClick={handleBack} disabled={loading}>
-            Back
-          </Button>
+          {/* Bottom Section - Import Certificate Details */}
+          <Box sx={{ 
+            flex: 1,
+            minHeight: 0,
+            overflow: 'auto'
+          }}>
+            {selectedCertificatePem ? (
+              <ImportCertificateDialogContent
+                key={selectedCertificateIndex}
+                targetStore={targetStore}
+                currentCertificates={currentCertificates}
+                onCancel={onCancel}
+                onSuccess={onSuccess}
+                initialPemText={selectedCertificatePem}
+                readOnlyPem={true}
+              />
+            ) : (
+              <Alert severity="info">
+                Select a certificate from the list to view details and import
+              </Alert>
+            )}
+          </Box>
+        </Box>
+      )}
+
+      {/* Bottom Action Buttons - Only show when certificates are loaded */}
+      {certificates.length > 0 && (
+        <Stack 
+          direction="row" 
+          spacing={1} 
+          justifyContent="flex-end" 
+          sx={{ 
+            pt: 2, 
+            borderTop: '1px solid', 
+            borderColor: 'divider',
+            mt: 'auto'
+          }}
+        >
           <Button onClick={onCancel} disabled={loading}>
             Cancel
           </Button>
-          <Button
-            variant="contained"
-            onClick={handleContinue}
-            disabled={loading || selectedCertificateIndex === null}
-          >
-            Continue
-          </Button>
         </Stack>
-      </Box>
-    )
-  }
-
-  // Step 3: Import Dialog (reuse existing component)
-  if (step === 'import' && selectedCertificatePem) {
-    return (
-      <ImportCertificateDialogContent
-        targetStore={targetStore}
-        currentCertificates={currentCertificates}
-        onCancel={onCancel}
-        onSuccess={onSuccess}
-        initialPemText={selectedCertificatePem}
-        readOnlyPem={true}
-      />
-    )
-  }
-
-  return null
+      )}
+    </Box>
+  )
 }
 

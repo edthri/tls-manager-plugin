@@ -76,7 +76,8 @@ export default function ImportCertificateDialogContent({
 
   // Pre-populate PEM text if initialPemText is provided
   useEffect(() => {
-    if (initialPemText && initialPemText.trim() && !pemText.trim()) {
+    if (initialPemText && initialPemText.trim()) {
+      // Always update when initialPemText changes (for URL import flow)
       setPemText(initialPemText)
       parseCertificateDetails(initialPemText)
     }
