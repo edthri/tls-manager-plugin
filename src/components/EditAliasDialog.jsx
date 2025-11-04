@@ -21,6 +21,7 @@ export default function EditAliasDialog({
   open, 
   onClose, 
   certificate, 
+  currentCertificates = null,
   onSuccess 
 }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
@@ -59,7 +60,8 @@ export default function EditAliasDialog({
       const result = await updateCertificateAlias(
         certificate.store, 
         certificate.alias, 
-        newAlias
+        newAlias,
+        currentCertificates
       )
       if (result.success) {
         onSuccess?.(result.data)

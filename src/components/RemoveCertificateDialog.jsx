@@ -21,6 +21,7 @@ export default function RemoveCertificateDialog({
   open, 
   onClose, 
   certificate, 
+  currentCertificates = null,
   onSuccess 
 }) {
   const [loading, setLoading] = useState(false)
@@ -33,7 +34,7 @@ export default function RemoveCertificateDialog({
     setError(null)
     
     try {
-      const result = await removeCertificate(certificate.store, certificate.alias)
+      const result = await removeCertificate(certificate.store, certificate.alias, currentCertificates)
       if (result.success) {
         onSuccess?.(result.data)
         onClose()

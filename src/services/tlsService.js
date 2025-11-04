@@ -43,24 +43,7 @@ function saveToStorage() {
   }
 }
 
-// === MOCK CHANNEL ASSIGNMENT HELPERS ===
-const CHANNEL_POOL = [
-  'Channel 1', 'Channel 2', 'Channel 3', 'Channel 4', 
-  'Channel 5', 'Channel 6', 'Channel 7', 'Channel 8'
-]
-
-// Generate random channels (1-3 channels from pool)
-function generateMockChannels() {
-  const numChannels = Math.floor(Math.random() * 3) + 1 // 1-3 channels
-  const shuffled = [...CHANNEL_POOL].sort(() => 0.5 - Math.random())
-  return shuffled.slice(0, numChannels)
-}
-
-// Returns true ~35% of the time
-function shouldHaveChannels() {
-  return Math.random() < 0.35
-}
-
+// === CHANNEL ASSIGNMENT HELPERS ===
 // Get or create channel assignments from localStorage
 function getOrCreateChannelAssignments() {
   try {
@@ -79,26 +62,9 @@ function getOrCreateChannelAssignments() {
   }
 }
 
-// Save channel assignments to localStorage
-function saveChannelAssignments(assignments) {
-  try {
-    localStorage.setItem(CHANNEL_ASSIGNMENTS_KEY, JSON.stringify(assignments))
-  } catch (e) {
-    console.warn('Failed to save channel assignments to localStorage:', e)
-  }
-}
-
-// Get channels for a specific certificate, creating if needed
+// Get channels for a specific certificate
 function getChannelsForCertificate(store, alias, assignments) {
   const storeAssignments = assignments[store] || {}
-  
-  if (!(alias in storeAssignments)) {
-    // Create new assignment
-    storeAssignments[alias] = shouldHaveChannels() ? generateMockChannels() : []
-    assignments[store] = storeAssignments
-    saveChannelAssignments(assignments)
-  }
-  
   return storeAssignments[alias] || []
 }
 
@@ -432,190 +398,195 @@ export async function fetchCertificates() {
   }
 }
 
-export async function updateCertificates(targetStore, certificateData) {
+export async function updateCertificates(targetStore, certificateData, currentCertificates = null) {
   try {
-    // === INTERNAL STORE (for development) ===
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
     const { alias, pemText, privateKeyText } = certificateData
     
-    // Convert PEM to Base64 using utility functions
-    const base64Certificate = pemToBase64(pemText)
+    let certificates = currentCertificates
     
-    if (targetStore === 'trusted') {
-      // Add to trusted certificates
-      const cert = {
-        alias,
-        certificate: base64Certificate
-      }
-      
-      const existing = internalStore.certificates.findIndex(c => c.alias === alias)
-      if (existing >= 0) {
-        internalStore.certificates[existing] = cert
+    // If currentCertificates not provided, fetch from API
+    if (!certificates) {
+      if (targetStore === 'trusted') {
+        certificates = await fetchTrustedCertificates()
+      } else if (targetStore === 'private') {
+        certificates = await fetchLocalCertificates()
       } else {
-        internalStore.certificates.push(cert)
-        // Initialize new certificate with no channels
-        const channelAssignments = getOrCreateChannelAssignments()
-        if (!channelAssignments.trusted) {
-          channelAssignments.trusted = {}
-        }
-        channelAssignments.trusted[alias] = []
-        saveChannelAssignments(channelAssignments)
-      }
-    } else if (targetStore === 'private') {
-      // Add to private key pairs
-      const base64PrivateKey = privateKeyPemToBase64(privateKeyText)
-      
-      const pair = {
-        alias,
-        certificate: base64Certificate,
-        privateKey: base64PrivateKey
-      }
-      
-      const existing = internalStore.pairs.findIndex(p => p.alias === alias)
-      if (existing >= 0) {
-        internalStore.pairs[existing] = pair
-      } else {
-        internalStore.pairs.push(pair)
-        // Initialize new certificate with no channels
-        const channelAssignments = getOrCreateChannelAssignments()
-        if (!channelAssignments.private) {
-          channelAssignments.private = {}
-        }
-        channelAssignments.private[alias] = []
-        saveChannelAssignments(channelAssignments)
+        throw new Error('Invalid store type')
       }
     }
     
-    // Save to localStorage
-    saveToStorage()
+    // Check if certificate with same alias exists
+    const existingIndex = certificates.findIndex(c => c.alias === alias)
     
-    console.log('[Internal Store] Updated:', internalStore)
+    // Update or add certificate in the array
+    if (existingIndex >= 0) {
+      // Update existing certificate - preserve other fields, update certificate data
+      certificates[existingIndex] = {
+        ...certificates[existingIndex],
+        alias,
+        rawCertificate: pemText, // Update with new PEM
+        ...(targetStore === 'private' && privateKeyText ? { rawPrivateKey: privateKeyText } : {})
+      }
+    } else {
+      // Add new certificate
+      const newCert = {
+        alias,
+        rawCertificate: pemText,
+        ...(targetStore === 'private' && privateKeyText ? { rawPrivateKey: privateKeyText } : {})
+      }
+      certificates.push(newCert)
+    }
     
-    return { success: true, data: { alias, targetStore } }
-    
-    // === REAL API (uncomment when API is ready) ===
-    // const payload = {}
-    // 
-    // if (certificates && certificates.length > 0) {
-    //   payload.certificates = certificates.map(cert => ({
-    //     alias: cert.alias,
-    //     certificate: cert.certificate // Base64-encoded PEM
-    //   }))
-    // }
-    // 
-    // if (pairs && pairs.length > 0) {
-    //   payload.pairs = pairs.map(pair => ({
-    //     alias: pair.alias,
-    //     certificate: pair.certificate, // Base64-encoded PEM
-    //     privateKey: pair.privateKey // Base64-encoded PEM
-    //   }))
-    // }
-    // 
-    // const response = await api.put('/api/tlsmanager/certificates', payload)
-    // return response.data
+    // Reconstruct API payload format
+    let payload
+    if (targetStore === 'trusted') {
+      payload = {
+        list: {
+          trustedCertificate: certificates.map(cert => ({
+            alias: cert.alias,
+            certificate: cert.rawCertificate // Use rawCertificate (PEM format)
+          }))
+        }
+      }
+      const response = await api.put('/api/tlsmanager/trustedCertificates', payload)
+      return { success: true, data: response.data || { alias, targetStore } }
+    } else if (targetStore === 'private') {
+      payload = {
+        list: {
+          localCertificate: certificates.map(cert => ({
+            alias: cert.alias,
+            certificate: cert.rawCertificate, // Use rawCertificate (PEM format)
+            key: cert.rawPrivateKey // Use rawPrivateKey (PEM format)
+          }))
+        }
+      }
+      const response = await api.put('/api/tlsmanager/localCertificates', payload)
+      return { success: true, data: response.data || { alias, targetStore } }
+    } else {
+      throw new Error('Invalid store type')
+    }
   } catch (error) {
     console.error('Failed to update certificates:', error)
-    throw new Error('Failed to update certificates in internal store')
+    throw new Error(error.response?.data?.message || error.message || 'Failed to update certificates')
   }
 }
 
-export async function updateCertificateAlias(store, oldAlias, newAlias) {
+export async function updateCertificateAlias(store, oldAlias, newAlias, currentCertificates = null) {
   try {
-    // === INTERNAL STORE (for development) ===
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300))
+    let certificates = currentCertificates
     
+    // If currentCertificates not provided, fetch from API
+    if (!certificates) {
+      if (store === 'trusted') {
+        certificates = await fetchTrustedCertificates()
+      } else if (store === 'private') {
+        certificates = await fetchLocalCertificates()
+      } else {
+        throw new Error('Invalid store type')
+      }
+    }
+    
+    // Find certificate by old alias
+    const certIndex = certificates.findIndex(c => c.alias === oldAlias)
+    if (certIndex < 0) {
+      throw new Error('Certificate not found')
+    }
+    
+    // Update only the alias field
+    certificates[certIndex] = {
+      ...certificates[certIndex],
+      alias: newAlias
+    }
+    
+    // Reconstruct API payload format
+    let payload
     if (store === 'trusted') {
-      const certIndex = internalStore.certificates.findIndex(c => c.alias === oldAlias)
-      if (certIndex >= 0) {
-        internalStore.certificates[certIndex].alias = newAlias
-      } else {
-        throw new Error('Certificate not found')
+      payload = {
+        list: {
+          trustedCertificate: certificates.map(cert => ({
+            alias: cert.alias,
+            certificate: cert.rawCertificate // Use rawCertificate (PEM format)
+          }))
+        }
       }
+      const response = await api.put('/api/tlsmanager/trustedCertificates', payload)
+      return { success: true, data: response.data || { store, oldAlias, newAlias } }
     } else if (store === 'private') {
-      const pairIndex = internalStore.pairs.findIndex(p => p.alias === oldAlias)
-      if (pairIndex >= 0) {
-        internalStore.pairs[pairIndex].alias = newAlias
-      } else {
-        throw new Error('Certificate not found')
+      payload = {
+        list: {
+          localCertificate: certificates.map(cert => ({
+            alias: cert.alias,
+            certificate: cert.rawCertificate, // Use rawCertificate (PEM format)
+            key: cert.rawPrivateKey // Use rawPrivateKey (PEM format)
+          }))
+        }
       }
+      const response = await api.put('/api/tlsmanager/localCertificates', payload)
+      return { success: true, data: response.data || { store, oldAlias, newAlias } }
     } else {
       throw new Error('Invalid store type')
     }
-    
-    // Update channel assignments to use new alias
-    const channelAssignments = getOrCreateChannelAssignments()
-    if (channelAssignments[store] && channelAssignments[store][oldAlias]) {
-      channelAssignments[store][newAlias] = channelAssignments[store][oldAlias]
-      delete channelAssignments[store][oldAlias]
-      saveChannelAssignments(channelAssignments)
-    }
-    
-    // Save to localStorage
-    saveToStorage()
-    
-    console.log('[Internal Store] Updated alias:', { store, oldAlias, newAlias })
-    
-    return { success: true, data: { store, oldAlias, newAlias } }
-    
-    // === REAL API (uncomment when API is ready) ===
-    // const response = await api.put(`/api/tlsmanager/certificates/${store}/alias`, {
-    //   oldAlias,
-    //   newAlias
-    // })
-    // return response.data
   } catch (error) {
     console.error('Failed to update certificate alias:', error)
-    throw new Error('Failed to update certificate alias')
+    throw new Error(error.response?.data?.message || error.message || 'Failed to update certificate alias')
   }
 }
 
-export async function removeCertificate(store, alias) {
+export async function removeCertificate(store, alias, currentCertificates = null) {
   try {
-    // === INTERNAL STORE (for development) ===
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300))
+    let certificates = currentCertificates
     
+    // If currentCertificates not provided, fetch from API
+    if (!certificates) {
+      if (store === 'trusted') {
+        certificates = await fetchTrustedCertificates()
+      } else if (store === 'private') {
+        certificates = await fetchLocalCertificates()
+      } else {
+        throw new Error('Invalid store type')
+      }
+    }
+    
+    // Remove certificate from array by alias
+    const certIndex = certificates.findIndex(c => c.alias === alias)
+    if (certIndex < 0) {
+      throw new Error('Certificate not found')
+    }
+    
+    // Remove the certificate
+    certificates.splice(certIndex, 1)
+    
+    // Reconstruct API payload format
+    let payload
     if (store === 'trusted') {
-      const certIndex = internalStore.certificates.findIndex(c => c.alias === alias)
-      if (certIndex >= 0) {
-        internalStore.certificates.splice(certIndex, 1)
-      } else {
-        throw new Error('Certificate not found')
+      payload = {
+        list: {
+          trustedCertificate: certificates.map(cert => ({
+            alias: cert.alias,
+            certificate: cert.rawCertificate // Use rawCertificate (PEM format)
+          }))
+        }
       }
+      const response = await api.put('/api/tlsmanager/trustedCertificates', payload)
+      return { success: true, data: response.data || { store, alias } }
     } else if (store === 'private') {
-      const pairIndex = internalStore.pairs.findIndex(p => p.alias === alias)
-      if (pairIndex >= 0) {
-        internalStore.pairs.splice(pairIndex, 1)
-      } else {
-        throw new Error('Certificate not found')
+      payload = {
+        list: {
+          localCertificate: certificates.map(cert => ({
+            alias: cert.alias,
+            certificate: cert.rawCertificate, // Use rawCertificate (PEM format)
+            key: cert.rawPrivateKey // Use rawPrivateKey (PEM format)
+          }))
+        }
       }
+      const response = await api.put('/api/tlsmanager/localCertificates', payload)
+      return { success: true, data: response.data || { store, alias } }
     } else {
       throw new Error('Invalid store type')
     }
-    
-    // Clean up channel assignments
-    const channelAssignments = getOrCreateChannelAssignments()
-    if (channelAssignments[store] && channelAssignments[store][alias]) {
-      delete channelAssignments[store][alias]
-      saveChannelAssignments(channelAssignments)
-    }
-    
-    // Save to localStorage
-    saveToStorage()
-    
-    console.log('[Internal Store] Removed certificate:', { store, alias })
-    
-    return { success: true, data: { store, alias } }
-    
-    // === REAL API (uncomment when API is ready) ===
-    // const response = await api.delete(`/api/tlsmanager/certificates/${store}/${alias}`)
-    // return response.data
   } catch (error) {
     console.error('Failed to remove certificate:', error)
-    throw new Error('Failed to remove certificate')
+    throw new Error(error.response?.data?.message || error.message || 'Failed to remove certificate')
   }
 }
 

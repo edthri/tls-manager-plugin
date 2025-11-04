@@ -122,13 +122,27 @@ export default function useCertificates(tabKey = 'native') {
     }
   }
 
+  // Get certificates by store name (for update operations)
+  const getCertificatesByStore = useCallback((store) => {
+    // Map store names to tab keys
+    const storeToTabMap = {
+      'trusted': 'trusted',
+      'private': 'private',
+      'native': 'native'
+    }
+    const tabKey = storeToTabMap[store]
+    return tabKey ? certificatesByTab[tabKey] || [] : []
+  }, [certificatesByTab])
+
   return { 
     all, 
     loading: currentLoading, 
     error: currentError, 
     counts, 
     filterBy, 
-    refetch 
+    refetch,
+    getCertificatesByStore,
+    certificatesByTab // Also expose directly for convenience
   }
 }
 

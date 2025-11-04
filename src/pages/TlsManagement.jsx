@@ -21,7 +21,7 @@ export default function TlsManagement() {
   const tabKeys = ['native', 'trusted', 'private']
   const initialKey = params.get('tab') && tabKeys.includes(params.get('tab')) ? params.get('tab') : 'native'
   const [tabKey, setTabKey] = useState(initialKey)
-  const { all, counts, filterBy, loading, error, refetch } = useCertificates(tabKey)
+  const { all, counts, filterBy, loading, error, refetch, getCertificatesByStore } = useCertificates(tabKey)
   const { showSuccess, showError } = useNotification()
   const [search, setSearch] = useState('')
 
@@ -222,6 +222,7 @@ export default function TlsManagement() {
           {dialogType === 'import-certificate' && (
             <ImportCertificateDialogContent
               targetStore={dialogProps.targetStore}
+              currentCertificates={getCertificatesByStore(dialogProps.targetStore)}
               onCancel={closeDialog}
               onSubmit={() => closeDialog()}
               onSuccess={handleImportSuccess}
@@ -248,6 +249,7 @@ export default function TlsManagement() {
         open={editAliasDialogOpen}
         onClose={handleCloseEditAlias}
         certificate={certificateToEdit}
+        currentCertificates={certificateToEdit ? getCertificatesByStore(certificateToEdit.store) : null}
         onSuccess={handleAliasEditSuccess}
       />
 
@@ -255,6 +257,7 @@ export default function TlsManagement() {
         open={removeDialogOpen}
         onClose={handleCloseRemove}
         certificate={certificateToRemove}
+        currentCertificates={certificateToRemove ? getCertificatesByStore(certificateToRemove.store) : null}
         onSuccess={handleRemoveSuccess}
       />
 

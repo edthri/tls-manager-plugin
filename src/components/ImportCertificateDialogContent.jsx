@@ -19,6 +19,7 @@ import { verifyCertificate } from '../utils/verificationUtils.js'
 
 export default function ImportCertificateDialogContent({
   targetStore = 'trusted',
+  currentCertificates = null,
   onCancel,
   onSubmit,
   onSuccess,
@@ -117,7 +118,7 @@ export default function ImportCertificateDialogContent({
         alias,
         pemText,
         privateKeyText: targetStore === 'private' ? privateKeyText : undefined,
-      })
+      }, currentCertificates)
       if (result.success) {
         onSuccess?.(result.data)
         onSubmit?.()
