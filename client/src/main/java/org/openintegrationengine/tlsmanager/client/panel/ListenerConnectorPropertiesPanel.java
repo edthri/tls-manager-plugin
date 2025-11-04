@@ -413,7 +413,9 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
 
         subjectDnValidationLabel.setEnabled(managerEnabled);
         subjectDnValidationModeComboBox.setEnabled(managerEnabled);
-        subjectDnValidationFilterTextField.setEnabled(managerEnabled);
+        subjectDnValidationFilterTextField.setEnabled(
+            managerEnabled && properties.getSubjectDnValidationMode() != SubjectDnValidationMode.NONE
+        );
 
         crlModeLabel.setEnabled(managerEnabled);
         crlModeComboBox.setEnabled(managerEnabled);
