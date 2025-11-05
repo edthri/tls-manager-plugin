@@ -143,6 +143,10 @@ public final class CertificateService {
             var keystore = KeyStore.getInstance(PKCS12);
             keystore.load(null, new char[0]);
 
+            if (alias == null) {
+                throw new IllegalArgumentException("Alias cannot be null");
+            }
+
             if (externalKeyStore.isKeyEntry(alias)) {
                 var certChain = externalKeyStore.getCertificateChain(alias);
                 var privateKey = externalKeyStore.getKey(alias, new char[0]);
