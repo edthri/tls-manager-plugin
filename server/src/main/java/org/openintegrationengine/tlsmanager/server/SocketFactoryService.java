@@ -115,7 +115,11 @@ public class SocketFactoryService {
 
     public WeirdIntermediaryListenerContextContainer generateTLSContext(Connector connector, TLSListenerProperties properties) {
         var keystore = certificateService.getKeyStore(properties.getServerCertificateAlias());
-        var truststore = certificateService.getTrustStoreFromProperties(properties.isTrustSystemTruststore(), properties.getTrustedServerCertificates(), connector);
+        var truststore = certificateService.getTrustStoreFromProperties(
+            properties.isTrustSystemTruststore(),
+            properties.getTrustedServerCertificates(),
+            connector
+        );
 
         var dualcheckerTrustManager = new DualCheckerTrustManager(
             truststore,
