@@ -162,29 +162,29 @@ export default function ImportFromUrlDialogContent({
             flex: '0 0 auto',
             pb: 3,
             borderBottom: '1px solid',
-            borderColor: 'divider'
+            borderColor: 'divider',
+            overflow: 'scroll',
+            maxHeight: '300px'
           }}>
             <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
               Select a certificate to import:
             </Typography>
 
-            <FormControl component="fieldset" sx={{ width: '100%' }}>
+            <FormControl component="fieldset" sx={{ width: '100%',  }}>
               <RadioGroup
                 value={selectedCertificateIndex !== null ? selectedCertificateIndex.toString() : ''}
                 onChange={(e) => handleCertificateSelect(parseInt(e.target.value, 10))}
-                sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 2 }}
+                sx={{ display: 'flex', flexDirection: 'column', flexWrap: 'wrap', gap: 2 }}
               >
                 {certificates.map((cert, index) => (
                   <Paper
                     key={index}
                     variant="outlined"
                     sx={{
-                      p: 2,
+                      p: 1,
                       borderRadius: 2,
                       cursor: 'pointer',
                       transition: 'all 0.2s',
-                      minWidth: 200,
-                      flex: '1 1 auto',
                       '&:hover': {
                         backgroundColor: 'action.hover'
                       },
@@ -222,7 +222,7 @@ export default function ImportFromUrlDialogContent({
           {/* Bottom Section - Import Certificate Details */}
           <Box sx={{ 
             flex: 1,
-            minHeight: 0,
+            minHeight: '500px',
             overflow: 'auto'
           }}>
             {selectedCertificatePem ? (
@@ -244,24 +244,6 @@ export default function ImportFromUrlDialogContent({
         </Box>
       )}
 
-      {/* Bottom Action Buttons - Only show when certificates are loaded */}
-      {certificates.length > 0 && (
-        <Stack 
-          direction="row" 
-          spacing={1} 
-          justifyContent="flex-end" 
-          sx={{ 
-            pt: 2, 
-            borderTop: '1px solid', 
-            borderColor: 'divider',
-            mt: 'auto'
-          }}
-        >
-          <Button onClick={onCancel} disabled={loading}>
-            Cancel
-          </Button>
-        </Stack>
-      )}
     </Box>
   )
 }
