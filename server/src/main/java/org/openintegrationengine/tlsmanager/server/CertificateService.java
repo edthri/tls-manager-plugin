@@ -177,6 +177,12 @@ public final class CertificateService {
 
             var presentInSystem = new HashSet<String>();
             var unknownAliases = new HashSet<String>();
+
+            if (aliasSet == null) {
+                log.debug("No aliases provided. Using all aliases from truststore");
+                return finalTrustStore;
+            }
+
             for (String alias : aliasSet) {
                 try {
                     if (systemTrustStore.containsAlias(alias)) {
