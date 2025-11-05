@@ -112,29 +112,34 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
         trustManagerDelegate.checkClientTrusted(chain, authType);
+        runValidations(chain, null);
     }
 
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType, Socket s) throws CertificateException {
         trustManagerDelegate.checkClientTrusted(chain, authType, s);
+        runValidations(chain, s);
     }
 
     @Override
-    public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine e) throws CertificateException {
-        trustManagerDelegate.checkClientTrusted(chain, authType, e);
-        validateClientTrusted(chain, authType, e);
+    public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine sslEngine) throws CertificateException {
+        trustManagerDelegate.checkClientTrusted(chain, authType, sslEngine);
+        SSLSession session = sslEngine.getSession();
+        var has = hasStapledOcsp(chain, session);
+
+        log.info("here");
     }
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
         trustManagerDelegate.checkServerTrusted(chain, authType);
-        validateServerTrusted(chain, null);
+        runValidations(chain, null);
     }
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType, Socket s) throws CertificateException {
         trustManagerDelegate.checkServerTrusted(chain, authType, s);
-        validateServerTrusted(chain, s);
+        runValidations(chain, s);
     }
 
     @Override
@@ -145,7 +150,29 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     @Override
     public X509Certificate[] getAcceptedIssuers() { return trustManagerDelegate.getAcceptedIssuers(); }
 
-    private void validateServerTrusted(X509Certificate[] chain, Socket socket) throws CertificateException {
+    private boolean hasStapledOcsp(X509Certificate[] chain, SSLSession session) throws CertificateException {
+        if (session instanceof ExtendedSSLSession extendedSession) {
+            var statusResponses = extendedSession.getStatusResponses();
+
+            if (statusResponses != null && !statusResponses.isEmpty()) {
+                log.info("Received {} stapled OCSP response(s)", statusResponses.size());
+
+                for (int i = 0; i < Math.min(statusResponses.size(), chain.length); i++) {
+                    byte[] response = statusResponses.get(i);
+                    if (response != null && response.length > 0) {
+                        validateStapledOcspResponse(response, chain[i]);
+                        return true;
+                    }
+                }
+            }
+        } else {
+            log.debug("SSLSession is not an ExtendedSSLSession");
+        }
+
+        return false;
+    }
+
+    private void runValidations(X509Certificate[] chain, Socket socket) throws CertificateException {
         try {
             var certificateFactory = CertificateFactory.getInstance("X.509");
             var certPath = certificateFactory.generateCertPath(List.of(chain));
@@ -164,7 +191,6 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
                         throw new CertificateException("Subject DN does not match filter");
                     }
                 } else if (subjectDnValidationMode == SubjectDnValidationMode.PARTIAL) {
-
                     LdapName subjectLdapName, expectedLdapName;
                     try {
                         subjectLdapName = new LdapName(subjectDn);
@@ -186,31 +212,13 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
             // OCSP-only pass (if requested)
             if (ocspMode != RevocationMode.DISABLED) {
-
-                boolean hasStapledOcsp = false;
-
                 if (socket instanceof SSLSocket sslSocket) {
                     SSLSession session = sslSocket.getHandshakeSession();
+                    var hasStapledOcsp = hasStapledOcsp(chain, session);
 
-                    if (session instanceof ExtendedSSLSession extendedSession) {
-                        var statusResponses = extendedSession.getStatusResponses();
-
-                        if (statusResponses != null && !statusResponses.isEmpty()) {
-                            log.info("Received {} stapled OCSP response(s)", statusResponses.size());
-
-                            for (int i = 0; i < Math.min(statusResponses.size(), chain.length); i++) {
-                                byte[] response = statusResponses.get(i);
-                                if (response != null && response.length > 0) {
-                                    validateStapledOcspResponse(response, chain[i]);
-                                    hasStapledOcsp = true;
-                                }
-                            }
-                        }
+                    if (!hasStapledOcsp) {
+                        pkixOcspOnly(certPath, ocspMode == RevocationMode.SOFT_FAIL);
                     }
-                }
-
-                if (!hasStapledOcsp) {
-                    pkixOcspOnly(certPath, ocspMode == RevocationMode.SOFT_FAIL);
                 }
             }
 
@@ -229,42 +237,6 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
             }
 
             throw new CertificateException("Validation error: " + e.getMessage(), e);
-        }
-    }
-
-    private void validateClientTrusted(X509Certificate[] chain, String authType, SSLEngine sslEngine) throws CertificateException {
-        if (subjectDnValidationMode != null && subjectDnValidationMode != SubjectDnValidationMode.NONE) {
-            if (subjectDnValidationFilter == null || subjectDnValidationFilter.isEmpty()) {
-                throw new IllegalStateException("Expected Subject DN cannot be empty");
-            }
-
-            var subject = chain[0].getSubjectX500Principal();
-
-            var subjectDn = subject.getName(X500Principal.RFC2253);
-            var expectedDn = new X500Principal(subjectDnValidationFilter).getName(X500Principal.RFC2253);
-            if (subjectDnValidationMode == SubjectDnValidationMode.EXACT) {
-                if (!subjectDn.equals(expectedDn)) {
-                    throw new CertificateException("Subject DN does not match filter");
-                }
-            } else if (subjectDnValidationMode == SubjectDnValidationMode.PARTIAL) {
-
-                LdapName subjectLdapName, expectedLdapName;
-                try {
-                    subjectLdapName = new LdapName(subjectDn);
-                    expectedLdapName = new LdapName(expectedDn);
-                } catch (InvalidNameException e) {
-                    throw new IllegalArgumentException("Error converting DN to LdapName", e);
-                }
-
-                var subjectRdns = subjectLdapName.getRdns();
-                for (var expectedRdn : expectedLdapName.getRdns()) {
-                    if (!subjectRdns.contains(expectedRdn)) {
-                        throw new RuntimeException("Subject DN does not contain expected RDN");
-                    }
-                }
-            } else {
-                throw new UnsupportedOperationException("Unsupported SubjectDnValidationMode: " + subjectDnValidationMode);
-            }
         }
     }
 
