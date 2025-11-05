@@ -4,11 +4,18 @@ import com.mirth.connect.connectors.ws.DefaultWebServiceConfiguration;
 import com.mirth.connect.connectors.ws.SSLSocketFactoryWrapper;
 import com.mirth.connect.connectors.ws.WebServiceDispatcher;
 import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
+import com.mirth.connect.connectors.ws.WebServiceReceiver;
 import com.mirth.connect.donkey.server.channel.Connector;
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsParameters;
+import com.sun.net.httpserver.HttpsServer;
 import lombok.extern.slf4j.Slf4j;
 import org.openintegrationengine.tlsmanager.server.SocketFactoryService;
 import org.openintegrationengine.tlsmanager.server.TLSServicePlugin;
+import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
 import org.openintegrationengine.tlsmanager.shared.models.WeirdIntermediaryContextContainer;
+import org.openintegrationengine.tlsmanager.shared.models.WeirdIntermediaryListenerContextContainer;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSListenerProperties;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
 
 import javax.net.ssl.SSLSocketFactory;
@@ -19,7 +26,8 @@ public class TLSWebServiceConfiguration extends DefaultWebServiceConfiguration {
 
     private final SocketFactoryService socketFactoryService;
 
-    private WeirdIntermediaryContextContainer contextContainer;
+    private WeirdIntermediaryContextContainer senderContainer;
+    private WeirdIntermediaryListenerContextContainer listenerContainer;
 
     public TLSWebServiceConfiguration() {
         // This looks ugly, I know
@@ -34,20 +42,76 @@ public class TLSWebServiceConfiguration extends DefaultWebServiceConfiguration {
     public void configureConnectorDeploy(Connector connector) throws Exception {
         if (connector instanceof WebServiceDispatcher webServiceDispatcher) {
             configureSocketFactory(webServiceDispatcher);
+        } else if (connector instanceof WebServiceReceiver webServiceReceiver) {
+            configureSocketFactory(webServiceReceiver);
         }
+    }
+
+    @Override
+    public void configureReceiver(WebServiceReceiver connector) throws Exception {
+        if (listenerContainer == null) {
+            super.configureReceiver(connector);
+            return;
+        }
+
+        var tlsContext = listenerContainer.sslContext();
+
+        var httpsServer = HttpsServer.create();
+        httpsServer.setHttpsConfigurator(new HttpsConfigurator(tlsContext) {
+            @Override
+            public void configure(HttpsParameters params) {
+                var sslParams = tlsContext.getDefaultSSLParameters();
+
+                sslParams.setProtocols(listenerContainer.protocols());
+                sslParams.setCipherSuites(listenerContainer.ciphers());
+
+                if (ClientAuthMode.REQUESTED == listenerContainer.clientAuthMode()) {
+                    sslParams.setWantClientAuth(true);
+                } else if (ClientAuthMode.REQUIRED == listenerContainer.clientAuthMode()) {
+                    sslParams.setNeedClientAuth(true);
+                }
+
+                // TODO Stapling?
+                //sslParams.setEndpointIdentificationAlgorithm("HTTPS");
+
+                params.setSSLParameters(sslParams);
+            }
+        });
+
+        connector.setServer(httpsServer);
     }
 
     @Override
     public void configureDispatcher(WebServiceDispatcher connector, WebServiceDispatcherProperties connectorProperties, Map<String, Object> requestContext) throws Exception {
         SSLSocketFactory socketFactory = new SSLSocketFactoryWrapper(
-            contextContainer.sslContext().getSocketFactory(),
-            contextContainer.protocols(),
-            contextContainer.ciphers()
+            senderContainer.sslContext().getSocketFactory(),
+            senderContainer.protocols(),
+            senderContainer.ciphers()
         );
 
         // Wat?
         requestContext.put("com.sun.xml.internal.ws.transport.https.client.SSLSocketFactory", socketFactory);
         requestContext.put("com.sun.xml.ws.transport.https.client.SSLSocketFactory", socketFactory); // JAX-WS RI
+    }
+
+    private void configureSocketFactory(WebServiceReceiver connector) {
+        var tlsConnectorProperties = connector.getConnectorProperties().getPluginProperties()
+            .stream()
+            .filter(TLSListenerProperties.class::isInstance)
+            .findFirst()
+            .map(TLSListenerProperties.class::cast)
+            .orElse(null);
+
+        if (tlsConnectorProperties != null && tlsConnectorProperties.isTlsManagerEnabled()) {
+            listenerContainer = socketFactoryService.generateTLSContext(connector, tlsConnectorProperties);
+        } else {
+            try {
+                super.configureConnectorDeploy(connector);
+            } catch (Exception e) {
+                log.error("Error creating non-TLS socket factory", e);
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private void configureSocketFactory(WebServiceDispatcher connector) {
@@ -59,9 +123,9 @@ public class TLSWebServiceConfiguration extends DefaultWebServiceConfiguration {
             .orElse(null);
 
         if (tlsConnectorProperties != null && tlsConnectorProperties.isTlsManagerEnabled()) {
-            contextContainer = socketFactoryService.generateTLSContext(connector, tlsConnectorProperties);
+            senderContainer = socketFactoryService.generateTLSContext(connector, tlsConnectorProperties);
 
-            var socketConnectionFactory = socketFactoryService.getConnectorSocketFactory(contextContainer);
+            var socketConnectionFactory = socketFactoryService.getConnectorSocketFactory(senderContainer);
             if (socketConnectionFactory != null) {
                 connector.getSocketFactoryRegistry().register("https", socketConnectionFactory);
             }
