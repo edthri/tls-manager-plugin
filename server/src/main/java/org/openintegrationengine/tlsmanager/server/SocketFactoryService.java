@@ -155,7 +155,8 @@ public class SocketFactoryService {
                 cipherArray,
                 hostnameVerificationStrategy,
                 keystore,
-                sslContext
+                sslContext,
+                properties.getClientAuthMode()
             );
         } catch (Exception e) {
             log.error("Error generating SSLContext", e);

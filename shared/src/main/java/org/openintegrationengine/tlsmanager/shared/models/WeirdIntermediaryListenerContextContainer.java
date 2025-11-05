@@ -9,5 +9,6 @@ public record WeirdIntermediaryListenerContextContainer(
     String[] ciphers,
     HostnameVerifier hostnameVerifier,
     KeyStore keyStore,
-    SSLContext sslContext
+    SSLContext sslContext,
+    ClientAuthMode clientAuthMode
 ) {}
