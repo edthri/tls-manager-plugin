@@ -48,6 +48,8 @@ export function validateCertificateChain(certificates) {
   for (let i = 0; i < certificates.length - 1; i++) {
     const cert = certificates[i].cert
     const issuerCert = certificates[i + 1].cert
+    const certPem = certificates[i].pem
+    const issuerPem = certificates[i + 1].pem
 
     validation.details.push(`Checking certificate ${i + 1} against issuer certificate ${i + 2}`)
 
@@ -64,7 +66,7 @@ export function validateCertificateChain(certificates) {
 
     // Verify signature
     try {
-      const isSignatureValid = cert.verifySignature(issuerCert.pem)  // jsrsasign requires PEM string
+      const isSignatureValid = cert.verifySignature(issuerPem)  // jsrsasign requires PEM string
       if (isSignatureValid) {
         validation.details.push(`✓ Certificate ${i + 1} signature verified by certificate ${i + 2}`)
       } else {
@@ -92,12 +94,13 @@ export function validateCertificateChain(certificates) {
 
   // Check if root is self-signed
   const rootCert = certificates[certificates.length - 1].cert
+  const rootPem = certificates[certificates.length - 1].pem
   const rootIssuer = rootCert.getIssuerString()
   const rootSubject = rootCert.getSubjectString()
 
   if (rootIssuer === rootSubject) {
     try {
-      const isSelfSigned = rootCert.verifySignature(rootCert.pem)
+      const isSelfSigned = rootCert.verifySignature(rootPem)
       if (isSelfSigned) {
         validation.details.push('✓ Root certificate is properly self-signed')
       } else {

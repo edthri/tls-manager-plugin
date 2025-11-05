@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   Box,
   Stack,
@@ -31,6 +31,8 @@ export default function ImportFromUrlDialogContent({
   const [certificates, setCertificates] = useState([])
   const [selectedCertificateIndex, setSelectedCertificateIndex] = useState(null)
   const [selectedCertificatePem, setSelectedCertificatePem] = useState(null)
+  const [importLoading, setImportLoading] = useState(false)
+  const importCertificateRef = useRef(null)
 
   const validateUrl = (urlValue) => {
     if (!urlValue.trim()) {
@@ -100,6 +102,7 @@ export default function ImportFromUrlDialogContent({
   useEffect(() => {
     if (selectedCertificateIndex !== null && certificates[selectedCertificateIndex]) {
       setSelectedCertificatePem(certificates[selectedCertificateIndex].certificate)
+      setImportLoading(false) // Reset loading when certificate selection changes
     }
   }, [selectedCertificateIndex, certificates])
 
@@ -127,13 +130,14 @@ export default function ImportFromUrlDialogContent({
           />
           <Button
             variant="contained"
+            size="small"
             onClick={handleFetchCertificates}
             disabled={loading || !url.trim() || !!urlError}
-            sx={{ minWidth: 150, mt: 1 }}
+            sx={{ minWidth: 120, mt: 1 }}
           >
             {loading ? (
               <>
-                <CircularProgress size={16} sx={{ mr: 1 }} />
+                <CircularProgress size={14} sx={{ mr: 0.75 }} />
                 Fetching...
               </>
             ) : (
@@ -160,29 +164,29 @@ export default function ImportFromUrlDialogContent({
           {/* Top Section - Certificate List */}
           <Box sx={{ 
             flex: '0 0 auto',
-            pb: 3,
+            pb: 2,
             borderBottom: '1px solid',
             borderColor: 'divider',
-            overflow: 'scroll',
-            maxHeight: '300px'
+            overflow: 'auto',
+            maxHeight: '180px'
           }}>
-            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
               Select a certificate to import:
             </Typography>
 
-            <FormControl component="fieldset" sx={{ width: '100%',  }}>
+            <FormControl component="fieldset" sx={{ width: '100%' }}>
               <RadioGroup
                 value={selectedCertificateIndex !== null ? selectedCertificateIndex.toString() : ''}
                 onChange={(e) => handleCertificateSelect(parseInt(e.target.value, 10))}
-                sx={{ display: 'flex', flexDirection: 'column', flexWrap: 'wrap', gap: 2 }}
+                sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
               >
                 {certificates.map((cert, index) => (
                   <Paper
                     key={index}
                     variant="outlined"
                     sx={{
-                      p: 1,
-                      borderRadius: 2,
+                      p: 0.75,
+                      borderRadius: 1.5,
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       '&:hover': {
@@ -198,14 +202,14 @@ export default function ImportFromUrlDialogContent({
                   >
                     <FormControlLabel
                       value={index.toString()}
-                      control={<Radio />}
+                      control={<Radio size="small" />}
                       label={
-                        <Box sx={{ width: '100%', ml: 1 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                        <Box sx={{ width: '100%', ml: 0.5 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
                             {cert.alias || `Certificate ${index + 1}`}
                           </Typography>
                           {cert.error && (
-                            <Alert severity="warning" sx={{ mt: 1 }}>
+                            <Alert severity="warning" sx={{ mt: 0.5, py: 0.25, fontSize: '0.75rem' }}>
                               {cert.subject}
                             </Alert>
                           )}
@@ -222,18 +226,23 @@ export default function ImportFromUrlDialogContent({
           {/* Bottom Section - Import Certificate Details */}
           <Box sx={{ 
             flex: 1,
-            minHeight: '500px',
+            minHeight: 0,
             overflow: 'auto'
           }}>
             {selectedCertificatePem ? (
               <ImportCertificateDialogContent
+                ref={importCertificateRef}
                 key={selectedCertificateIndex}
                 targetStore={targetStore}
                 currentCertificates={currentCertificates}
                 onCancel={onCancel}
-                onSuccess={onSuccess}
+                onSuccess={(data) => {
+                  setImportLoading(false)
+                  onSuccess?.(data)
+                }}
                 initialPemText={selectedCertificatePem}
                 readOnlyPem={true}
+                hideButtons={true}
               />
             ) : (
               <Alert severity="info">
@@ -242,6 +251,40 @@ export default function ImportFromUrlDialogContent({
             )}
           </Box>
         </Box>
+      )}
+
+      {/* Fixed buttons at bottom - only show when certificate is selected */}
+      {certificates.length > 0 && selectedCertificatePem && (
+        <Stack 
+          direction="row" 
+          spacing={1} 
+          justifyContent="flex-end" 
+          sx={{ 
+            pt: 2, 
+            borderTop: '1px solid', 
+            borderColor: 'divider',
+            mt: 'auto',
+            flexShrink: 0
+          }}
+        >
+          <Button onClick={onCancel} disabled={importLoading}>
+            Cancel
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={async () => {
+              setImportLoading(true)
+              try {
+                await importCertificateRef.current?.handleSubmit()
+              } finally {
+                // Loading state will be reset by onSuccess callback
+              }
+            }}
+            disabled={importLoading}
+          >
+            {importLoading ? 'Importing...' : 'Import Certificate'}
+          </Button>
+        </Stack>
       )}
 
     </Box>

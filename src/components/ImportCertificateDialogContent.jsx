@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
 import {
   Box,
   Stack,
@@ -17,7 +17,7 @@ import MobileCertificateSection from './MobileCertificateSection'
 import { updateCertificates } from '../services/tlsService.js'
 import { verifyCertificate } from '../utils/verificationUtils.js'
 
-export default function ImportCertificateDialogContent({
+const ImportCertificateDialogContent = forwardRef(function ImportCertificateDialogContent({
   targetStore = 'trusted',
   currentCertificates = null,
   onCancel,
@@ -25,7 +25,8 @@ export default function ImportCertificateDialogContent({
   onSuccess,
   initialPemText = null,
   readOnlyPem = false,
-}) {
+  hideButtons = false,
+}, ref) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showValidationDialog, setShowValidationDialog] = useState(false)
   const [validationError, setValidationError] = useState(null)
@@ -161,6 +162,12 @@ export default function ImportCertificateDialogContent({
     setShowConfirmDialog(false)
   }
 
+  // Expose handleSubmit and loading state via ref
+  useImperativeHandle(ref, () => ({
+    handleSubmit,
+    loading
+  }))
+
   return (
     <Box sx={{ 
       pt: 0.5,
@@ -228,28 +235,30 @@ export default function ImportCertificateDialogContent({
       </Box>
       
       {/* Fixed buttons at bottom */}
-      <Stack 
-        direction="row" 
-        spacing={1} 
-        justifyContent="flex-end" 
-        sx={{ 
-          pt: 2, 
-          borderTop: '1px solid', 
-          borderColor: 'divider',
-          mt: 'auto'
-        }}
-      >
-        <Button onClick={onCancel} disabled={loading}>
-          Cancel
-        </Button>
-        <Button 
-          variant="contained" 
-          onClick={handleSubmit} 
-          disabled={loading}
+      {!hideButtons && (
+        <Stack 
+          direction="row" 
+          spacing={1} 
+          justifyContent="flex-end" 
+          sx={{ 
+            pt: 2, 
+            borderTop: '1px solid', 
+            borderColor: 'divider',
+            mt: 'auto'
+          }}
         >
-          {loading ? 'Importing...' : 'Import Certificate'}
-        </Button>
-      </Stack>
+          <Button onClick={onCancel} disabled={loading}>
+            Cancel
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={handleSubmit} 
+            disabled={loading}
+          >
+            {loading ? 'Importing...' : 'Import Certificate'}
+          </Button>
+        </Stack>
+      )}
 
       {/* Confirmation Dialog for Replacing Existing Certificate */}
       <Dialog
@@ -304,4 +313,6 @@ export default function ImportCertificateDialogContent({
             </Dialog>
           </Box>
         )
-      }
+})
+
+export default ImportCertificateDialogContent
