@@ -51,6 +51,7 @@ import java.awt.Font;
 import java.awt.Window;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EventObject;
 import java.util.LinkedHashSet;
@@ -96,8 +97,14 @@ public class ItemPickerDialog extends MirthDialog {
         BiConsumer<Boolean, Set<String>> onSaveConsumer
     ) {
         super(owner, windowTitle, true);
+
+        if (allOptions == null) {
+            throw new IllegalArgumentException("allOptions cannot be null");
+        }
+
         this.allOptions = allOptions;
-        this.selectedOptions = selectedOptions;
+        this.selectedOptions = Objects.requireNonNullElseGet(selectedOptions, Collections::emptySet);
+
         this.isDefaultSelected = isDefaultSelected;
         this.defaultValue = defaultValue;
         this.onSaveConsumer = onSaveConsumer;
