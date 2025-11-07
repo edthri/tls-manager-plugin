@@ -14,7 +14,7 @@ public class StateAwareTLSSocket extends StateAwareSocket {
 
     private final SSLConnectionSocketFactory socketFactory;
 
-    private Socket sslSocket;
+    private Socket delegate;
 
     private boolean isClosing;
 
@@ -30,16 +30,16 @@ public class StateAwareTLSSocket extends StateAwareSocket {
 
     @Override
     public void connect(SocketAddress endpoint, int timeout) throws IOException {
-        // Step 1: Perform the plain TCP connection first
+        // Perform the plain TCP connection first
         super.connect(endpoint, timeout);
 
-        // Step 2: Layer TLS on top using createLayeredSocket
+        // Layer TLS on top using createLayeredSocket
         if (endpoint instanceof InetSocketAddress inet) {
             String host = inet.getHostString();
             int port = inet.getPort();
 
             // createLayeredSocket() will internally call SSLSocketFactory.createSocket()
-            this.sslSocket = socketFactory.createLayeredSocket(this, host, port, null);
+            this.delegate = socketFactory.createLayeredSocket(this, host, port, null);
         } else {
             throw new IOException("Expected InetSocketAddress for TLS connection");
         }
@@ -47,16 +47,16 @@ public class StateAwareTLSSocket extends StateAwareSocket {
 
     @Override
     public InputStream getInputStream() throws IOException {
-        if (sslSocket != null) {
-            return sslSocket.getInputStream();
+        if (delegate != null) {
+            return delegate.getInputStream();
         }
         return super.getInputStream();
     }
 
     @Override
     public OutputStream getOutputStream() throws IOException {
-        if (sslSocket != null) {
-            return sslSocket.getOutputStream();
+        if (delegate != null) {
+            return delegate.getOutputStream();
         }
         return super.getOutputStream();
     }
@@ -71,8 +71,8 @@ public class StateAwareTLSSocket extends StateAwareSocket {
 
         isClosing = true;
         try {
-            if (sslSocket != null) {
-                sslSocket.close();
+            if (delegate != null) {
+                delegate.close();
             } else {
                 super.close();
             }
