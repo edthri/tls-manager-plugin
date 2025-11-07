@@ -119,7 +119,6 @@ jobs:
         with:
           token: ${{ secrets.TESTS_REPO_CLONE_PAT }}
           repository: NovaMap-Health/oie-test-orchestrator
-          ref: local_run
 
       - name: Copy keystores and certificates
         run: |
@@ -146,6 +145,7 @@ jobs:
         env:
           OPENSSL_EXECUTABLE: /usr/bin/openssl
           OIE_API_BASE: https://localhost:8443/api
+          INSECURE_REQUESTS: true
         run: mvn -B test
 
       - name: Generate reports
