@@ -112,39 +112,37 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
         trustManagerDelegate.checkClientTrusted(chain, authType);
-        runValidations(chain, null);
+        runValidations(chain, null, null);
     }
 
     @Override
-    public void checkClientTrusted(X509Certificate[] chain, String authType, Socket s) throws CertificateException {
-        trustManagerDelegate.checkClientTrusted(chain, authType, s);
-        runValidations(chain, s);
+    public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
+        trustManagerDelegate.checkClientTrusted(chain, authType, socket);
+        runValidations(chain, socket, null);
     }
 
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine sslEngine) throws CertificateException {
         trustManagerDelegate.checkClientTrusted(chain, authType, sslEngine);
-        SSLSession session = sslEngine.getSession();
-        var has = hasStapledOcsp(chain, session);
-
-        log.info("here");
+        runValidations(chain, null, sslEngine);
     }
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
         trustManagerDelegate.checkServerTrusted(chain, authType);
-        runValidations(chain, null);
+        runValidations(chain, null, null);
     }
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType, Socket s) throws CertificateException {
         trustManagerDelegate.checkServerTrusted(chain, authType, s);
-        runValidations(chain, s);
+        runValidations(chain, s, null);
     }
 
     @Override
-    public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine e) {
-        throw new UnsupportedOperationException("SSLEngine not supported");
+    public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine sslEngine) throws CertificateException {
+        trustManagerDelegate.checkServerTrusted(chain, authType, sslEngine);
+        runValidations(chain, null , sslEngine);
     }
 
     @Override
@@ -172,7 +170,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         return false;
     }
 
-    private void runValidations(X509Certificate[] chain, Socket socket) throws CertificateException {
+    private void runValidations(X509Certificate[] chain, Socket socket, SSLEngine sslEngine) throws CertificateException {
         try {
             var certificateFactory = CertificateFactory.getInstance("X.509");
             var certPath = certificateFactory.generateCertPath(List.of(chain));
@@ -212,10 +210,18 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
             // OCSP-only pass (if requested)
             if (ocspMode != RevocationMode.DISABLED) {
-                if (socket instanceof SSLSocket sslSocket) {
-                    SSLSession session = sslSocket.getHandshakeSession();
-                    var hasStapledOcsp = hasStapledOcsp(chain, session);
+                if (socket != null || sslEngine != null) {
+                    SSLSession session;
 
+                    if (socket instanceof SSLSocket sslSocket) {
+                        session = sslSocket.getHandshakeSession();
+                    } else if (sslEngine != null) {
+                        session = sslEngine.getSession();
+                    } else {
+                        throw new IllegalStateException("Expected either a Socket or SSLEngine");
+                    }
+
+                    var hasStapledOcsp = hasStapledOcsp(chain, session);
                     if (!hasStapledOcsp) {
                         pkixOcspOnly(certPath, ocspMode == RevocationMode.SOFT_FAIL);
                     }
