@@ -84,7 +84,7 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
 
     @Override
     public void configureReceiver(HttpReceiver connector) throws Exception {
-        var tlsConnectorProperties = getSenderProperties(TLSListenerProperties.class, connector);
+        var tlsConnectorProperties = getConnectorProperties(TLSListenerProperties.class, connector);
 
         // If TLS manager is not enabled, delegate to OIE default
         if (tlsConnectorProperties == null || !tlsConnectorProperties.isTlsManagerEnabled()) {
@@ -133,7 +133,7 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
     }
 
     private void configureSocketFactory(HttpDispatcher connector) {
-        var tlsConnectorProperties = getSenderProperties(TLSSenderProperties.class, connector);
+        var tlsConnectorProperties = getConnectorProperties(TLSSenderProperties.class, connector);
 
         if (tlsConnectorProperties != null && tlsConnectorProperties.isTlsManagerEnabled()) {
             var sslSocketFactory = socketFactoryService.getConnectorSocketFactory(connector, tlsConnectorProperties);
@@ -151,7 +151,7 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
         }
     }
 
-    private <T> T getSenderProperties(Class<T> propertiesClass, Connector connector) {
+    private <T> T getConnectorProperties(Class<T> propertiesClass, Connector connector) {
         return connector.getConnectorProperties().getPluginProperties()
             .stream()
             .filter(propertiesClass::isInstance)
