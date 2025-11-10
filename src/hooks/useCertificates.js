@@ -6,7 +6,7 @@ function normalize(text) {
 }
 
 /**
- * Hook to manage certificates with lazy loading per tab
+ * Hook to manage certificates with preloading of all tabs
  * @param {string} tabKey - The active tab key ('native', 'trusted', or 'private')
  * @returns {Object} Certificate data and utilities
  */
@@ -77,10 +77,28 @@ export default function useCertificates(tabKey = 'native') {
     }
   }, []) // Empty dependencies - use refs to access current state
 
-  // Fetch certificates when tab changes
+  // Preload all certificate types on mount
+  useEffect(() => {
+    const tabKeys = ['native', 'trusted', 'private']
+    
+    // Fetch all certificate types in parallel
+    Promise.allSettled(
+      tabKeys.map(async (key) => {
+        // Only fetch if not already loaded or loading
+        if (!loadingByTabRef.current[key] && certificatesByTabRef.current[key].length === 0) {
+          await fetchByTab(key)
+        }
+      })
+    )
+  }, [fetchByTab]) // fetchByTab is stable (useCallback with empty deps), but included for correctness
+
+  // Fetch certificates when tab changes (fallback for manual refresh)
   useEffect(() => {
     if (tabKey && fetchFunctions[tabKey]) {
-      fetchByTab(tabKey)
+      // Only fetch if not already loaded (preload may have already loaded it)
+      if (!loadingByTabRef.current[tabKey] && certificatesByTabRef.current[tabKey].length === 0) {
+        fetchByTab(tabKey)
+      }
     }
   }, [tabKey, fetchByTab])
 
