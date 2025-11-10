@@ -49,9 +49,9 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     private MirthRadioButton clientAuthRadioRequested;
     private MirthRadioButton clientAuthRadioRequired;
 
-    private JLabel trustedIssuersLabel;
-    private JButton trustedIssuersButton;
-    private JLabel trustedIssuersText;
+    private JLabel trustedClientCertsLabel;
+    private JButton trustedClientCertsButton;
+    private JLabel trustedClientCertsText;
 
     private JLabel serverCertificateLabel;
     private JButton serverCertificateButton;
@@ -75,7 +75,6 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     private JButton ciphersButton;
     private JLabel ciphersText;
 
-    private final Frame parentFrame;
     private TLSListenerProperties properties;
 
     private Set<String> publicCertificates;
@@ -84,7 +83,6 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     private Set<String> supportedCiphers;
 
     public ListenerConnectorPropertiesPanel() {
-        this.parentFrame = PlatformUI.MIRTH_FRAME;
         this.properties = new TLSListenerProperties();
 
         this.publicCertificates = new HashSet<>();
@@ -200,9 +198,9 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         clientAuthRadioRequired.addActionListener(e -> handleClientAuthModeChange(ClientAuthMode.REQUIRED, true));
         clientAuthModeButtonGroup.add(clientAuthRadioRequired);
 
-        trustedIssuersLabel = new JLabel("Trusted Issuers:");
-        trustedIssuersButton = new JButton(wrenchIcon);
-        trustedIssuersButton.addActionListener(e -> {
+        trustedClientCertsLabel = new JLabel("Trusted Client Certificates:");
+        trustedClientCertsButton = new JButton(wrenchIcon);
+        trustedClientCertsButton.addActionListener(e -> {
             BiConsumer<Boolean, Set<String>> completionConsumer = (isTrustSystemTrustStoreEnabled, selectedCertificates) -> {
                 properties.setTrustSystemTruststore(isTrustSystemTrustStoreEnabled);
                 if (isTrustSystemTrustStoreEnabled) {
@@ -217,7 +215,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
 
             new ItemPickerDialog(
                 PlatformUI.MIRTH_FRAME,
-                "Trusted Issuers Picker",
+                "Trusted Client Certificates Picker",
                 publicCertificates,
                 properties.getTrustedServerCertificates(),
                 properties.isTrustSystemTruststore(),
@@ -225,7 +223,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
                 completionConsumer
             );
         });
-        trustedIssuersText = new JLabel();
+        trustedClientCertsText = new JLabel();
 
         var comboBoxRenderer = new DisplayTextEnumModeComboBoxRenderer();
 
@@ -338,9 +336,9 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         add(clientAuthRadioRequested, "split");
         add(clientAuthRadioRequired);
 
-        add(trustedIssuersLabel, "newline, right");
-        add(trustedIssuersButton, "h 22!, w 22!, split");
-        add(trustedIssuersText);
+        add(trustedClientCertsLabel, "newline, right");
+        add(trustedClientCertsButton, "h 22!, w 22!, split");
+        add(trustedClientCertsText);
 
         add(subjectDnValidationLabel, "newline, right");
         add(subjectDnValidationModeComboBox, "split");
@@ -367,9 +365,9 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         }
 
         var issuerSelectorEnabled = authMode != ClientAuthMode.NONE;
-        trustedIssuersLabel.setEnabled(issuerSelectorEnabled);
-        trustedIssuersButton.setEnabled(issuerSelectorEnabled);
-        trustedIssuersText.setEnabled(issuerSelectorEnabled);
+        trustedClientCertsLabel.setEnabled(issuerSelectorEnabled);
+        trustedClientCertsButton.setEnabled(issuerSelectorEnabled);
+        trustedClientCertsText.setEnabled(issuerSelectorEnabled);
     }
 
     private void handleSubjectDnValidationModeChange() {
@@ -406,9 +404,9 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         if (managerEnabled) {
             handleClientAuthModeChange(properties.getClientAuthMode(), false);
         } else {
-            trustedIssuersLabel.setEnabled(false);
-            trustedIssuersButton.setEnabled(false);
-            trustedIssuersText.setEnabled(false);
+            trustedClientCertsLabel.setEnabled(false);
+            trustedClientCertsButton.setEnabled(false);
+            trustedClientCertsText.setEnabled(false);
         }
 
         subjectDnValidationLabel.setEnabled(managerEnabled);
@@ -470,7 +468,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
                 ? "no one >:C"
                 : String.join(" and ", thingsToTrust)
         );
-        trustedIssuersText.setText(serverCertificatesText);
+        trustedClientCertsText.setText(serverCertificatesText);
 
         subjectDnValidationModeComboBox.setSelectedItem(properties.getSubjectDnValidationMode());
         subjectDnValidationFilterTextField.setEnabled(properties.getSubjectDnValidationMode() != SubjectDnValidationMode.NONE);
