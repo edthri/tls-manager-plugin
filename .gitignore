@@ -28,3 +28,7 @@ project-setup.md
 scratchpad.md
 /dashboard
 .env
+*.crt
+*.key
+*.csr
+*.srl
