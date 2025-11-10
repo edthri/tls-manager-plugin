@@ -48,6 +48,25 @@ api.interceptors.response.use(
       status: error?.response?.status,
       data: error?.response?.data,
     })
+    
+    // Handle 401 Unauthorized errors - clear auth and redirect to login
+    if (error?.response?.status === 401) {
+      const STORAGE_KEY = 'auth:isAuthenticated'
+      
+      // Clear authentication state from localStorage
+      try {
+        localStorage.removeItem(STORAGE_KEY)
+      } catch (_) {
+        // Ignore localStorage errors
+      }
+      
+      // Redirect to login page if not already there
+      const currentPath = window.location.pathname
+      if (!currentPath.includes('/login')) {
+        window.location.href = '/dashboard/login'
+      }
+    }
+    
     return Promise.reject(error)
   }
 )
