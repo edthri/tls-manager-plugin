@@ -35,7 +35,7 @@ public record TLSPluginConfiguration(
 
         PersistenceMode persistenceMode;
         if (persistenceModeFromEnv == null) {
-            log.debug("No persistence mode environment variable not set, defaulting to \"database\"");
+            log.debug("No persistence mode environment variable set, defaulting to \"database\"");
             persistenceMode = PersistenceMode.DATABASE;
         } else {
             persistenceMode = PersistenceMode.valueOf(persistenceModeFromEnv.toUpperCase());
