@@ -30,9 +30,16 @@ public record TLSPluginConfiguration(
     }
 
     private static PersistenceMode getPersistenceMode() {
-        var persistenceModeFromEnv = readKeyFromEnv(TLSPluginConstants.ENV_PERSISTENCE_BACKEND, true);
+        var persistenceModeFromEnv = readKeyFromEnv(TLSPluginConstants.ENV_PERSISTENCE_BACKEND, false);
 
-        var persistenceMode = PersistenceMode.valueOf(persistenceModeFromEnv.toUpperCase());
+
+        PersistenceMode persistenceMode;
+        if (persistenceModeFromEnv == null) {
+            log.debug("No persistence mode environment variable not set, defaulting to \"database\"");
+            persistenceMode = PersistenceMode.DATABASE;
+        } else {
+            persistenceMode = PersistenceMode.valueOf(persistenceModeFromEnv.toUpperCase());
+        }
 
         log.info("Using persistence mode {}", persistenceMode);
 
