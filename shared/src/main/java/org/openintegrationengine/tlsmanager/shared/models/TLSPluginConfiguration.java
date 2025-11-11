@@ -26,12 +26,13 @@ public record TLSPluginConfiguration(
             readKeyFromEnv(ENV_PERSISTENCE_FS_KEYSTOREPASS, false)
         );
 
+        log.debug("Using following configuration: {}", conf);
+
         return conf;
     }
 
     private static PersistenceMode getPersistenceMode() {
         var persistenceModeFromEnv = readKeyFromEnv(TLSPluginConstants.ENV_PERSISTENCE_BACKEND, false);
-
 
         PersistenceMode persistenceMode;
         if (persistenceModeFromEnv == null) {
