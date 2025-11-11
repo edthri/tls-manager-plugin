@@ -63,7 +63,7 @@
         <mirth.plugin.description>TLS Management made easy</mirth.plugin.description>
         <mirth.plugin.name>TLS Manager</mirth.plugin.name>
         <mirth.plugin.path>tls-manager</mirth.plugin.path>
-        <mirth.plugin.url>https://openintegrationengine.com</mirth.plugin.url>
+        <mirth.plugin.url>https://openintegrationengine.org</mirth.plugin.url>
         <mirth.plugin.version>${project.version}</mirth.plugin.version>
     </properties>
 
