@@ -42,7 +42,7 @@ public record TLSPluginConfiguration(
     private static String readKeyFromEnv(String key, boolean isRequired) {
         var keyFromEnv = System.getenv(key);
         if (keyFromEnv == null && isRequired) {
-            throw new IllegalStateException("Env key (%s) is not set".formatted(keyFromEnv));
+            throw new IllegalStateException("Environment variable (%s) is not set".formatted(key));
         }
 
         return keyFromEnv;
