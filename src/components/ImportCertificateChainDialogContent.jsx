@@ -6,28 +6,27 @@ import {
   TextField,
   Typography,
   Alert,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions
 } from '@mui/material'
-import { fetchRemoteCertificates, updateCertificates } from '../services/tlsService.js'
+import { parseCertificateChainFromPem } from '../utils/certificateUtils.js'
 import TrustedCertificateImportForm from './TrustedCertificateImportForm'
 import CertificateChainSelector from './CertificateChainSelector'
+import { updateCertificates } from '../services/tlsService.js'
 import { verifyCertificate } from '../utils/verificationUtils.js'
 
-export default function ImportFromUrlDialogContent({
+export default function ImportCertificateChainDialogContent({
   targetStore = 'trusted',
   currentCertificates = null,
   onCancel,
   onSuccess,
 }) {
-  const [url, setUrl] = useState('')
-  const [urlError, setUrlError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [fetchError, setFetchError] = useState(null)
+  const [pemText, setPemText] = useState('')
+  const [file, setFile] = useState(null)
+  const [parseError, setParseError] = useState(null)
   const [certificates, setCertificates] = useState([])
   const [selectedCertificateIndex, setSelectedCertificateIndex] = useState(null)
   const [selectedCertificatePem, setSelectedCertificatePem] = useState(null)
@@ -36,70 +35,33 @@ export default function ImportFromUrlDialogContent({
   const [showValidationDialog, setShowValidationDialog] = useState(false)
   const [validationError, setValidationError] = useState(null)
   const formRef = useRef(null)
+  const fileInputRef = useRef(null)
 
-  const validateUrl = (urlValue) => {
-    if (!urlValue.trim()) {
-      setUrlError('URL is required')
-      return false
-    }
-    if (!urlValue.startsWith('https://')) {
-      setUrlError('URL must start with https://')
-      return false
-    }
-    try {
-      new URL(urlValue)
-      setUrlError('')
-      return true
-    } catch (e) {
-      setUrlError('Invalid URL format')
-      return false
-    }
-  }
-
-  const handleUrlChange = (e) => {
-    const newUrl = e.target.value
-    setUrl(newUrl)
-    if (urlError) {
-      validateUrl(newUrl)
-    }
-  }
-
-  const handleFetchCertificates = async () => {
-    if (!validateUrl(url)) {
-      return
-    }
-
-    setLoading(true)
-    setFetchError(null)
-    setCertificates([])
-    setSelectedCertificateIndex(null)
-    setSelectedCertificatePem(null)
-
-    try {
-      const fetchedCerts = await fetchRemoteCertificates(url)
-      if (fetchedCerts.length === 0) {
-        setFetchError('No certificates found at the specified URL')
-        setLoading(false)
-        return
+  // Parse certificate chain when PEM text changes
+  useEffect(() => {
+    if (pemText.trim()) {
+      const parsed = parseCertificateChainFromPem(pemText)
+      if (parsed.length === 0) {
+        setParseError('No valid certificates found in the provided text')
+        setCertificates([])
+        setSelectedCertificateIndex(null)
+        setSelectedCertificatePem(null)
+      } else {
+        setParseError(null)
+        setCertificates(parsed)
+        // Auto-select first certificate if available
+        if (parsed.length > 0) {
+          setSelectedCertificateIndex(0)
+          setSelectedCertificatePem(parsed[0].certificate)
+        }
       }
-      setCertificates(fetchedCerts)
-      // Auto-select first certificate if available
-      if (fetchedCerts.length > 0) {
-        setSelectedCertificateIndex(0)
-        setSelectedCertificatePem(fetchedCerts[0].certificate)
-      }
-    } catch (error) {
-      setFetchError(error.message || 'Failed to fetch certificates from URL')
-    } finally {
-      setLoading(false)
+    } else {
+      setParseError(null)
+      setCertificates([])
+      setSelectedCertificateIndex(null)
+      setSelectedCertificatePem(null)
     }
-  }
-
-  const handleCertificateSelect = (index) => {
-    setSelectedCertificateIndex(index)
-    const selectedCert = certificates[index]
-    setSelectedCertificatePem(selectedCert.certificate)
-  }
+  }, [pemText])
 
   // Update selected certificate PEM when index changes
   useEffect(() => {
@@ -108,6 +70,37 @@ export default function ImportFromUrlDialogContent({
       setImportLoading(false) // Reset loading when certificate selection changes
     }
   }, [selectedCertificateIndex, certificates])
+
+  const handleFileUpload = (e) => {
+    const uploadedFile = e.target.files?.[0]
+    if (!uploadedFile) {
+      return
+    }
+
+    setFile(uploadedFile)
+    setParseError(null)
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const fileContent = event.target?.result
+      if (fileContent) {
+        setPemText(fileContent)
+      }
+    }
+    reader.onerror = () => {
+      setParseError('Failed to read file')
+      setFile(null)
+    }
+    reader.readAsText(uploadedFile)
+  }
+
+  const handleCertificateSelect = (index) => {
+    setSelectedCertificateIndex(index)
+    const selectedCert = certificates[index]
+    setSelectedCertificatePem(selectedCert.certificate)
+  }
+
+  const fileAccept = '.pem,.crt,.cer,.cert'
 
   const performFinalVerification = async (pemText) => {
     try {
@@ -189,43 +182,43 @@ export default function ImportFromUrlDialogContent({
       maxHeight: '80vh',
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden'
     }}>
-      {/* URL Input Section */}
+      {/* PEM Input Section */}
       <Box sx={{ mb: 3 }}>
-        <Stack direction="row" spacing={2} alignItems="flex-start">
-          <TextField
-            label="URL"
-            placeholder="https://example.com"
-            value={url}
-            onChange={handleUrlChange}
-            onBlur={() => validateUrl(url)}
-            error={!!urlError}
-            helperText={urlError || 'Enter a valid HTTPS URL to fetch certificates'}
-            fullWidth
-            disabled={loading}
-            autoFocus
-          />
-          <Button
-            variant="contained"
-            size="small"
-            onClick={handleFetchCertificates}
-            disabled={loading || !url.trim() || !!urlError}
-            sx={{ minWidth: 120, mt: 1 }}
-          >
-            {loading ? (
-              <>
-                <CircularProgress size={14} sx={{ mr: 0.75 }} />
-                Fetching...
-              </>
-            ) : (
-              'Fetch Certificates'
-            )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={fileAccept}
+          style={{ display: 'none' }}
+          onChange={handleFileUpload}
+        />
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+          <Button variant="outlined" onClick={() => fileInputRef.current?.click()}>
+            {file ? 'Change Certificate File' : 'Choose Certificate File'}
           </Button>
+          <Typography variant="body2" color="text.secondary">
+            {file ? file.name : 'No file selected'}
+          </Typography>
         </Stack>
-        
-        {fetchError && (
-          <Alert severity="error" sx={{ mt: 2 }}>{fetchError}</Alert>
+
+        <TextField
+          label="PEM Certificate Chain"
+          placeholder="-----BEGIN CERTIFICATE-----\n...base64...\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\n...base64...\n-----END CERTIFICATE-----"
+          value={pemText}
+          onChange={(e) => setPemText(e.target.value)}
+          error={!!parseError}
+          helperText={parseError || 'Paste certificate or upload a file'}
+          multiline
+          minRows={4}
+          maxRows={7}
+          fullWidth
+          autoFocus
+        />
+
+        {certificates.length > 0 && (
+          <Alert severity="success" sx={{ mt: 2 }}>
+            Found {certificates.length} certificate{certificates.length > 1 ? 's' : ''} in the chain
+          </Alert>
         )}
       </Box>
 
@@ -233,7 +226,6 @@ export default function ImportFromUrlDialogContent({
       {certificates.length > 0 && (
         <Box sx={{ 
           flex: 1,
-          overflow: 'auto',
           minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
@@ -244,14 +236,13 @@ export default function ImportFromUrlDialogContent({
             certificates={certificates}
             selectedIndex={selectedCertificateIndex}
             onSelect={handleCertificateSelect}
-            loading={loading}
+            loading={importLoading}
           />
 
           {/* Bottom Section - Import Certificate Details */}
           <Box sx={{ 
             flex: 1,
             minHeight: 0,
-            overflow: 'auto'
           }}>
             {selectedCertificatePem ? (
               <TrustedCertificateImportForm
@@ -276,8 +267,15 @@ export default function ImportFromUrlDialogContent({
           direction="row" 
           spacing={1} 
           justifyContent="flex-end" 
+          position="absolute"
+          bottom={0}
+          
+          right={2}
+          width="100%"
+          backgroundColor="background.paper"
           sx={{ 
             pt: 2, 
+            pb: 2,
             borderTop: '1px solid', 
             borderColor: 'divider',
             mt: 'auto',

@@ -1,4 +1,5 @@
 import { X509, KEYUTIL, KJUR, zulutodate } from 'jsrsasign'
+import { parseCertificateChain } from './verificationUtils.js'
 
 /**
  * Convert X509 time string to Date object using jsrsasign utility
@@ -489,4 +490,82 @@ export function getSuggestedAlias(details) {
   }
   
   return null
+}
+
+/**
+ * Parse a certificate chain from PEM text and return array of certificate objects
+ * @param {string} pemText - PEM certificate text (can contain multiple certificates)
+ * @returns {Array} Array of certificate objects with structure: { certificate: pem, alias, subject, issuer, ... }
+ */
+export function parseCertificateChainFromPem(pemText) {
+  if (!pemText || !pemText.trim()) {
+    return []
+  }
+
+  try {
+    // Parse the certificate chain using verificationUtils
+    const chainCertificates = parseCertificateChain(pemText)
+    
+    if (chainCertificates.length === 0) {
+      return []
+    }
+
+    // Parse each certificate to get details
+    const certificates = []
+    chainCertificates.forEach((chainCert, index) => {
+      try {
+        const parsed = parseCertificate(chainCert.pem)
+        
+        // Handle parse errors gracefully
+        if (parsed.error) {
+          certificates.push({
+            certificate: chainCert.pem,
+            alias: `Certificate ${index + 1}`,
+            name: 'Invalid Certificate',
+            type: 'Invalid',
+            subject: `Parse Error: ${parsed.error}`,
+            issuer: 'Unknown',
+            validFrom: 'Unknown',
+            validTo: 'Unknown',
+            fingerprintSha1: 'Unknown',
+            parsedCertificate: parsed,
+            error: parsed.error
+          })
+          return
+        }
+
+        certificates.push({
+          certificate: chainCert.pem,
+          alias: getSuggestedAlias(parsed) || `Certificate ${index + 1}`,
+          name: parsed.subject?.CN || 'Unknown',
+          type: parsed.type || 'Unknown',
+          subject: parsed.subjectStr || 'Unknown',
+          issuer: parsed.issuerStr || 'Unknown',
+          validFrom: parsed.validFrom,
+          validTo: parsed.validTo,
+          fingerprintSha1: parsed.fingerprintSha1,
+          parsedCertificate: parsed
+        })
+      } catch (parseError) {
+        console.warn('Failed to parse certificate in chain:', parseError)
+        certificates.push({
+          certificate: chainCert.pem,
+          alias: `Certificate ${index + 1}`,
+          name: 'Parse Error',
+          type: 'Invalid',
+          subject: `Parse Error: ${parseError.message}`,
+          issuer: 'Unknown',
+          validFrom: 'Unknown',
+          validTo: 'Unknown',
+          fingerprintSha1: 'Unknown',
+          error: parseError.message
+        })
+      }
+    })
+
+    return certificates
+  } catch (error) {
+    console.error('Failed to parse certificate chain:', error)
+    return []
+  }
 }

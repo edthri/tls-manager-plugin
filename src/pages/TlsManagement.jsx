@@ -13,6 +13,7 @@ import VpnKeyIcon from '@mui/icons-material/VpnKey'
 import ImportTrustedCertificateDialog from '../components/ImportTrustedCertificateDialog'
 import ImportPrivateCertificateDialog from '../components/ImportPrivateCertificateDialog'
 import ImportFromUrlDialogContent from '../components/ImportFromUrlDialogContent'
+import ImportCertificateChainDialogContent from '../components/ImportCertificateChainDialogContent'
 import CertificateDetailsDialog from '../components/CertificateDetailsDialog'
 import EditAliasDialog from '../components/EditAliasDialog'
 import RemoveCertificateDialog from '../components/RemoveCertificateDialog'
@@ -115,7 +116,13 @@ export default function TlsManagement() {
 
   const openImportDialog = () => {
     const targetStore = tabKey === 'trusted' ? 'trusted' : 'private'
-    openDialog({ type: 'import-certificate', title: 'Import Certificate (PEM)', props: { targetStore } })
+    if (targetStore === 'trusted') {
+      // Use certificate chain import for trusted store
+      openDialog({ type: 'import-certificate-chain', title: 'Import Certificate Chain', props: { targetStore } })
+    } else {
+      // Use regular import for private store
+      openDialog({ type: 'import-certificate', title: 'Import Certificate (PEM)', props: { targetStore } })
+    }
   }
 
   const onTabChange = (_e, newIndex) => {
@@ -222,11 +229,11 @@ export default function TlsManagement() {
       <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="lg">
         <DialogTitle>{dialogTitle}</DialogTitle>
         <DialogContent>
-          {dialogType === 'import-certificate' && dialogProps.targetStore === 'trusted' && (
-            <ImportTrustedCertificateDialog
+          {dialogType === 'import-certificate-chain' && dialogProps.targetStore === 'trusted' && (
+            <ImportCertificateChainDialogContent
+              targetStore={dialogProps.targetStore}
               currentCertificates={getCertificatesByStore('trusted')}
               onCancel={closeDialog}
-              onSubmit={() => closeDialog()}
               onSuccess={handleImportSuccess}
             />
           )}

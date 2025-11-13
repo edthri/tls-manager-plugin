@@ -97,12 +97,11 @@ const UserInputsSection = ({
         )}
 
         <TextField
-          label="PEM (paste contents including BEGIN/END)"
+          label="PEM"
           placeholder={"-----BEGIN CERTIFICATE-----\n...base64...\n-----END CERTIFICATE-----"}
           value={pemText}
           onChange={handlePemTextChange}
           error={Boolean(errors.pemText)}
-          helperText={errors.pemText || (readOnlyPem ? 'Certificate imported from URL' : 'Paste certificate or chain. Uploading a .pem or .key file fills this field.')}
           multiline
           minRows={4}
           maxRows={6}
