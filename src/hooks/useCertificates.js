@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchSystemCertificates, fetchTrustedCertificates, fetchLocalCertificates } from '../services/tlsService'
 
 function normalize(text) {
-  return (text || '').toLowerCase()
+  return (text || '').toString().toLowerCase()
 }
 
 /**
