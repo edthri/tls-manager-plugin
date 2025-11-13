@@ -8,9 +8,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 
@@ -18,7 +16,7 @@ public class StateAwareTLSSocket extends StateAwareSocket {
 
     private final SSLConnectionSocketFactory socketFactory;
 
-    private Socket delegate;
+    private SSLSocket delegate;
 
     private boolean isClosing;
 
@@ -51,7 +49,8 @@ public class StateAwareTLSSocket extends StateAwareSocket {
             int port = inet.getPort();
 
             // createLayeredSocket() will internally call SSLSocketFactory.createSocket()
-            this.delegate = socketFactory.createLayeredSocket(this, host, port, null);
+            this.delegate = (SSLSocket) socketFactory.createLayeredSocket(this, host, port, null);
+            this.bis = null;
         } else {
             throw new IOException("Expected InetSocketAddress for TLS connection");
         }
@@ -73,64 +72,6 @@ public class StateAwareTLSSocket extends StateAwareSocket {
             return delegate.getOutputStream();
         }
         return super.getOutputStream();
-    }
-
-    @Override
-    public SocketAddress getRemoteSocketAddress() {
-        return delegate == null ? super.getRemoteSocketAddress() : delegate.getRemoteSocketAddress();
-    }
-
-    @Override
-    public InetAddress getInetAddress() {
-        return delegate == null ? super.getInetAddress() : delegate.getInetAddress();
-    }
-
-    @Override
-    public InetAddress getLocalAddress() {
-        return delegate == null ? super.getLocalAddress() : delegate.getLocalAddress();
-    }
-
-    @Override
-    public int getPort() {
-        return delegate == null ? super.getPort() : delegate.getPort();
-    }
-
-    @Override
-    public boolean isInputShutdown() {
-        return delegate == null ? super.isInputShutdown() : delegate.isInputShutdown();
-    }
-
-    @Override
-    public boolean isOutputShutdown() {
-        return delegate == null ? super.isOutputShutdown() : delegate.isOutputShutdown();
-    }
-
-    @Override
-    public void shutdownOutput() throws IOException {
-        if (delegate != null) {
-            delegate.shutdownOutput();
-        } else {
-            super.shutdownOutput();
-        }
-    }
-
-    @Override
-    public SocketAddress getLocalSocketAddress() {
-        return delegate == null ? super.getLocalSocketAddress() : delegate.getLocalSocketAddress();
-    }
-
-    @Override
-    public int getLocalPort() {
-        return delegate == null ? super.getLocalPort() : delegate.getLocalPort();
-    }
-
-    @Override
-    public void shutdownInput() throws IOException {
-        if (delegate != null) {
-            delegate.shutdownInput();
-        } else {
-            super.shutdownInput();
-        }
     }
 
     @Override
