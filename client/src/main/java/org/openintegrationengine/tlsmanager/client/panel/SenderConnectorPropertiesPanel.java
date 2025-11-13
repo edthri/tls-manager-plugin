@@ -30,6 +30,7 @@ import com.mirth.connect.connectors.http.HttpDispatcherProperties;
 import com.mirth.connect.connectors.http.HttpSender;
 import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
 import com.mirth.connect.connectors.tcp.TcpSender;
+import com.mirth.connect.connectors.ws.DefinitionServiceMap;
 import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
 import com.mirth.connect.connectors.ws.WebServiceSender;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
@@ -212,6 +213,102 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
                 var message = "No Get Operations button found in settings panel %s".formatted(settingsPanel);
                 log(message);
             }
+
+            var getOperationsButtons = getButtonsByText("Get Operations");
+            if (!getOperationsButtons.isEmpty()) {
+                var button = getOperationsButtons.get(0);
+
+                var actionListeners = button.getActionListeners().clone();
+
+                var previousActionListener = actionListeners[0]; // Hope it only has a single listener
+
+                // Replace the ActionListener
+                button.removeActionListener(previousActionListener);
+                button.addActionListener(e -> getOperations(previousActionListener, e));
+            } else {
+                var message = "No Get Operations button found in settings panel %s".formatted(settingsPanel);
+                log(message);
+            }
+        }
+    }
+
+    private void getOperations(ActionListener nonTlsActionListener, ActionEvent event) {
+        if (!properties.isTlsManagerEnabled()) {
+            // If TLS management is disabled, run the previous non-tls connection test
+            // The <code>isWsdlUrlBeingTested</code> hopefully doesn't matter here as the listeners are already defined
+            // by the sender panel.
+            nonTlsActionListener.actionPerformed(event);
+            return;
+        }
+
+
+        var webServiceSender = (WebServiceSender) connectorPanel.getConnectorSettingsPanel();
+        if (!parentFrame.alertOkCancel(parentFrame, "This will replace your current service, port, location URI, and operation list. Press OK to continue.")) {
+            return;
+        }
+
+        var wsProperties = (WebServiceDispatcherProperties) connectorPanel.getProperties();
+
+        // wtf...
+        var cacheWsdlHandler = new ResponseHandler() {
+            @Override
+            public void handle(Object response) {
+                try {
+                    var retrieveWsdlFromCacheHandler = new ResponseHandler() {
+                        @Override
+                        public void handle(Object response) {
+                            if (response == null) {
+                                return;
+                            }
+
+                            var definitionServiceMap = (DefinitionServiceMap) response;
+                            var currentProperties = (WebServiceDispatcherProperties) webServiceSender.getProperties();
+                            currentProperties.setWsdlDefinitionMap(definitionServiceMap);
+
+                            // Trigger private loadServiceMap() function
+                            webServiceSender.setProperties(currentProperties);
+
+                            parentFrame.setSaveEnabled(true);
+                        }
+                    };
+
+                    connectorPanel
+                        .getConnectorSettingsPanel()
+                        .getServlet(
+                            TLSServletInterface.class,
+                            "Retrieving cached WSDL definition map...",
+                            "There was an error retrieving the cached WSDL definition map.\n\n",
+                            retrieveWsdlFromCacheHandler
+                        )
+                        .getDefinition(
+                            connectorPanel.getConnectorSettingsPanel().getChannelId(),
+                            connectorPanel.getConnectorSettingsPanel().getChannelName(),
+                            wsProperties.getWsdlUrl(),
+                            wsProperties.getUsername(),
+                            wsProperties.getPassword()
+                        );
+                } catch (ClientException e) {
+                    // Should not happen
+                }
+            }
+        };
+
+        try {
+            connectorPanel
+                .getConnectorSettingsPanel()
+                .getServlet(
+                    TLSServletInterface.class,
+                    "Getting operations...",
+                    "Error caching WSDL. Please check the WSDL URL and authentication settings.\n\n",
+                    cacheWsdlHandler
+                )
+                .cacheWsdlFromUrl(
+                    connectorPanel.getConnectorSettingsPanel().getChannelId(),
+                    connectorPanel.getConnectorSettingsPanel().getChannelName(),
+                    wsProperties
+                );
+        } catch (ClientException e) {
+            // Should not happen
         }
     }
 

@@ -25,6 +25,7 @@ import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
 import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
+import com.mirth.connect.connectors.ws.DefinitionServiceMap;
 import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -40,6 +41,7 @@ import org.openintegrationengine.tlsmanager.shared.models.LocalCertificate;
 import org.openintegrationengine.tlsmanager.shared.models.TrustedCertificate;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -383,5 +385,111 @@ public interface TLSServletInterface extends BaseServletInterface {
         @QueryParam("channelName") String channelName,
         @Param("properties")
         @RequestBody(description = "The WebService Sender properties to use.", required = true) WebServiceDispatcherProperties wsDispatcherProperties
+    ) throws ClientException;
+
+    @POST
+    @Path("/_cacheWsdlFromUrl")
+    @io.swagger.v3.oas.annotations.Operation(
+        summary = "Downloads the WSDL at the specified URL and caches the web service definition tree."
+    )
+    @MirthOperation(
+        name = "cacheWsdlFromUrl",
+        display = "Download and cache WSDL",
+        type = Operation.ExecuteType.ASYNC,
+        auditable = false
+    )
+    Object cacheWsdlFromUrl(
+        @Param("channelId")
+        @Parameter(description = "The ID of the channel.", required = true)
+        @QueryParam("channelId")
+        String channelId,
+
+        @Param("channelName")
+        @Parameter(description = "The name of the channel.")
+        @QueryParam("channelName")
+        String channelName,
+
+        @Param("properties")
+        @RequestBody(
+            description = "The Web Service Sender properties to use. These properties can be found in the exported channel's XML file. Copy the data from the opening tag &lt;destinationConnectorProperties&gt; to the closing tag &lt;/wsdlDefinitionMap&gt; (including the tags). Paste over the information below between the opening and closing tags for &lt;com.mirth.connect.connectors.ws.WebServiceDispatcherProperties&gt;.",
+            required = true,
+            content = {@Content(mediaType = "application/xml"), @Content(mediaType = "application/json")}
+        ) WebServiceDispatcherProperties properties
+    ) throws ClientException;
+
+    @POST
+    @Path("/_isWsdlCached")
+    @Consumes({"application/x-www-form-urlencoded"})
+    @io.swagger.v3.oas.annotations.Operation(
+        summary = "Returns true if the definition tree for the WSDL is cached by the server."
+    )
+    @MirthOperation(
+        name = "isWsdlCached",
+        display = "Check if WSDL is cached",
+        type = Operation.ExecuteType.ASYNC,
+        auditable = false
+    )
+    boolean isWsdlCached(
+        @Param("channelId")
+        @Parameter(description = "The ID of the channel.", required = true, schema = @Schema(description = "The ID of the channel."))
+        @FormParam("channelId")
+        String channelId,
+
+        @Param("channelName")
+        @Parameter(description = "The name of the channel.", schema = @Schema(description = "The name of the channel."))
+        @FormParam("channelName")
+        String channelName,
+
+        @Param("wsdlUrl")
+        @Parameter(description = "The full URL to the WSDL describing the web service method to be called.", required = true, schema = @Schema(description = "The full URL to the WSDL describing the web service method to be called."))
+        @FormParam("wsdlUrl")
+        String wsdlUrl,
+
+        @Param("username")
+        @Parameter(description = "Username used to authenticate to the web server.", schema = @Schema(description = "Username used to authenticate to the web server."))
+        @FormParam("username")
+        String username,
+
+        @Param(value = "password", excludeFromAudit = true)
+        @Parameter(description = "Password used to authenticate to the web server.", schema = @Schema(description = "Password used to authenticate to the web server."))
+        @FormParam("password")
+        String password
+    ) throws ClientException;
+
+    @POST
+    @Path("/getDefinition")
+    @Consumes({"application/x-www-form-urlencoded"})
+    @io.swagger.v3.oas.annotations.Operation(
+        summary = "Retrieves the definition service map corresponding to the specified WSDL."
+    )
+    @MirthOperation(
+        name = "getDefinition",
+        display = "Get WSDL Definition",
+        type = Operation.ExecuteType.ASYNC,
+        auditable = false
+    )
+    DefinitionServiceMap getDefinition(
+        @Param("channelId")
+        @Parameter(description = "The ID of the channel.", required = true, schema = @Schema(description = "The ID of the channel."))
+        @FormParam("channelId")
+        String channelId,
+
+        @Param("channelName")
+        @Parameter(description = "The name of the channel.", schema = @Schema(description = "The name of the channel."))
+        @FormParam("channelName")
+        String channelName,
+
+        @Param("wsdlUrl") @Parameter(description = "The full URL to the WSDL describing the web service method to be called.", required = true, schema = @Schema(description = "The full URL to the WSDL describing the web service method to be called."))
+        @FormParam("wsdlUrl")
+        String wsdlUrl,
+
+        @Param("username") @Parameter(description = "Username used to authenticate to the web server.", schema = @Schema(description = "Username used to authenticate to the web server."))
+        @FormParam("username")
+        String username,
+
+        @Param(value = "password",excludeFromAudit = true)
+        @Parameter(description = "Password used to authenticate to the web server.", schema = @Schema(description = "Password used to authenticate to the web server."))
+        @FormParam("password")
+        String password
     ) throws ClientException;
 }

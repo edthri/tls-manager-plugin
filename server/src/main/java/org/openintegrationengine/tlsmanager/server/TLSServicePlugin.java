@@ -19,6 +19,7 @@ package org.openintegrationengine.tlsmanager.server;
 import com.kaurpalang.mirth.annotationsplugin.annotation.MirthServerClass;
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.server.controllers.ExtensionController;
+import com.mirth.connect.server.util.TemplateValueReplacer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.openintegrationengine.tlsmanager.server.connectorconfig.TLSHttpConfiguration;
@@ -50,6 +51,9 @@ public class TLSServicePlugin implements ServicePlugin {
     @Getter
     private SocketFactoryService socketFactoryService;
 
+    @Getter
+    private WebServiceService webServiceService;
+
     @Override
     public void init(Properties properties) {
         var configurationController = ControllerFactory.getFactory().createConfigurationController();
@@ -58,6 +62,11 @@ public class TLSServicePlugin implements ServicePlugin {
         this.socketFactoryService = new SocketFactoryService(
             configurationController,
             certificateService
+        );
+
+        this.webServiceService = new WebServiceService(
+            socketFactoryService,
+            new TemplateValueReplacer()
         );
 
         configurationController.saveProperty(

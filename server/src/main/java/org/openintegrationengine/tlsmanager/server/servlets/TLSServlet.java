@@ -19,14 +19,17 @@ package org.openintegrationengine.tlsmanager.server.servlets;
 import com.kaurpalang.mirth.annotationsplugin.annotation.MirthApiProvider;
 import com.kaurpalang.mirth.annotationsplugin.type.ApiProviderType;
 import com.mirth.connect.client.core.ClientException;
+import com.mirth.connect.client.core.api.MirthApiException;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
 import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
+import com.mirth.connect.connectors.ws.DefinitionServiceMap;
 import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
 import com.mirth.connect.server.api.DontCheckAuthorized;
 import com.mirth.connect.server.api.MirthServlet;
 import lombok.extern.slf4j.Slf4j;
 import org.openintegrationengine.tlsmanager.server.CertificateService;
 import org.openintegrationengine.tlsmanager.server.TLSServicePlugin;
+import org.openintegrationengine.tlsmanager.server.WebServiceService;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.models.ConnectionTestResult;
 import org.openintegrationengine.tlsmanager.shared.models.LocalCertificate;
@@ -51,24 +54,28 @@ import java.util.Set;
 @MirthApiProvider(type = ApiProviderType.SERVER_CLASS)
 public class TLSServlet extends MirthServlet implements TLSServletInterface {
 
-    private CertificateService certificateService;
+    private final CertificateService certificateService;
+    private final WebServiceService webServiceService;
 
     public TLSServlet(@Context HttpServletRequest request, @Context SecurityContext sc) {
         this(
             request,
             sc,
-            TLSServicePlugin.getPluginInstance().getCertificateService()
+            TLSServicePlugin.getPluginInstance().getCertificateService(),
+            TLSServicePlugin.getPluginInstance().getWebServiceService()
         );
     }
 
     public TLSServlet(
         @Context HttpServletRequest request,
         @Context SecurityContext sc,
-        CertificateService certificateService
+        CertificateService certificateService,
+        WebServiceService webServiceService
     ) {
         super(request, sc, TLSPluginConstants.PLUGIN_POINTNAME);
 
         this.certificateService = certificateService;
+        this.webServiceService = webServiceService;
     }
 
     @Override
@@ -156,5 +163,45 @@ public class TLSServlet extends MirthServlet implements TLSServletInterface {
     @Override
     public ConnectionTestResult testWsConnection(String channelId, String channelName, WebServiceDispatcherProperties wsDispatcherProperties) throws ClientException {
         return certificateService.testWsConnection(channelId, channelName, wsDispatcherProperties);
+    }
+
+    @Override
+    public Object cacheWsdlFromUrl(
+        String channelId,
+        String channelName,
+        WebServiceDispatcherProperties properties
+    ) {
+        try {
+            webServiceService.cacheWsdlFromUrl(channelId, channelName, properties);
+            return null;
+        } catch (Exception e) {
+            throw new MirthApiException(e);
+        }
+    }
+
+    @Override
+    public boolean isWsdlCached(
+        String channelId,
+        String channelName,
+        String wsdlUrl,
+        String username,
+        String password
+    ) {
+        return false;
+    }
+
+    @Override
+    public DefinitionServiceMap getDefinition(
+        String channelId,
+        String channelName,
+        String wsdlUrl,
+        String username,
+        String password
+    ) {
+        try {
+            return webServiceService.getDefinition(channelId, channelName, wsdlUrl, username, password);
+        } catch (Exception e) {
+            throw new MirthApiException(e);
+        }
     }
 }
