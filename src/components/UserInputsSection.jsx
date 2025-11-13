@@ -21,6 +21,7 @@ const UserInputsSection = ({
   targetStore,
   aliasWarning,
   readOnlyPem = false,
+  showPrivateKeyFields = false,
 
   // Refs
   fileInputRef,
@@ -110,7 +111,7 @@ const UserInputsSection = ({
           sx={{ marginTop: '10px' }}
         />
 
-        {targetStore === 'private' && (
+        {showPrivateKeyFields && (
           <>
             <input
               ref={privateKeyFileInputRef}

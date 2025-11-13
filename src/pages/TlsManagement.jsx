@@ -10,7 +10,8 @@ import useCertificates from '../hooks/useCertificates'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import VpnKeyIcon from '@mui/icons-material/VpnKey'
-import ImportCertificateDialogContent from '../components/ImportCertificateDialogContent'
+import ImportTrustedCertificateDialog from '../components/ImportTrustedCertificateDialog'
+import ImportPrivateCertificateDialog from '../components/ImportPrivateCertificateDialog'
 import ImportFromUrlDialogContent from '../components/ImportFromUrlDialogContent'
 import CertificateDetailsDialog from '../components/CertificateDetailsDialog'
 import EditAliasDialog from '../components/EditAliasDialog'
@@ -221,10 +222,17 @@ export default function TlsManagement() {
       <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="lg">
         <DialogTitle>{dialogTitle}</DialogTitle>
         <DialogContent>
-          {dialogType === 'import-certificate' && (
-            <ImportCertificateDialogContent
-              targetStore={dialogProps.targetStore}
-              currentCertificates={getCertificatesByStore(dialogProps.targetStore)}
+          {dialogType === 'import-certificate' && dialogProps.targetStore === 'trusted' && (
+            <ImportTrustedCertificateDialog
+              currentCertificates={getCertificatesByStore('trusted')}
+              onCancel={closeDialog}
+              onSubmit={() => closeDialog()}
+              onSuccess={handleImportSuccess}
+            />
+          )}
+          {dialogType === 'import-certificate' && dialogProps.targetStore === 'private' && (
+            <ImportPrivateCertificateDialog
+              currentCertificates={getCertificatesByStore('private')}
               onCancel={closeDialog}
               onSubmit={() => closeDialog()}
               onSuccess={handleImportSuccess}

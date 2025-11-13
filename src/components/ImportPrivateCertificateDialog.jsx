@@ -17,8 +17,7 @@ import MobileCertificateSection from './MobileCertificateSection'
 import { updateCertificates } from '../services/tlsService.js'
 import { verifyCertificate } from '../utils/verificationUtils.js'
 
-const ImportCertificateDialogContent = forwardRef(function ImportCertificateDialogContent({
-  targetStore = 'trusted',
+const ImportPrivateCertificateDialog = forwardRef(function ImportPrivateCertificateDialog({
   currentCertificates = null,
   onCancel,
   onSubmit,
@@ -27,6 +26,7 @@ const ImportCertificateDialogContent = forwardRef(function ImportCertificateDial
   readOnlyPem = false,
   hideButtons = false,
 }, ref) {
+  const targetStore = 'private'
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showValidationDialog, setShowValidationDialog] = useState(false)
   const [validationError, setValidationError] = useState(null)
@@ -88,9 +88,7 @@ const ImportCertificateDialogContent = forwardRef(function ImportCertificateDial
   // Reusable verification function
   const performFinalVerification = async () => {
     try {
-      const privateKeyPem = targetStore === 'private' && privateKeyText.trim() 
-        ? privateKeyText 
-        : null
+      const privateKeyPem = privateKeyText.trim() ? privateKeyText : null
       
       const verificationResult = await verifyCertificate(pemText, privateKeyPem)
       
@@ -132,7 +130,7 @@ const ImportCertificateDialogContent = forwardRef(function ImportCertificateDial
       const result = await updateCertificates(targetStore, {
         alias,
         pemText,
-        privateKeyText: targetStore === 'private' ? privateKeyText : undefined,
+        privateKeyText,
       }, currentCertificates)
       if (result.success) {
         onSuccess?.(result.data)
@@ -204,6 +202,7 @@ const ImportCertificateDialogContent = forwardRef(function ImportCertificateDial
           handlePrivateKeyFileUpload={handlePrivateKeyFileUpload}
           setApiError={setApiError}
           readOnlyPem={readOnlyPem}
+          showPrivateKeyFields={true}
         />
         {/* Right Column - Certificate Details & Verification */}
         <Box sx={{ 
@@ -221,8 +220,6 @@ const ImportCertificateDialogContent = forwardRef(function ImportCertificateDial
             />
           </Stack>
         </Box>
-
-       
 
         {/* Mobile Certificate Details & Verification */}
         <MobileCertificateSection
@@ -287,32 +284,33 @@ const ImportCertificateDialogContent = forwardRef(function ImportCertificateDial
           >
             {loading ? 'Replacing...' : 'Replace Certificate'}
           </Button>
-              </DialogActions>
-            </Dialog>
+        </DialogActions>
+      </Dialog>
 
-            {/* Validation Error Dialog */}
-            <Dialog
-              open={showValidationDialog}
-              onClose={() => setShowValidationDialog(false)}
-              aria-labelledby="validation-dialog-title"
-              aria-describedby="validation-dialog-description"
-            >
-              <DialogTitle id="validation-dialog-title">
-                Certificate Validation Failed
-              </DialogTitle>
-              <DialogContent>
-                <DialogContentText id="validation-dialog-description">
-                  {validationError}
-                </DialogContentText>
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={() => setShowValidationDialog(false)}>
-                  Close
-                </Button>
-              </DialogActions>
-            </Dialog>
-          </Box>
-        )
+      {/* Validation Error Dialog */}
+      <Dialog
+        open={showValidationDialog}
+        onClose={() => setShowValidationDialog(false)}
+        aria-labelledby="validation-dialog-title"
+        aria-describedby="validation-dialog-description"
+      >
+        <DialogTitle id="validation-dialog-title">
+          Certificate Validation Failed
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="validation-dialog-description">
+            {validationError}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowValidationDialog(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  )
 })
 
-export default ImportCertificateDialogContent
+export default ImportPrivateCertificateDialog
+

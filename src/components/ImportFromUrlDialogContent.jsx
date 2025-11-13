@@ -15,7 +15,7 @@ import {
   Divider
 } from '@mui/material'
 import { fetchRemoteCertificates } from '../services/tlsService.js'
-import ImportCertificateDialogContent from './ImportCertificateDialogContent'
+import ImportTrustedCertificateDialog from './ImportTrustedCertificateDialog'
 import StatusPill from './StatusPill'
 
 export default function ImportFromUrlDialogContent({
@@ -230,10 +230,9 @@ export default function ImportFromUrlDialogContent({
             overflow: 'auto'
           }}>
             {selectedCertificatePem ? (
-              <ImportCertificateDialogContent
+              <ImportTrustedCertificateDialog
                 ref={importCertificateRef}
                 key={selectedCertificateIndex}
-                targetStore={targetStore}
                 currentCertificates={currentCertificates}
                 onCancel={onCancel}
                 onSuccess={(data) => {
