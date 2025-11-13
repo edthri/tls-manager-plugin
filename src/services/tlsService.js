@@ -121,7 +121,7 @@ export async function fetchSystemCertificates() {
       }
       
       certificates.push({
-        alias: cert.alias,
+        alias: cert.alias.toString(),
         name: parsed.subject?.CN || cert.alias,
         type: parsed.type || 'Unknown',
         subject: parsed.subjectStr || 'Unknown',
@@ -291,7 +291,7 @@ export async function fetchTrustedCertificates() {
       }
       
       certificates.push({
-        alias: cert.alias,
+        alias: cert.alias.toString(),
         name: parsed.subject?.CN || cert.alias,
         type: parsed.type || 'Unknown',
         subject: parsed.subjectStr || 'Unknown',
@@ -372,7 +372,7 @@ export async function fetchLocalCertificates() {
       }
       
       certificates.push({
-        alias: cert.alias,
+        alias: cert.alias.toString(),
         name: parsed.subject?.CN || cert.alias,
         type: parsed.type || 'Unknown',
         subject: parsed.subjectStr || 'Unknown',

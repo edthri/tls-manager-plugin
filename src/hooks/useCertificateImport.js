@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { parseCertificate, getSuggestedAlias, isValidPemCertificate } from '../utils/certificateUtils'
 import { verifyCertificate } from '../utils/verificationUtils'
 import { fetchCertificates } from '../services/tlsService'
 
-export const useCertificateImport = (targetStore) => {
+export const useCertificateImport = (targetStore, currentCertificates = null) => {
   // State management
   const [alias, setAlias] = useState('')
   const [pemText, setPemText] = useState('')
@@ -16,7 +16,7 @@ export const useCertificateImport = (targetStore) => {
   const [certificateDetails, setCertificateDetails] = useState(null)
   const [verificationResult, setVerificationResult] = useState(null)
   const [isVerifying, setIsVerifying] = useState(false)
-  const [existingCertificates, setExistingCertificates] = useState([])
+  const [existingCertificates, setExistingCertificates] = useState(currentCertificates || [])
   const [aliasWarning, setAliasWarning] = useState(null)
 
   // Refs
@@ -27,6 +27,12 @@ export const useCertificateImport = (targetStore) => {
 
   // Load existing certificates to check for alias conflicts
   const loadExistingCertificates = async () => {
+    // If currentCertificates were provided, use them instead of fetching
+    if (currentCertificates && currentCertificates.length > 0) {
+      setExistingCertificates(currentCertificates)
+      return
+    }
+    
     try {
       const certificates = await fetchCertificates()
       setExistingCertificates(certificates)
@@ -34,6 +40,13 @@ export const useCertificateImport = (targetStore) => {
       console.error('Failed to load existing certificates:', error)
     }
   }
+  
+  // Update existingCertificates when currentCertificates prop changes
+  useEffect(() => {
+    if (currentCertificates && currentCertificates.length > 0) {
+      setExistingCertificates(currentCertificates)
+    }
+  }, [currentCertificates])
 
   // Check if alias already exists within the target store
   const checkAliasExists = (aliasToCheck) => {

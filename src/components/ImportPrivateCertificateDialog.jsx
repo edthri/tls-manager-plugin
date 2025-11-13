@@ -68,7 +68,7 @@ const ImportPrivateCertificateDialog = forwardRef(function ImportPrivateCertific
     validate,
     loadExistingCertificates,
     checkAliasExists
-  } = useCertificateImport(targetStore)
+  } = useCertificateImport(targetStore, currentCertificates)
 
   // Load existing certificates on component mount
   useEffect(() => {
