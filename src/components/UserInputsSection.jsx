@@ -135,7 +135,7 @@ const UserInputsSection = ({
               value={privateKeyText}
               onChange={handlePrivateKeyTextChange}
               error={Boolean(errors.privateKeyText)}
-              helperText={errors.privateKeyText || 'Paste private key. Uploading a .pem or .key file fills this field.'}
+              helperText={errors.privateKeyText || 'Paste private key. Uploading a .key file fills this field.'}
               multiline
               minRows={4}
               maxRows={6}

@@ -33,15 +33,6 @@ const CertificateVerificationSection = ({
           <Security color="primary" />
           Certificate Verification
         </Typography>
-        <Button
-          variant="outlined"
-          onClick={onVerify}
-          disabled={isVerifying || !pemText.trim()}
-          startIcon={isVerifying ? <CircularProgress size={16} /> : <Security />}
-          size="small"
-        >
-          {isVerifying ? 'Verifying...' : 'Verify'}
-        </Button>
       </Stack>
 
       {verificationResult && (
