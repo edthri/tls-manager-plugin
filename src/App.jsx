@@ -11,7 +11,7 @@ export default function App() {
 
   return (
     <NotificationProvider>
-      <BrowserRouter basename="/dashboard">
+      <BrowserRouter basename="/tls-manager">
         <Routes>
           <Route
             path="/login"

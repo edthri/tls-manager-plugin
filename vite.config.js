@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: '/dashboard/',
+  base: '/tls-manager/',
   server: {
     allowedHosts: ['localhost', '127.0.0.1', '0.0.0.0', '778ded44be8d.ngrok-free.app'],
     proxy: {
@@ -19,7 +19,7 @@ export default defineConfig({
 
   },
   build: {
-    outDir: 'dashboard',
+    outDir: 'tls-manager',
     emptyOutDir: true,
   },
 })
