@@ -53,7 +53,7 @@ const UserInputsSection = ({
                   value={alias}
                   onChange={handleAliasChange}
                   error={Boolean(errors.alias)}
-                  helperText={errors.alias || aliasWarning || "Provide a unique alias for this certificate"}
+                  helperText={errors.alias || aliasWarning || " "}
                   fullWidth
                   required
                   sx={{ 

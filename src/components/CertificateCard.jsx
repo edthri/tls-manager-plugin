@@ -185,7 +185,7 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
           >
             View Details
           </Button>
-          <Button
+          {/* <Button
             variant="outlined"
             color="secondary"
             size="small"
@@ -200,7 +200,7 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
             }}
           >
             Export
-          </Button>
+          </Button> */}
           {/* Edit Alias button - only show for trusted and private stores */}
           {(certificate.store === 'trusted' || certificate.store === 'private') && (
             <Button

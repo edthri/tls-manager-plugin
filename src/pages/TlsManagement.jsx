@@ -156,7 +156,7 @@ export default function TlsManagement() {
       actions: [
         { key: 'import', label: 'Import Certificate', color: 'info', onClick: () => openImportDialog() },
         { key: 'import-url', label: 'Import from URL', color: 'info', onClick: () => openDialog({ type: 'import-from-url', title: 'Import Certificate from URL', props: { targetStore: 'trusted' } }) },
-        { key: 'add', label: 'Add New', variant: 'contained', color: 'success', onClick: () => openDialog({ type: 'text', title: 'Add New Certificate', props: { text: 'Placeholder dialog for adding a new certificate.' } }) },
+
       ],
     },
     private: {
@@ -164,7 +164,7 @@ export default function TlsManagement() {
       actions: [
         { key: 'show-private-keys', label: showPrivateKeys ? 'Hide Private Keys' : 'Show Private Keys', color: 'warning', onClick: handleTogglePrivateKeys },
         { key: 'import-cert', label: 'Import Certificate', color: 'info', onClick: () => openImportDialog() },
-        { key: 'add-new', label: 'Add New', variant: 'contained', color: 'success', onClick: () => openDialog({ type: 'text', title: 'Add New Private Key', props: { text: 'Placeholder dialog for adding a new private key certificate.' } }) },
+
       ],
     },
   }
