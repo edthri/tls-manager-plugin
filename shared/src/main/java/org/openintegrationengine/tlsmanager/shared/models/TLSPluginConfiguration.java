@@ -1,6 +1,7 @@
 package org.openintegrationengine.tlsmanager.shared.models;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.openintegrationengine.tlsmanager.shared.PersistenceMode;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 
@@ -54,5 +55,25 @@ public record TLSPluginConfiguration(
         }
 
         return keyFromEnv;
+    }
+
+    @NotNull
+    @Override
+    public String toString() {
+        return "%s[persistenceMode=%s, truststorePath=%s, truststorePassword=%s, keystorePath=%s, keystorePassword=%s]".formatted(
+            this.getClass().getSimpleName(),
+            persistenceMode,
+            truststorePath,
+            anonymize(truststorePassword),
+            keystorePath,
+            anonymize(keystorePassword)
+        );
+    }
+
+    public static String anonymize(String input) {
+        if (input == null || input.length() <= 2) {
+            return input; // too short to anonymize meaningfully
+        }
+        return input.charAt(0) + "***" + input.charAt(input.length() - 1);
     }
 }
