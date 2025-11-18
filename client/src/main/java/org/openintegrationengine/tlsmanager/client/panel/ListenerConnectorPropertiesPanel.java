@@ -92,6 +92,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
 
         initComponents();
         initLayout();
+        fetchData();
     }
 
     @Override

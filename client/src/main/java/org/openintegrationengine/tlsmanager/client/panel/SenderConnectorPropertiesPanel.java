@@ -143,6 +143,7 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
 
         initComponents();
         initLayout();
+        fetchData();
     }
 
     private List<JButton> getButtonsByText(String text) {
