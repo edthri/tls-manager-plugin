@@ -143,7 +143,6 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
 
         initComponents();
         initLayout();
-        fetchData();
     }
 
     private List<JButton> getButtonsByText(String text) {
@@ -413,6 +412,7 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
     public void setProperties(ConnectorProperties connectorProperties, ConnectorPluginProperties connectorPluginProperties, Connector.Mode mode, String s) {
         if (connectorPluginProperties instanceof TLSSenderProperties tlsSenderProperties) {
             this.properties = tlsSenderProperties;
+            fetchData();
             redrawState();
             handleManagerEnabledButton(tlsSenderProperties.isTlsManagerEnabled());
         }

@@ -92,7 +92,6 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
 
         initComponents();
         initLayout();
-        fetchData();
     }
 
     @Override
@@ -104,6 +103,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     public void setProperties(ConnectorProperties connectorProperties, ConnectorPluginProperties connectorPluginProperties, Connector.Mode mode, String s) {
         if (connectorPluginProperties instanceof TLSListenerProperties tlsListenerProperties) {
             this.properties = tlsListenerProperties;
+            fetchData();
             redrawState();
             handleManagerEnabledButton(tlsListenerProperties.isTlsManagerEnabled());
         }
