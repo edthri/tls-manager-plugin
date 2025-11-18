@@ -1,23 +1,24 @@
 package org.openintegrationengine.tlsmanager.server.io;
 
-import com.mirth.connect.connectors.tcp.StateAwareSocket;
+import com.mirth.connect.connectors.tcp.StateAwareSocketInterface;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 
 import javax.net.ssl.SSLSocket;
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PushbackInputStream;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.SocketAddress;
-import java.net.SocketException;
+import java.util.Objects;
 
-public class StateAwareTLSSocket extends StateAwareSocket {
+@Slf4j
+public class StateAwareTLSSocket extends Socket implements StateAwareSocketInterface {
 
     private final SSLConnectionSocketFactory socketFactory;
-
     private SSLSocket delegate;
-
     private boolean isClosing;
 
     public StateAwareTLSSocket(SSLConnectionSocketFactory socketFactory) {
@@ -40,17 +41,16 @@ public class StateAwareTLSSocket extends StateAwareSocket {
 
     @Override
     public void connect(SocketAddress endpoint, int timeout) throws IOException {
-        // Perform the plain TCP connection first
-        super.connect(endpoint, timeout);
-
-        // Layer TLS on top using createLayeredSocket
         if (endpoint instanceof InetSocketAddress inet) {
-            String host = inet.getHostString();
-            int port = inet.getPort();
+            // Perform the plain TCP connection first
+            super.connect(endpoint, timeout);
 
-            // createLayeredSocket() will internally call SSLSocketFactory.createSocket()
-            this.delegate = (SSLSocket) socketFactory.createLayeredSocket(this, host, port, null);
-            this.bis = null;
+            this.delegate = (SSLSocket) socketFactory.createLayeredSocket(
+                this,
+                inet.getHostString(),
+                inet.getPort(),
+                null
+            );
         } else {
             throw new IOException("Expected InetSocketAddress for TLS connection");
         }
@@ -58,12 +58,11 @@ public class StateAwareTLSSocket extends StateAwareSocket {
 
     @Override
     public InputStream getInputStream() throws IOException {
-        if (this.bis == null) {
-            var inputStream = delegate != null ? delegate.getInputStream() : super.getInputStream();
-            this.bis = new BufferedInputStream(inputStream);
+        if (delegate != null) {
+            return delegate.getInputStream();
         }
 
-        return this.bis;
+        return super.getInputStream();
     }
 
     @Override
@@ -96,45 +95,25 @@ public class StateAwareTLSSocket extends StateAwareSocket {
 
     @Override
     public boolean remoteSideHasClosed() throws IOException {
-        if (delegate != null) {
-            return remoteSideHasClosedInternal();
-        }
-        return super.remoteSideHasClosed();
+        return remoteSideHasClosedInternal(
+            Objects.requireNonNullElse(delegate, this)
+        );
     }
 
-    private boolean remoteSideHasClosedInternal() throws IOException {
-        if (delegate.isClosed()) {
-            return true;
-        }
+    private boolean remoteSideHasClosedInternal(Socket socket) throws IOException {
+        if (socket.isClosed()) return true;
 
-        int oldTimeout;
+        int oldTimeout = socket.getSoTimeout();
+        socket.setSoTimeout(100);
+
+        var pbIn = new PushbackInputStream(socket.getInputStream());
         try {
-            oldTimeout = delegate.getSoTimeout();
-        } catch (IOException e) {
-            if (e.getMessage() != null && e.getMessage().contains("Socket closed")) {
-               return true;
-            }
-
-            throw e;
-        }
-
-        delegate.setSoTimeout(100);
-        this.getInputStream().mark(1);
-
-        try {
-            return bis.read() == -1;
-        } catch (IOException e) {
+            int b = pbIn.read();
+            if (b == -1) return true;
+            pbIn.unread(b);
             return false;
         } finally {
-            try {
-                bis.reset();
-            } catch (IOException ignored) {
-            }
-
-            try {
-                delegate.setSoTimeout(oldTimeout);
-            } catch (SocketException ignored) {
-            }
+            socket.setSoTimeout(oldTimeout);
         }
     }
 }
