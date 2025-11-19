@@ -159,10 +159,9 @@ public class ConnectionUtils {
      * is best-effort only.
      *
      * @param socket the socket to test (not {@code null})
-     * @return {@code true} if the socket likely remains open; {@code false} otherwise
      */
 
-    private static boolean isSocketAlive(Socket socket) throws IOException {
+    private static void isSocketAlive(Socket socket) throws IOException {
         log.trace("Checking socket liveness");
         int oldTimeOut = socket.getSoTimeout();
         socket.setSoTimeout(100); // 100ms read timeout
@@ -182,13 +181,15 @@ public class ConnectionUtils {
         } catch (SocketTimeoutException e) {
             // no data within timeout → probably still open
             log.debug("Socket alive (idle)");
+            throw e;
         } catch (IOException e) {
             // network error, RST, etc.
             log.debug("Socket dead (idle)", e);
+            throw e;
         } finally {
-            socket.setSoTimeout(oldTimeOut);
+            if (!socket.isClosed()) {
+                socket.setSoTimeout(oldTimeOut);
+            }
         }
-
-        return true;
     }
 }
