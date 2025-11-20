@@ -53,7 +53,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -367,21 +366,6 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         params.addCertPathChecker(revocationChecker);
 
         certPathValidator.validate(path, params);
-    }
-
-    // ---- Helpers: anchors, AIA->OCSP URL, CRLDP fetch (HTTP) ----
-    private static Set<TrustAnchor> anchorsFrom(KeyStore ks) throws KeyStoreException {
-        Set<TrustAnchor> out = new HashSet<>();
-        for (Enumeration<String> e = ks.aliases(); e.hasMoreElements();) {
-            var alias = e.nextElement();
-            var certificate = ks.getCertificate(alias);
-            if (certificate instanceof X509Certificate x509Certificate) {
-                out.add(new TrustAnchor(x509Certificate, null));
-            } else {
-                log.debug("Ignoring non-X.509 certificate {} in truststore", certificate);
-            }
-        }
-        return out;
     }
 
     private static Collection<? extends CRL> fetchCrlsFromCrlDP(X509Certificate[] chain) {
