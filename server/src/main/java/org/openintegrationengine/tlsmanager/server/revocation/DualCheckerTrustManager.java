@@ -72,6 +72,8 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     private final X509ExtendedTrustManager trustManagerDelegate;
     private final X509ExtendedKeyManager keyManagerDelegate;
 
+    private final CertificateFactory certificateFactory;
+
     public DualCheckerTrustManager(
         KeyStore trustStore,
         KeyStore keyStore,
@@ -94,6 +96,8 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         initTrustedLeafSet(trustedAliasSet);
 
         try {
+            this.certificateFactory = CertificateFactory.getInstance("X.509");
+
             var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             tmf.init(trustStore);
 
@@ -209,10 +213,8 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         }
 
         try {
-
             // Build a CertPath from the server chain
-            var cf = CertificateFactory.getInstance("X.509");
-            var certPath = cf.generateCertPath(serverChain);
+            var certPath = certificateFactory.generateCertPath(serverChain);
 
             // PKIX parameters
             var params = new PKIXParameters(anchors);
@@ -279,7 +281,6 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
                 }
             }
 
-            var certificateFactory = CertificateFactory.getInstance("X.509");
             var certPath = certificateFactory.generateCertPath(serverChain);
 
             // OCSP-only pass (if requested)
@@ -368,10 +369,9 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         certPathValidator.validate(path, params);
     }
 
-    private static Collection<? extends CRL> fetchCrlsFromCrlDP(X509Certificate[] chain) {
+    private Collection<? extends CRL> fetchCrlsFromCrlDP(X509Certificate[] chain) {
         List<CRL> out = new ArrayList<>();
         try {
-            var certificateFactory = CertificateFactory.getInstance("X.509");
             for (X509Certificate cert : chain) {
                 byte[] ext = cert.getExtensionValue(Extension.cRLDistributionPoints.getId());
                 if (ext == null) continue;
