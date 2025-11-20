@@ -55,6 +55,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Slf4j
@@ -93,7 +94,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         this.preloadedCrls = preloadedCrls == null ? List.of() : preloadedCrls;
 
         this.trustedLeafCertSet = new HashSet<>();
-        initTrustedLeafSet(trustedAliasSet);
+        initTrustedLeafSet(Objects.requireNonNullElse(trustedAliasSet, Set.of()));
 
         try {
             this.certificateFactory = CertificateFactory.getInstance("X.509");
