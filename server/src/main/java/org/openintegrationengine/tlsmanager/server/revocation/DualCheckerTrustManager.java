@@ -32,11 +32,14 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.net.URI;
 import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.CRL;
 import java.security.cert.CertPath;
 import java.security.cert.CertPathValidator;
+import java.security.cert.CertPathValidatorException;
 import java.security.cert.CertStore;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -65,6 +68,8 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     private final RevocationMode ocspMode, crlMode;
     private final Collection<? extends CRL> preloadedCrls; // optional (in addition to CRLDP)
 
+    private final Set<X509Certificate> trustedLeafCertSet;
+
     private final X509ExtendedTrustManager trustManagerDelegate;
     private final X509ExtendedKeyManager keyManagerDelegate;
 
@@ -75,7 +80,8 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         String subjectDnValidationFilter,
         RevocationMode ocspMode,
         RevocationMode crlMode,
-        Collection<? extends CRL> preloadedCrls
+        Collection<? extends CRL> preloadedCrls,
+        Set<String> trustedAliasSet
     ) {
         this.trustStore = trustStore;
         this.keyStore = keyStore;
@@ -84,6 +90,9 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         this.ocspMode = ocspMode;
         this.crlMode = crlMode;
         this.preloadedCrls = preloadedCrls == null ? List.of() : preloadedCrls;
+
+        this.trustedLeafCertSet = new HashSet<>();
+        initTrustedLeafSet(trustedAliasSet);
 
         try {
             var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -170,11 +179,74 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         return false;
     }
 
-    private void runValidations(X509Certificate[] chain, Socket socket, SSLEngine sslEngine) throws CertificateException {
-        try {
-            var certificateFactory = CertificateFactory.getInstance("X.509");
-            var certPath = certificateFactory.generateCertPath(List.of(chain));
+    private void initTrustedLeafSet(Set<String> trustedAliasSet) {
+        trustedAliasSet.forEach(alias -> {
+            try {
+                var cert = trustStore.getCertificate(alias);
+                if (cert instanceof X509Certificate x509Certificate) {
+                    trustedLeafCertSet.add(x509Certificate);
+                } else {
+                    log.debug("Truststore does not contain x509Certificate with alias {}", alias);
+                }
+            } catch (KeyStoreException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
 
+    private boolean runTrustCheck(List<X509Certificate> serverChain) {
+        if (serverChain == null || serverChain.isEmpty()) {
+            throw new IllegalStateException("Remote provided an empty certificate chain");
+        }
+
+        var leafCert = serverChain.get(0);
+        if (trustedLeafCertSet.contains(leafCert)) {
+            return true;
+        }
+
+        var anchors = new HashSet<TrustAnchor>();
+        for (X509Certificate cert : trustedLeafCertSet) {
+            anchors.add(new TrustAnchor(cert, null));
+        }
+
+        try {
+
+            // Build a CertPath from the server chain
+            var cf = CertificateFactory.getInstance("X.509");
+            var certPath = cf.generateCertPath(serverChain);
+
+            // PKIX parameters
+            var params = new PKIXParameters(anchors);
+            params.setRevocationEnabled(false); // optional, CRL/OCSP check disabled
+
+            // Optional: add intermediate certificates as CertStore
+            if (serverChain.size() > 1) {
+                var store = CertStore.getInstance(
+                    "Collection",
+                    new CollectionCertStoreParameters(serverChain.subList(1, serverChain.size()))
+                );
+                params.addCertStore(store);
+            }
+
+            // Validate the chain
+            var validator = CertPathValidator.getInstance("PKIX");
+            validator.validate(certPath, params);
+
+            return true;
+        } catch (CertPathValidatorException | InvalidAlgorithmParameterException | CertificateException | NoSuchAlgorithmException e) {
+            return false;
+        }
+    }
+
+    private void runValidations(X509Certificate[] chain, Socket socket, SSLEngine sslEngine) throws CertificateException {
+        var serverChain = List.of(chain);
+        var isRemoteLeafTrusted = runTrustCheck(serverChain);
+
+        if (!isRemoteLeafTrusted) {
+            throw new CertificateException("Remote leaf certificate is not trusted");
+        }
+
+        try {
             if (subjectDnValidationMode != null && subjectDnValidationMode != SubjectDnValidationMode.NONE) {
                 if (subjectDnValidationFilter == null || subjectDnValidationFilter.isEmpty()) {
                     throw new IllegalStateException("Expected Subject DN cannot be empty");
@@ -207,6 +279,9 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
                     throw new UnsupportedOperationException("Unsupported SubjectDnValidationMode: " + subjectDnValidationMode);
                 }
             }
+
+            var certificateFactory = CertificateFactory.getInstance("X.509");
+            var certPath = certificateFactory.generateCertPath(serverChain);
 
             // OCSP-only pass (if requested)
             if (ocspMode != RevocationMode.DISABLED) {

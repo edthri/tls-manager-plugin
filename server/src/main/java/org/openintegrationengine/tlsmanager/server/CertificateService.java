@@ -20,7 +20,6 @@ import com.mirth.connect.client.core.api.MirthApiException;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
 import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
 import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
-import com.mirth.connect.donkey.server.channel.Connector;
 import com.mirth.connect.server.util.TemplateValueReplacer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -168,10 +167,12 @@ public final class CertificateService {
         }
     }
 
-    KeyStore getTrustStoreFromProperties(boolean isTrustSystem, Set<String> aliasSet, Connector connector) {
+    KeyStore getTrustStore(boolean isTrustSystem) {
         try {
             KeyStore finalTrustStore;
 
+            // If should trust system then base final truststore off of it.
+            // If not, then initialize a new one.
             if (isTrustSystem) {
                 finalTrustStore = clone(systemTrustStore);
             } else {
@@ -179,50 +180,15 @@ public final class CertificateService {
                 finalTrustStore.load(null, "supabase".toCharArray());
             }
 
-            var presentInSystem = new HashSet<String>();
-            var unknownAliases = new HashSet<String>();
-
-            if (aliasSet == null) {
-                log.debug("No aliases provided. Using all aliases from truststore");
-                return finalTrustStore;
-            }
-
-            for (String alias : aliasSet) {
+            // Add every cert from external truststore
+            externalTrustStore.aliases().asIterator().forEachRemaining(alias -> {
                 try {
-                    if (systemTrustStore.containsAlias(alias)) {
-                        presentInSystem.add(alias);
-                        continue;
-                    }
-
-                    if (!externalTrustStore.containsAlias(alias)) {
-                        unknownAliases.add(alias);
-                        continue;
-                    }
-
-                    var publicCertificate = externalTrustStore.getCertificate(alias);
-                    finalTrustStore.setCertificateEntry(alias, publicCertificate);
+                    var cert = externalTrustStore.getCertificate(alias);
+                    finalTrustStore.setCertificateEntry(alias, cert);
                 } catch (KeyStoreException e) {
                     throw new RuntimeException(e);
                 }
-            }
-
-            if (!presentInSystem.isEmpty()) {
-                log.warn(
-                    "Generating effective TrustStore for connector ({}) in channel ({}). Found and ignored aliases present in system truststore: {}",
-                    connector == null ? "testConnection" : connector.getConnectorProperties().getName(),
-                    connector == null ? "testConnection" : connector.getChannel().getName(),
-                    presentInSystem
-                );
-            }
-
-            if (!unknownAliases.isEmpty()) {
-                log.warn(
-                    "Generating effective TrustStore for connector ({}) in channel ({}). Found aliases not present in additional truststore: {}",
-                    connector == null ? "testConnection" : connector.getConnectorProperties().getName(),
-                    connector == null ? "testConnection" : connector.getChannel().getName(),
-                    presentInSystem
-                );
-            }
+            });
 
             return finalTrustStore;
         } catch (Exception e) {

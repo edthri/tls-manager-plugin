@@ -55,10 +55,8 @@ public class SocketFactoryService {
 
     public WeirdIntermediaryContextContainer generateTLSContext(Connector connector, TLSSenderProperties properties) {
         try {
-            var truststore = certificateService.getTrustStoreFromProperties(
-                properties.isTrustSystemTruststore(),
-                properties.getTrustedServerCertificates(),
-                connector
+            var truststore = certificateService.getTrustStore(
+                properties.isTrustSystemTruststore()
             );
 
             // Exit early if truststore is empty
@@ -73,7 +71,8 @@ public class SocketFactoryService {
                 properties.getSubjectDnValidationFilter(),
                 properties.getOcspMode(),
                 properties.getCrlMode(),
-                null
+                null,
+                properties.getTrustedServerCertificates()
             );
 
             KeyManager[] keyManagers = null;
@@ -115,10 +114,8 @@ public class SocketFactoryService {
 
     public WeirdIntermediaryListenerContextContainer generateTLSContext(Connector connector, TLSListenerProperties properties) {
         var keystore = certificateService.getKeyStore(properties.getServerCertificateAlias());
-        var truststore = certificateService.getTrustStoreFromProperties(
-            properties.isTrustSystemTruststore(),
-            properties.getTrustedServerCertificates(),
-            connector
+        var truststore = certificateService.getTrustStore(
+            properties.isTrustSystemTruststore()
         );
 
         var dualcheckerTrustManager = new DualCheckerTrustManager(
@@ -128,7 +125,8 @@ public class SocketFactoryService {
             properties.getSubjectDnValidationFilter(),
             properties.getOcspMode(),
             properties.getCrlMode(),
-            null
+            null,
+            properties.getTrustedServerCertificates()
         );
 
         var protocolArray = properties.isUseServerDefaultProtocols()
