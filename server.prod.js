@@ -20,7 +20,7 @@ if (!API_TARGET) {
 }
 
 // Serve static files from the dashboard directory
-app.use('/dashboard', express.static(path.join(__dirname, 'dashboard'), {
+app.use('/tls-manager', express.static(path.join(__dirname, 'tls-manager'), {
   // Set proper MIME types for JavaScript modules
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.js')) {
@@ -55,18 +55,18 @@ app.use('/api', createProxyMiddleware({
 
 // Redirect root to dashboard
 app.get('/', (req, res) => {
-  res.redirect('/dashboard')
+  res.redirect('/tls-manager')
 })
 
 // Handle client-side routing - serve index.html for dashboard routes
-app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dashboard', 'index.html'))
+app.get('/tls-manager', (req, res) => {
+  res.sendFile(path.join(__dirname, 'tls-manager', 'index.html'))
 })
 
 // Catch-all route for client-side routing (must be last)
 app.use((req, res) => {
-  if (req.path.startsWith('/dashboard')) {
-    res.sendFile(path.join(__dirname, 'dashboard', 'index.html'))
+  if (req.path.startsWith('/tls-manager')) {
+    res.sendFile(path.join(__dirname, 'tls-manager', 'index.html'))
   } else {
     res.status(404).send('Not Found')
   }
@@ -74,7 +74,7 @@ app.use((req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on http://0.0.0.0:${PORT}`)
-  console.log(`📁 Serving static files from: ${path.join(__dirname, 'dashboard')}`)
+  console.log(`📁 Serving static files from: ${path.join(__dirname, 'tls-manager')}`)
   console.log(`🔗 Proxying API requests to: ${API_TARGET}`)
-  console.log(`🌐 Access your app at: http://localhost:${PORT}/dashboard`)
+  console.log(`🌐 Access your app at: http://localhost:${PORT}/tls-manager`)
 })
