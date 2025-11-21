@@ -27,7 +27,7 @@ COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
 # Copy built application from builder stage
-COPY --from=builder /app/dashboard ./dashboard
+COPY --from=builder /app/tls-manager ./tls-manager
 
 # Copy production server
 COPY server.prod.js ./
@@ -45,7 +45,7 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/dashboard', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+  CMD node -e "require('http').get('http://localhost:3000/tls-manager', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Start the production server
 CMD ["npm", "start"]
