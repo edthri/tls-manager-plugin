@@ -106,7 +106,7 @@ public class ConnectionUtils {
                 log.debug("Client cert presented? {}", localPrinc != null);
             }
 
-            isSocketAlive(sslSocket);
+            //isSocketAlive(sslSocket);
 
             return ConnectionTestResult.builder()
                 .success(true)
