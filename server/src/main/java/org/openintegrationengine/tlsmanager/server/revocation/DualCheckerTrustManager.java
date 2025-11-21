@@ -242,10 +242,13 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
     private void runValidations(X509Certificate[] chain, Socket socket, SSLEngine sslEngine) throws CertificateException {
         var serverChain = List.of(chain);
-        var isRemoteLeafTrusted = runTrustCheck(serverChain);
 
-        if (!isRemoteLeafTrusted) {
-            throw new CertificateException("Remote leaf certificate is not trusted");
+        if (!trustedLeafCertSet.isEmpty()) {
+            var isRemoteLeafTrusted = runTrustCheck(serverChain);
+
+            if (!isRemoteLeafTrusted) {
+                throw new CertificateException("Remote leaf certificate is not trusted");
+            }
         }
 
         try {
