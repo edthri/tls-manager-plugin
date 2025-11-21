@@ -23,6 +23,7 @@ import com.mirth.connect.client.ui.Frame;
 import com.mirth.connect.client.ui.PlatformUI;
 import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.client.ui.components.MirthComboBox;
+import com.mirth.connect.client.ui.components.MirthEditableComboBox;
 import com.mirth.connect.client.ui.components.MirthRadioButton;
 import com.mirth.connect.client.ui.components.MirthTextField;
 import com.mirth.connect.client.ui.panels.connectors.ResponseHandler;
@@ -41,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
 import org.openintegrationengine.tlsmanager.client.misc.DisplayTextEnumModeComboBoxRenderer;
+import org.openintegrationengine.tlsmanager.client.misc.SwingMagic;
 import org.openintegrationengine.tlsmanager.shared.models.ConnectionTestResult;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
@@ -241,7 +243,6 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
             return;
         }
 
-
         var webServiceSender = (WebServiceSender) connectorPanel.getConnectorSettingsPanel();
         if (!parentFrame.alertOkCancel(parentFrame, "This will replace your current service, port, location URI, and operation list. Press OK to continue.")) {
             return;
@@ -262,11 +263,18 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
                             }
 
                             var definitionServiceMap = (DefinitionServiceMap) response;
+
                             var currentProperties = (WebServiceDispatcherProperties) webServiceSender.getProperties();
                             currentProperties.setWsdlDefinitionMap(definitionServiceMap);
 
                             // Trigger private loadServiceMap() function
                             webServiceSender.setProperties(currentProperties);
+
+                            // Trigger population of service and port comboboxes
+                            var serviceCombobox = SwingMagic.findComponentFollowingLabel(connectorPanel.getConnectorSettingsPanel(), "Service:");
+                            if (serviceCombobox instanceof MirthEditableComboBox serviceEditableCombobox) {
+                                serviceEditableCombobox.setSelectedItem(definitionServiceMap.getMap().keySet().iterator().next());
+                            }
 
                             parentFrame.setSaveEnabled(true);
                         }
