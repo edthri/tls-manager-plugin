@@ -119,6 +119,7 @@ jobs:
         with:
           token: ${{ secrets.TESTS_REPO_CLONE_PAT }}
           repository: NovaMap-Health/oie-test-orchestrator
+          ref: 0adc24ae977243a13322cd6bd72a84041f2d8a65
 
       - name: Copy keystores and certificates
         run: |
