@@ -1,5 +1,5 @@
 import { X509, KEYUTIL, KJUR, RSAKey } from 'jsrsasign'
-import { convertX509TimeToDate, parseDNString } from './certificateUtils.js'
+import { convertX509TimeToDate, parseDNString, isValidPemCertificate, isValidPemPrivateKey } from './certificateUtils.js'
 
 /**
  * Parse a certificate chain from PEM text (supports multiple certificates)
@@ -443,13 +443,38 @@ export function getSubjectField(cert, field, type = 'subject') {
  */
 export function verifyCertificate(certText, keyText = null) {
   try {
+    // First, validate certificate format
+    if (!certText || !certText.trim()) {
+      return {
+        success: false,
+        error: 'Invalid certificate. Make sure the file is a .pem.'
+      }
+    }
+
+    if (!isValidPemCertificate(certText)) {
+      return {
+        success: false,
+        error: 'Invalid certificate. Make sure the file is a .pem.'
+      }
+    }
+
+    // If private key is provided, validate its format first
+    if (keyText && keyText.trim()) {
+      if (!isValidPemPrivateKey(keyText)) {
+        return {
+          success: false,
+          error: 'Invalid private key. Make sure the file is a .key.'
+        }
+      }
+    }
+
     // Parse certificates
     const certificates = parseCertificateChain(certText)
 
     if (certificates.length === 0) {
       return {
         success: false,
-        error: 'No valid certificates found'
+        error: 'Invalid certificate. Make sure the file is a .pem.'
       }
     }
 
@@ -493,13 +518,26 @@ export function verifyCertificate(certText, keyText = null) {
 
     // Validate private key if provided
     let keyValidation = null
-    if (keyText) {
+    if (keyText && keyText.trim()) {
       keyValidation = validatePrivateKey(certificates[0], keyText)
+      
+      // Check if private key matches certificate
+      if (!keyValidation || !keyValidation.isValid) {
+        // Private key format is already validated above, so if validation fails here, it's a mismatch
+        return {
+          success: false,
+          certificates,
+          certDetails,
+          chainValidation,
+          keyValidation,
+          error: 'Certificate does not match private key.'
+        }
+      }
     }
 
     // Determine overall success based on validation results
     const chainValid = chainValidation && chainValidation.isValid
-    const keyValid = !keyText || (keyValidation && keyValidation.isValid)
+    const keyValid = !keyText || !keyText.trim() || (keyValidation && keyValidation.isValid)
     const overallSuccess = chainValid && keyValid
 
     return {

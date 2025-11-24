@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { parseCertificate, getSuggestedAlias, isValidPemCertificate } from '../utils/certificateUtils'
+import { parseCertificate, getSuggestedAlias, isValidPemCertificate, isValidPemPrivateKey } from '../utils/certificateUtils'
 import { verifyCertificate } from '../utils/verificationUtils'
 import { fetchCertificates } from '../services/tlsService'
 
@@ -73,15 +73,27 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
 
   // Parse certificate details when PEM text changes
   const parseCertificateDetails = async (pemText) => {
-    if (!pemText.trim() || !isValidPemCertificate(pemText)) {
+    if (!pemText.trim()) {
       setCertificateDetails(null)
       setVerificationResult(null)
+      setErrors((prev) => ({ ...prev, pemText: undefined }))
+      return
+    }
+
+    // Validate certificate format
+    if (!isValidPemCertificate(pemText)) {
+      setCertificateDetails(null)
+      setVerificationResult(null)
+      setErrors((prev) => ({ ...prev, pemText: 'Invalid certificate. Make sure the file is a .pem.' }))
       return
     }
 
     try {
       const details = parseCertificate(pemText)
       setCertificateDetails(details)
+      
+      // Clear any previous errors
+      setErrors((prev) => ({ ...prev, pemText: undefined }))
       
       // Auto-complete alias if it's empty
       if (!alias.trim()) {
@@ -102,6 +114,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
       console.error('Failed to parse certificate details:', error)
       setCertificateDetails(null)
       setVerificationResult(null)
+      setErrors((prev) => ({ ...prev, pemText: 'Invalid certificate. Make sure the file is a .pem.' }))
     }
   }
 
@@ -173,6 +186,16 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
         return
       }
       const text = await f.text()
+      
+      // Validate certificate format
+      if (!isValidPemCertificate(text)) {
+        setErrors((prev) => ({ ...prev, file: 'Invalid certificate. Make sure the file is a .pem.', pemText: 'Invalid certificate. Make sure the file is a .pem.' }))
+        setPemText(text) // Still set the text so user can see what was uploaded
+        setCertificateDetails(null)
+        setVerificationResult(null)
+        return
+      }
+      
       setPemText(text)
       await parseCertificateDetails(text) // This will now auto-verify and check for alias conflicts
       setErrors((prev) => ({ ...prev, file: undefined, pemText: undefined }))
@@ -193,6 +216,15 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
         return
       }
       const text = await f.text()
+      
+      // Validate private key format
+      if (!isValidPemPrivateKey(text)) {
+        setErrors((prev) => ({ ...prev, privateKeyFile: 'Invalid private key. Make sure the file is a .key.', privateKeyText: 'Invalid private key. Make sure the file is a .key.' }))
+        setPrivateKeyText(text) // Still set the text so user can see what was uploaded
+        setVerificationResult(null)
+        return
+      }
+      
       setPrivateKeyText(text)
       
       // Auto-verify if certificate is already present
@@ -216,6 +248,19 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
   const handlePrivateKeyTextChange = async (e) => {
     const newPrivateKeyText = e.target.value
     setPrivateKeyText(newPrivateKeyText)
+    
+    // Validate private key format if text is provided
+    if (newPrivateKeyText.trim()) {
+      if (!isValidPemPrivateKey(newPrivateKeyText)) {
+        setErrors((prev) => ({ ...prev, privateKeyText: 'Invalid private key. Make sure the file is a .key.' }))
+        setVerificationResult(null)
+        return
+      } else {
+        setErrors((prev) => ({ ...prev, privateKeyText: undefined }))
+      }
+    } else {
+      setErrors((prev) => ({ ...prev, privateKeyText: undefined }))
+    }
     
     // Auto-verify if certificate is already present
     if (pemText.trim()) {
