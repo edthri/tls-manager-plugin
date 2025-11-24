@@ -1,19 +1,25 @@
 import { useState, useEffect } from 'react'
 import { fetchCertificates } from '../services/tlsService'
 
-export const useAliasEdit = (currentAlias, currentStore) => {
+export const useAliasEdit = (currentAlias, currentStore, currentCertificates = null) => {
   // State management
   const [newAlias, setNewAlias] = useState('')
   const [existingCertificates, setExistingCertificates] = useState([])
   const [aliasWarning, setAliasWarning] = useState(null)
   const [loading, setLoading] = useState(false)
   const [apiError, setApiError] = useState(null)
+  const [existingCertificateInfo, setExistingCertificateInfo] = useState(null)
 
   // Load existing certificates to check for alias conflicts
   const loadExistingCertificates = async () => {
     try {
-      const certificates = await fetchCertificates()
-      setExistingCertificates(certificates)
+      // Use provided currentCertificates if available, otherwise fetch
+      if (currentCertificates && Array.isArray(currentCertificates)) {
+        setExistingCertificates(currentCertificates)
+      } else {
+        const certificates = await fetchCertificates()
+        setExistingCertificates(certificates)
+      }
     } catch (error) {
       console.error('Failed to load existing certificates:', error)
     }
@@ -23,21 +29,24 @@ export const useAliasEdit = (currentAlias, currentStore) => {
   const checkAliasExists = (aliasToCheck) => {
     if (!aliasToCheck.trim()) {
       setAliasWarning(null)
+      setExistingCertificateInfo(null)
       return false
     }
 
     // Only check certificates in the same store, excluding the current certificate
-    const exists = existingCertificates.some(cert => 
+    const existingCert = existingCertificates.find(cert => 
       cert.store === currentStore &&
       cert.alias.toLowerCase() === aliasToCheck.toLowerCase() && 
       cert.alias.toLowerCase() !== currentAlias.toLowerCase()
     )
     
-    if (exists) {
+    if (existingCert) {
       setAliasWarning('This alias is already in use in this store')
+      setExistingCertificateInfo(existingCert)
       return true
     } else {
       setAliasWarning(null)
+      setExistingCertificateInfo(null)
       return false
     }
   }
@@ -67,10 +76,10 @@ export const useAliasEdit = (currentAlias, currentStore) => {
     setNewAlias(currentAlias)
   }, [currentAlias])
 
-  // Load existing certificates on mount
+  // Load existing certificates on mount or when currentCertificates changes
   useEffect(() => {
     loadExistingCertificates()
-  }, [])
+  }, [currentCertificates])
 
   return {
     // State
@@ -79,6 +88,7 @@ export const useAliasEdit = (currentAlias, currentStore) => {
     loading,
     apiError,
     existingCertificates,
+    existingCertificateInfo,
     
     // Actions
     setLoading,

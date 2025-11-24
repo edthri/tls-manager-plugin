@@ -11,8 +11,7 @@ import {
   Typography,
   Paper,
   Grid,
-  Alert,
-  FormHelperText
+  Alert
 } from '@mui/material'
 import { useAliasEdit } from '../hooks/useAliasEdit'
 import { updateCertificateAlias } from '../services/tlsService'
@@ -25,19 +24,19 @@ export default function EditAliasDialog({
   onSuccess 
 }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-  const [validationError, setValidationError] = useState(null)
   
   const {
     newAlias,
     aliasWarning,
     loading,
     apiError,
+    existingCertificateInfo,
     handleAliasChange,
     validate,
     checkAliasExists,
     setLoading,
     setApiError
-  } = useAliasEdit(certificate?.alias || '', certificate?.store)
+  } = useAliasEdit(certificate?.alias || '', certificate?.store, currentCertificates)
 
   const handleSubmit = async () => {
     if (!validate()) return
@@ -87,7 +86,6 @@ export default function EditAliasDialog({
 
   const handleClose = () => {
     setShowConfirmDialog(false)
-    setValidationError(null)
     setApiError(null)
     onClose()
   }
@@ -134,7 +132,7 @@ export default function EditAliasDialog({
             />
 
             {/* Certificate Info Display */}
-            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+            <Paper variant="outlined" sx={{ p: 2, mb: 3, mt: 2 }}>
               <Typography variant="h6" gutterBottom>Certificate Information</Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
@@ -185,14 +183,42 @@ export default function EditAliasDialog({
         onClose={handleCancelReplace}
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
+        maxWidth="sm"
+        fullWidth
       >
         <DialogTitle id="confirm-dialog-title">
           Replace Existing Certificate
         </DialogTitle>
         <DialogContent>
-          <DialogContentText id="confirm-dialog-description">
-            A certificate with the alias "{newAlias}" already exists. This will replace the existing certificate. Are you sure you want to continue?
+          <DialogContentText id="confirm-dialog-description" sx={{ mb: 2 }}>
+            A certificate with the alias "{newAlias}" already exists in the {certificate?.store} store. This will replace the existing certificate. Are you sure you want to continue?
           </DialogContentText>
+          
+          {existingCertificateInfo && (
+            <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 152, 0, 0.1)' }}>
+              <Typography variant="subtitle2" gutterBottom color="warning.dark">
+                Certificate that will be replaced:
+              </Typography>
+              <Grid container spacing={1}>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">Alias</Typography>
+                  <Typography variant="body1">{existingCertificateInfo.alias}</Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">Subject</Typography>
+                  <Typography variant="body1" sx={{ wordBreak: 'break-all' }}>
+                    {existingCertificateInfo.subject}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">Issuer</Typography>
+                  <Typography variant="body1" sx={{ wordBreak: 'break-all' }}>
+                    {existingCertificateInfo.issuer}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </Paper>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCancelReplace} disabled={loading}>
