@@ -12,6 +12,7 @@
 
 import { parseCertificate, getSuggestedAlias } from '../utils/certificateUtils.js'
 import { api } from './api.js'
+import { notificationService } from './notificationService.js'
 
 // === INTERNAL STORE (remove when switching to real API) ===
 // Internal store to simulate API - starts empty
@@ -138,8 +139,9 @@ export async function fetchSystemCertificates() {
     
     return certificates
   } catch (error) {
-    console.error('Failed to fetch system certificates:', error)
-    throw new Error('Failed to fetch system certificates from server')
+    const errorMessage = 'Failed to fetch system certificates from server'
+    notificationService.showError(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -229,8 +231,9 @@ export async function fetchRemoteCertificates(url) {
     
     return certificates
   } catch (error) {
-    console.error('Failed to fetch remote certificates:', error)
-    throw new Error(error.response?.data?.message || error.message || 'Failed to fetch remote certificates from server')
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch remote certificates from server'
+    notificationService.showError(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -309,8 +312,9 @@ export async function fetchTrustedCertificates() {
     
     return certificates
   } catch (error) {
-    console.error('Failed to fetch trusted certificates:', error)
-    throw new Error('Failed to fetch trusted certificates from server')
+    const errorMessage = 'Failed to fetch trusted certificates from server'
+    notificationService.showError(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -391,8 +395,9 @@ export async function fetchLocalCertificates() {
     
     return certificates
   } catch (error) {
-    console.error('Failed to fetch local certificates:', error)
-    throw new Error('Failed to fetch local certificates from server')
+    const errorMessage = 'Failed to fetch local certificates from server'
+    notificationService.showError(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -484,8 +489,9 @@ export async function fetchCertificates() {
     
     return certificates
   } catch (error) {
-    console.error('Failed to fetch certificates:', error)
-    throw new Error('Failed to fetch certificates from server')
+    const errorMessage = 'Failed to fetch certificates from server'
+    notificationService.showError(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -557,8 +563,9 @@ export async function updateCertificates(targetStore, certificateData, currentCe
       throw new Error('Invalid store type')
     }
   } catch (error) {
-    console.error('Failed to update certificates:', error)
-    throw new Error(error.response?.data?.message || error.message || 'Failed to update certificates')
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to update certificates'
+    notificationService.showError(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -618,8 +625,9 @@ export async function updateCertificateAlias(store, oldAlias, newAlias, currentC
       throw new Error('Invalid store type')
     }
   } catch (error) {
-    console.error('Failed to update certificate alias:', error)
-    throw new Error(error.response?.data?.message || error.message || 'Failed to update certificate alias')
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to update certificate alias'
+    notificationService.showError(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -676,8 +684,9 @@ export async function removeCertificate(store, alias, currentCertificates = null
       throw new Error('Invalid store type')
     }
   } catch (error) {
-    console.error('Failed to remove certificate:', error)
-    throw new Error(error.response?.data?.message || error.message || 'Failed to remove certificate')
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to remove certificate'
+    notificationService.showError(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 

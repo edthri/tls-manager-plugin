@@ -11,6 +11,7 @@ function normalize(text) {
  * @returns {Object} Certificate data and utilities
  */
 export default function useCertificates(tabKey = 'native') {
+  
   // Store certificates per tab
   const [certificatesByTab, setCertificatesByTab] = useState({
     native: [],
@@ -70,7 +71,7 @@ export default function useCertificates(tabKey = 'native') {
       const data = await fetchFn()
       setCertificatesByTab((prev) => ({ ...prev, [key]: data }))
     } catch (e) {
-      console.error(`Failed to load ${key} certificates:`, e)
+      // Service already shows notification, just update error state
       setErrorByTab((prev) => ({ ...prev, [key]: `Failed to load certificates` }))
     } finally {
       setLoadingByTab((prev) => ({ ...prev, [key]: false }))

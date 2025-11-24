@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
 import { Snackbar, Alert } from '@mui/material'
+import { notificationService } from '../services/notificationService'
 
 const NotificationContext = createContext()
 
@@ -37,6 +38,14 @@ export const NotificationProvider = ({ children }) => {
   const showError = (message) => showNotification(message, 'error')
   const showWarning = (message) => showNotification(message, 'warning')
   const showInfo = (message) => showNotification(message, 'info')
+
+  // Subscribe to notification service so services/utils can trigger notifications
+  useEffect(() => {
+    const unsubscribe = notificationService.subscribe((message, severity) => {
+      showNotification(message, severity)
+    })
+    return unsubscribe
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <NotificationContext.Provider

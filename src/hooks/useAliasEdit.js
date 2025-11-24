@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { fetchCertificates } from '../services/tlsService'
 
 export const useAliasEdit = (currentAlias, currentStore, currentCertificates = null) => {
+  
   // State management
   const [newAlias, setNewAlias] = useState('')
   const [existingCertificates, setExistingCertificates] = useState([])
@@ -21,7 +22,7 @@ export const useAliasEdit = (currentAlias, currentStore, currentCertificates = n
         setExistingCertificates(certificates)
       }
     } catch (error) {
-      console.error('Failed to load existing certificates:', error)
+      // Service already shows notification, no need to show again
     }
   }
 

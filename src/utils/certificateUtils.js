@@ -1,5 +1,6 @@
 import { X509, KEYUTIL, KJUR, zulutodate } from 'jsrsasign'
 import { parseCertificateChain } from './verificationUtils.js'
+import { notificationService } from '../services/notificationService.js'
 
 /**
  * Convert X509 time string to Date object using jsrsasign utility
@@ -16,7 +17,6 @@ export function convertX509TimeToDate(timeStr) {
     // The t2d output is in 'YYYY/MM/DD hh:mm:ss GMT' format, which Date() can parse
     return new Date(isoString)
   } catch (error) {
-    console.error('Error converting X509 time to Date:', error)
     return null
   }
 }
@@ -192,7 +192,6 @@ export function parseCertificate(base64Pem) {
       raw: cert
     }
   } catch (error) {
-    console.error('Failed to parse certificate:', error)
     return {
       subject: null,
       subjectStr: 'Parse Error',
@@ -348,7 +347,6 @@ export function isValidPemCertificate(pemString) {
     
     return true
   } catch (error) {
-    console.error('Failed to validate PEM certificate:', error)
     return false
   }
 }
@@ -377,7 +375,6 @@ export function isValidPemPrivateKey(pemString) {
     
     return !!privateKey
   } catch (error) {
-    console.error('Failed to validate PEM private key:', error)
     return false
   }
 }
@@ -397,8 +394,9 @@ export function pemToBase64(pemString) {
     
     return base64Content
   } catch (error) {
-    console.error('Failed to convert PEM to Base64:', error)
-    throw new Error('Invalid PEM format')
+    const errorMessage = 'Invalid PEM format'
+    notificationService.showError(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -423,8 +421,9 @@ export function privateKeyPemToBase64(pemString) {
     
     return base64Content
   } catch (error) {
-    console.error('Failed to convert private key PEM to Base64:', error)
-    throw new Error('Invalid private key PEM format')
+    const errorMessage = 'Invalid private key PEM format'
+    notificationService.showError(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -439,8 +438,9 @@ export function base64ToPem(base64Cert) {
     const pemString = `-----BEGIN CERTIFICATE-----\n${base64Cert}\n-----END CERTIFICATE-----`
     return pemString
   } catch (error) {
-    console.error('Failed to convert Base64 to PEM:', error)
-    throw new Error('Invalid Base64 format')
+    const errorMessage = 'Invalid Base64 format'
+    notificationService.showError(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -455,8 +455,9 @@ export function base64ToPrivateKeyPem(base64Key) {
     const pemString = `-----BEGIN PRIVATE KEY-----\n${base64Key}\n-----END PRIVATE KEY-----`
     return pemString
   } catch (error) {
-    console.error('Failed to convert Base64 to private key PEM:', error)
-    throw new Error('Invalid Base64 private key format')
+    const errorMessage = 'Invalid Base64 private key format'
+    notificationService.showError(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -547,7 +548,7 @@ export function parseCertificateChainFromPem(pemText) {
           parsedCertificate: parsed
         })
       } catch (parseError) {
-        console.warn('Failed to parse certificate in chain:', parseError)
+        notificationService.showWarning(`Failed to parse certificate ${index + 1} in chain: ${parseError.message}`)
         certificates.push({
           certificate: chainCert.pem,
           alias: `Certificate ${index + 1}`,
@@ -565,7 +566,6 @@ export function parseCertificateChainFromPem(pemText) {
 
     return certificates
   } catch (error) {
-    console.error('Failed to parse certificate chain:', error)
     return []
   }
 }

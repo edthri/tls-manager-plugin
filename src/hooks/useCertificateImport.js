@@ -2,8 +2,11 @@ import { useState, useRef, useEffect } from 'react'
 import { parseCertificate, getSuggestedAlias, isValidPemCertificate, isValidPemPrivateKey } from '../utils/certificateUtils'
 import { verifyCertificate } from '../utils/verificationUtils'
 import { fetchCertificates } from '../services/tlsService'
+import { useNotification } from '../context/NotificationContext'
 
 export const useCertificateImport = (targetStore, currentCertificates = null) => {
+  const { showError } = useNotification()
+  
   // State management
   const [alias, setAlias] = useState('')
   const [pemText, setPemText] = useState('')
@@ -37,7 +40,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
       const certificates = await fetchCertificates()
       setExistingCertificates(certificates)
     } catch (error) {
-      console.error('Failed to load existing certificates:', error)
+      // Service already shows notification, no need to show again
     }
   }
   
@@ -111,7 +114,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
       // Auto-verify certificate
       await performAutoVerification(pemText)
     } catch (error) {
-      console.error('Failed to parse certificate details:', error)
+      showError('Failed to parse certificate details. Please check the certificate format.')
       setCertificateDetails(null)
       setVerificationResult(null)
       setErrors((prev) => ({ ...prev, pemText: 'Invalid certificate. Make sure the file is a .pem.' }))

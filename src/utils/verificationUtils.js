@@ -18,7 +18,7 @@ export function parseCertificateChain(certText) {
         cert.readCertPEM(certPem)
         certificates.push({ pem: certPem, cert: cert })
       } catch (e) {
-        console.error('Failed to parse certificate:', e)
+        // Failed to parse certificate - skip it
       }
     })
   }
@@ -334,7 +334,7 @@ export function getKeySize(cert) {
       }
     }
   } catch (error) {
-    console.error('Error getting key size:', error)
+    // Error getting key size - return unknown
   }
   return 'Unknown'
 }
@@ -564,7 +564,6 @@ export function verifyCertificate(certText, keyText = null) {
     }
 
   } catch (error) {
-    console.error('Error parsing certificate:', error)
     return {
       success: false,
       error: `Error parsing certificate: ${error.message}`
