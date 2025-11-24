@@ -160,6 +160,29 @@ const ImportPrivateCertificateDialog = forwardRef(function ImportPrivateCertific
     setShowConfirmDialog(false)
   }
 
+  // Determine if import button should be disabled
+  const isImportDisabled = () => {
+    // Disable if loading
+    if (loading) return true
+    
+    // Disable if there are validation errors
+    if (errors.pemText || errors.alias || errors.privateKeyText || errors.file || errors.privateKeyFile) {
+      return true
+    }
+    
+    // Disable if verification has been attempted and failed
+    if (verificationResult && verificationResult.success === false) {
+      return true
+    }
+    
+    // Disable if required fields are missing
+    if (!pemText.trim() || !alias.trim() || (targetStore === 'private' && !privateKeyText.trim())) {
+      return true
+    }
+    
+    return false
+  }
+
   // Expose handleSubmit and loading state via ref
   useImperativeHandle(ref, () => ({
     handleSubmit,
@@ -250,7 +273,7 @@ const ImportPrivateCertificateDialog = forwardRef(function ImportPrivateCertific
           <Button 
             variant="contained" 
             onClick={handleSubmit} 
-            disabled={loading}
+            disabled={isImportDisabled()}
           >
             {loading ? 'Importing...' : 'Import Certificate'}
           </Button>

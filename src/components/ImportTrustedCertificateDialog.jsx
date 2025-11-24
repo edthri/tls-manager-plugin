@@ -157,6 +157,29 @@ const ImportTrustedCertificateDialog = forwardRef(function ImportTrustedCertific
     setShowConfirmDialog(false)
   }
 
+  // Determine if import button should be disabled
+  const isImportDisabled = () => {
+    // Disable if loading
+    if (loading) return true
+    
+    // Disable if there are validation errors
+    if (errors.pemText || errors.alias || errors.file) {
+      return true
+    }
+    
+    // Disable if verification has been attempted and failed
+    if (verificationResult && verificationResult.success === false) {
+      return true
+    }
+    
+    // Disable if required fields are missing
+    if (!pemText.trim() || !alias.trim()) {
+      return true
+    }
+    
+    return false
+  }
+
   // Expose handleSubmit and loading state via ref
   useImperativeHandle(ref, () => ({
     handleSubmit,
@@ -247,7 +270,7 @@ const ImportTrustedCertificateDialog = forwardRef(function ImportTrustedCertific
           <Button 
             variant="contained" 
             onClick={handleSubmit} 
-            disabled={loading}
+            disabled={isImportDisabled()}
           >
             {loading ? 'Importing...' : 'Import Certificate'}
           </Button>
