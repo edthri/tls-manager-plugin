@@ -22,8 +22,12 @@ import { useNotification } from '../context/NotificationContext'
 export default function TlsManagement() {
   const [params, setParams] = useSearchParams()
   const tabKeys = ['native', 'trusted', 'private']
-  const initialKey = params.get('tab') && tabKeys.includes(params.get('tab')) ? params.get('tab') : 'native'
-  const [tabKey, setTabKey] = useState(initialKey)
+  const urlTab = params.get('tab')
+  // Derive tabKey directly from URL - single source of truth, no state needed
+  const tabKey = useMemo(() => {
+    return urlTab && tabKeys.includes(urlTab) ? urlTab : 'native'
+  }, [urlTab, tabKeys])
+  
   const { all, counts, filterBy, loading, error, refetch, getCertificatesByStore } = useCertificates(tabKey)
   const { showSuccess, showError } = useNotification()
   const [search, setSearch] = useState('')
@@ -127,13 +131,13 @@ export default function TlsManagement() {
 
   const onTabChange = (_e, newIndex) => {
     const newKey = tabKeys[newIndex]
-    setTabKey(newKey)
     setSearch('')
     setParams((prev) => {
       const p = new URLSearchParams(prev)
       p.set('tab', newKey)
       return p
     }, { replace: true })
+    // tabKey will automatically update from URL via useMemo
   }
 
   const tabIndex = useMemo(() => Math.max(0, tabKeys.indexOf(tabKey)), [tabKey])

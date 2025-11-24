@@ -25,8 +25,11 @@ export default function Login() {
     setError('')
     try {
       await login({ username, password })
-      const redirectTo = location.state?.from?.pathname || '/tls'
-      navigate(redirectTo, { replace: true })
+      // Preserve search params when redirecting after login
+      const from = location.state?.from
+      const redirectTo = from?.pathname || '/tls'
+      const search = from?.search || ''
+      navigate(redirectTo + search, { replace: true })
     } catch (err) {
       const msg = err?.message || 'Login failed. Please try again.'
       setError(msg)

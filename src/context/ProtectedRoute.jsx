@@ -7,7 +7,8 @@ export default function ProtectedRoute({ children }) {
   const location = useLocation()
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />
+    // Preserve search params when redirecting to login
+    return <Navigate to="/login" replace state={{ from: { pathname: location.pathname, search: location.search } }} />
   }
 
   return children

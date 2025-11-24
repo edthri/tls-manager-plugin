@@ -10,16 +10,15 @@ const AuthContext = createContext({
 })
 
 export function AuthProvider({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-
-  useEffect(() => {
+  // Initialize synchronously from localStorage to avoid redirect flash
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved === 'true') {
-        setIsAuthenticated(true)
-      }
-    } catch (_) {}
-  }, [])
+      return saved === 'true'
+    } catch (_) {
+      return false
+    }
+  })
 
   useEffect(() => {
     try {
