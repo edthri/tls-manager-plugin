@@ -1,5 +1,5 @@
 import React from 'react'
-import { Paper, Box, Typography, Stack, Button, Divider, Chip } from '@mui/material'
+import { Paper, Box, Typography, Stack, Button, Divider, Chip, Tooltip } from '@mui/material'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -34,17 +34,35 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
       {/* Main Content Area - grows to fill available space */}
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Stack spacing={2}>
-          <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Box sx={{ width: 36, height: 36, borderRadius: 2, backgroundColor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" sx={{ minWidth: 0 }}>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: 2, backgroundColor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <ShieldOutlinedIcon fontSize="small" />
               </Box>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1 }}>{name}</Typography>
+              <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                <Tooltip title={name} arrow placement="top">
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      fontWeight: 600, 
+                      lineHeight: 1,
+                      wordBreak: 'break-all',
+                      overflow: 'hidden',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      cursor: 'help'
+                    }}
+                  >
+                    {name}
+                  </Typography>
+                </Tooltip>
                 <Typography variant="body2" color="text.secondary">{type}</Typography>
               </Box>
             </Stack>
-            <StatusPill validFrom={validFrom} validTo={validTo} />
+            <Box sx={{ flexShrink: 0 }}>
+              <StatusPill validFrom={validFrom} validTo={validTo} />
+            </Box>
           </Stack>
 
         <Box sx={{ flex: '0 0 auto' }}>
