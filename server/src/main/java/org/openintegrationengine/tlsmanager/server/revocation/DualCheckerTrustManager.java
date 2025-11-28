@@ -124,38 +124,68 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     // --- JSSE delegation ---
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-        trustManagerDelegate.checkClientTrusted(chain, authType);
-        runValidations(chain, null, null);
+        try {
+            trustManagerDelegate.checkClientTrusted(chain, authType);
+            runValidations(chain, null, null);
+        } catch (CertificateException e) {
+            log.error("Failed to check client trust", e);
+            throw e;
+        }
     }
 
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
-        trustManagerDelegate.checkClientTrusted(chain, authType, socket);
-        runValidations(chain, socket, null);
+        try {
+            trustManagerDelegate.checkClientTrusted(chain, authType, socket);
+            runValidations(chain, socket, null);
+        } catch (CertificateException e) {
+            log.error("Failed to check client trust", e);
+            throw e;
+        }
     }
 
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine sslEngine) throws CertificateException {
-        trustManagerDelegate.checkClientTrusted(chain, authType, sslEngine);
-        runValidations(chain, null, sslEngine);
+        try {
+            trustManagerDelegate.checkClientTrusted(chain, authType, sslEngine);
+            runValidations(chain, null, sslEngine);
+        } catch (CertificateException e) {
+            log.error("Failed to check client trust", e);
+            throw e;
+        }
     }
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-        trustManagerDelegate.checkServerTrusted(chain, authType);
-        runValidations(chain, null, null);
+        try {
+            trustManagerDelegate.checkServerTrusted(chain, authType);
+            runValidations(chain, null, null);
+        } catch (CertificateException e) {
+            log.error("Failed to check server trust", e);
+            throw e;
+        }
     }
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType, Socket s) throws CertificateException {
-        trustManagerDelegate.checkServerTrusted(chain, authType, s);
-        runValidations(chain, s, null);
+        try {
+            trustManagerDelegate.checkServerTrusted(chain, authType, s);
+            runValidations(chain, s, null);
+        } catch (CertificateException e) {
+            log.error("Failed to check server trust", e);
+            throw e;
+        }
     }
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine sslEngine) throws CertificateException {
-        trustManagerDelegate.checkServerTrusted(chain, authType, sslEngine);
-        runValidations(chain, null , sslEngine);
+        try {
+            trustManagerDelegate.checkServerTrusted(chain, authType, sslEngine);
+            runValidations(chain, null , sslEngine);
+        } catch (CertificateException e) {
+            log.error("Failed to check server trust", e);
+            throw e;
+        }
     }
 
     @Override
