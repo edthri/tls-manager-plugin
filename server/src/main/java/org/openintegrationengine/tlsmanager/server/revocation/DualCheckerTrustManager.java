@@ -279,6 +279,8 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
             if (!isRemoteLeafTrusted) {
                 throw new CertificateException("Remote leaf certificate is not trusted");
             }
+        } else {
+            throw new CertificateException("No trusted certificates selected");
         }
 
         try {
