@@ -1,6 +1,7 @@
 name: Build plugin
 
 on:
+  workflow_dispatch:
   push:
     branch:
       - master
@@ -14,7 +15,6 @@ jobs:
         with:
           token: ${{ secrets.TESTS_REPO_CLONE_PAT }}
           repository: NovaMap-Health/dashboard-tls-manager
-          ref: feature/bundling
 
       - uses: actions/setup-node@v6
         with:
