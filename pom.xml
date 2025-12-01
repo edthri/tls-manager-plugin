@@ -37,6 +37,7 @@
         <module>server</module>
         <module>shared</module>
         <module>client</module>
+        <module>web-ui</module>
     </modules>
 
     <properties>
