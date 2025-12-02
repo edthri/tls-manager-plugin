@@ -59,7 +59,7 @@ import java.util.Set;
 @Slf4j
 public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
-    private final KeyStore trustStore;
+    private final KeyStore effectiveTrustStore;
     private final SubjectDnValidationMode subjectDnValidationMode;
     private final String subjectDnValidationFilter;
     private final RevocationMode ocspMode, crlMode;
@@ -72,7 +72,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     private final CertificateFactory certificateFactory;
 
     public DualCheckerTrustManager(
-        KeyStore trustStore,
+        KeyStore effectiveTrustStore,
         SubjectDnValidationMode subjectDnValidationMode,
         String subjectDnValidationFilter,
         RevocationMode ocspMode,
@@ -80,7 +80,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         Collection<? extends CRL> preloadedCrls,
         Set<String> trustedAliasSet
     ) {
-        this.trustStore = trustStore;
+        this.effectiveTrustStore = effectiveTrustStore;
         this.subjectDnValidationMode = subjectDnValidationMode;
         this.subjectDnValidationFilter = subjectDnValidationFilter;
         this.ocspMode = ocspMode;
@@ -94,7 +94,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
             this.certificateFactory = CertificateFactory.getInstance("X.509");
 
             var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            tmf.init(trustStore);
+            tmf.init(effectiveTrustStore);
 
             trustManagerDelegate = Arrays.stream(tmf.getTrustManagers())
                 .filter(X509ExtendedTrustManager.class::isInstance)
@@ -201,7 +201,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     private void initTrustedLeafSet(Set<String> trustedAliasSet) {
         trustedAliasSet.forEach(alias -> {
             try {
-                var cert = trustStore.getCertificate(alias);
+                var cert = effectiveTrustStore.getCertificate(alias);
                 if (cert instanceof X509Certificate x509Certificate) {
                     trustedLeafCertSet.add(x509Certificate);
                 } else {
@@ -344,7 +344,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
     // ---- Pass A: OCSP-only ----
     private void pkixOcspOnly(CertPath path, boolean softFail) throws GeneralSecurityException {
-        var params = new PKIXParameters(trustStore);
+        var params = new PKIXParameters(effectiveTrustStore);
         params.setRevocationEnabled(true);
 
         var certPathValidator = CertPathValidator.getInstance("PKIX");
@@ -364,7 +364,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
     // ---- Pass B: CRL-only ----
     private void pkixCrlOnly(CertPath path, Collection<? extends CRL> crls, boolean softFail) throws GeneralSecurityException {
-        var params = new PKIXParameters(trustStore);
+        var params = new PKIXParameters(effectiveTrustStore);
         params.setRevocationEnabled(true);
 
         if (crls != null && !crls.isEmpty()) {
