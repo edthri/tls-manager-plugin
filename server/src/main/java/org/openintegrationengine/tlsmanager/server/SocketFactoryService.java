@@ -66,7 +66,6 @@ public class SocketFactoryService {
 
             var dualcheckerTrustManager = new DualCheckerTrustManager(
                 truststore,
-                null,
                 properties.getSubjectDnValidationMode(),
                 properties.getSubjectDnValidationFilter(),
                 properties.getOcspMode(),
@@ -120,7 +119,6 @@ public class SocketFactoryService {
 
         var dualcheckerTrustManager = new DualCheckerTrustManager(
             truststore,
-            keystore,
             properties.getSubjectDnValidationMode(),
             properties.getSubjectDnValidationFilter(),
             properties.getOcspMode(),

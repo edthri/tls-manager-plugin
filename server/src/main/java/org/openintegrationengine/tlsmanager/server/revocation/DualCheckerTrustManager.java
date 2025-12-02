@@ -19,12 +19,10 @@ import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMod
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.net.ssl.ExtendedSSLSession;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 import javax.security.auth.x500.X500Principal;
 import java.io.ByteArrayInputStream;
@@ -62,7 +60,6 @@ import java.util.Set;
 public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
     private final KeyStore trustStore;
-    private final KeyStore keyStore;
     private final SubjectDnValidationMode subjectDnValidationMode;
     private final String subjectDnValidationFilter;
     private final RevocationMode ocspMode, crlMode;
@@ -71,13 +68,11 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     private final Set<X509Certificate> trustedLeafCertSet;
 
     private final X509ExtendedTrustManager trustManagerDelegate;
-    private final X509ExtendedKeyManager keyManagerDelegate;
 
     private final CertificateFactory certificateFactory;
 
     public DualCheckerTrustManager(
         KeyStore trustStore,
-        KeyStore keyStore,
         SubjectDnValidationMode subjectDnValidationMode,
         String subjectDnValidationFilter,
         RevocationMode ocspMode,
@@ -86,7 +81,6 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         Set<String> trustedAliasSet
     ) {
         this.trustStore = trustStore;
-        this.keyStore = keyStore;
         this.subjectDnValidationMode = subjectDnValidationMode;
         this.subjectDnValidationFilter = subjectDnValidationFilter;
         this.ocspMode = ocspMode;
@@ -102,20 +96,11 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
             var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             tmf.init(trustStore);
 
-            var kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            kmf.init(keyStore, null);
-
             trustManagerDelegate = Arrays.stream(tmf.getTrustManagers())
                 .filter(X509ExtendedTrustManager.class::isInstance)
                 .map(X509ExtendedTrustManager.class::cast)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No default X509ExtendedTrustManager found"));
-
-            keyManagerDelegate = Arrays.stream(kmf.getKeyManagers())
-                .filter(X509ExtendedKeyManager.class::isInstance)
-                .map(X509ExtendedKeyManager.class::cast)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No default X509ExtendedKeyManager found"));
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize TrustManager", e);
         }
