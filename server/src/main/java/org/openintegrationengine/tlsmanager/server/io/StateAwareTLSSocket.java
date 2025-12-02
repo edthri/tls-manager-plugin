@@ -51,6 +51,8 @@ public class StateAwareTLSSocket extends Socket implements StateAwareSocketInter
                 inet.getPort(),
                 null
             );
+
+            remoteSideHasClosedInternal(this.delegate);
         } else {
             throw new IOException("Expected InetSocketAddress for TLS connection");
         }
@@ -113,7 +115,9 @@ public class StateAwareTLSSocket extends Socket implements StateAwareSocketInter
             pbIn.unread(b);
             return false;
         } finally {
-            socket.setSoTimeout(oldTimeout);
+            if (!socket.isClosed()) {
+                socket.setSoTimeout(oldTimeout);
+            }
         }
     }
 }
