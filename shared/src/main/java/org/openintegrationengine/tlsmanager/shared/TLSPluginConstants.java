@@ -29,6 +29,8 @@ public final class TLSPluginConstants {
     public static final String ENV_PERSISTENCE_FS_KEYSTOREPASS = "OIE_TLS_PLUGIN_FS_KEYSTOREPASS";
     public static final String ENV_PERSISTENCE_FS_KEYSTOREPATH = "OIE_TLS_PLUGIN_FS_KEYSTOREPATH";
 
+    public static final String ENV_SHOULD_DISABLE_UI = "OIE_TLS_PLUGIN_DISABLE_UI";
+
     public static final String PKCS12 = "PKCS12";
 
     // This ain't no joke

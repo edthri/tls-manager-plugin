@@ -9,6 +9,7 @@ import static org.openintegrationengine.tlsmanager.shared.TLSPluginConstants.ENV
 import static org.openintegrationengine.tlsmanager.shared.TLSPluginConstants.ENV_PERSISTENCE_FS_KEYSTOREPATH;
 import static org.openintegrationengine.tlsmanager.shared.TLSPluginConstants.ENV_PERSISTENCE_FS_TRUSTSTOREPASS;
 import static org.openintegrationengine.tlsmanager.shared.TLSPluginConstants.ENV_PERSISTENCE_FS_TRUSTSTOREPATH;
+import static org.openintegrationengine.tlsmanager.shared.TLSPluginConstants.ENV_SHOULD_DISABLE_UI;
 
 @Slf4j
 public record TLSPluginConfiguration(
@@ -16,7 +17,8 @@ public record TLSPluginConfiguration(
     String truststorePath,
     String truststorePassword,
     String keystorePath,
-    String keystorePassword
+    String keystorePassword,
+    boolean disableUI
 ) {
     public static TLSPluginConfiguration fromEnv() {
         var conf = new TLSPluginConfiguration(
@@ -24,10 +26,11 @@ public record TLSPluginConfiguration(
             readKeyFromEnv(ENV_PERSISTENCE_FS_TRUSTSTOREPATH, false),
             readKeyFromEnv(ENV_PERSISTENCE_FS_TRUSTSTOREPASS, false),
             readKeyFromEnv(ENV_PERSISTENCE_FS_KEYSTOREPATH, false),
-            readKeyFromEnv(ENV_PERSISTENCE_FS_KEYSTOREPASS, false)
+            readKeyFromEnv(ENV_PERSISTENCE_FS_KEYSTOREPASS, false),
+            Boolean.parseBoolean(readKeyFromEnv(ENV_SHOULD_DISABLE_UI, false))
         );
 
-        log.debug("Using following configuration: {}", conf);
+        log.debug("Using configuration: {}", conf);
 
         return conf;
     }
@@ -60,13 +63,14 @@ public record TLSPluginConfiguration(
     @NotNull
     @Override
     public String toString() {
-        return "%s[persistenceMode=%s, truststorePath=%s, truststorePassword=%s, keystorePath=%s, keystorePassword=%s]".formatted(
+        return "%s[persistenceMode=%s, truststorePath=%s, truststorePassword=%s, keystorePath=%s, keystorePassword=%s, disableUI=%s]".formatted(
             this.getClass().getSimpleName(),
             persistenceMode,
             truststorePath,
             anonymize(truststorePassword),
             keystorePath,
-            anonymize(keystorePassword)
+            anonymize(keystorePassword),
+            disableUI
         );
     }
 

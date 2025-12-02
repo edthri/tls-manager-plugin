@@ -22,7 +22,8 @@ public class CertificateServiceTest {
             "/path/to",
             "truststorePass",
             "/path/to",
-            "keystorePass"
+            "keystorePass",
+            false
         );
 
         certificateService.init(pluginConfiguration);

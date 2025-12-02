@@ -54,6 +54,8 @@ public class TLSServicePlugin implements ServicePlugin {
     @Getter
     private WebServiceService webServiceService;
 
+    private TLSPluginConfiguration tlsPluginConfiguration;
+
     @Override
     public void init(Properties properties) {
         var configurationController = ControllerFactory.getFactory().createConfigurationController();
@@ -89,7 +91,11 @@ public class TLSServicePlugin implements ServicePlugin {
 
         SerializationController.registerSerializableClasses();
 
-        installWar(configurationController);
+        tlsPluginConfiguration = TLSPluginConfiguration.fromEnv();
+
+        if (!tlsPluginConfiguration.disableUI()) {
+            installWar(configurationController);
+        }
     }
 
     @Override
@@ -122,8 +128,7 @@ public class TLSServicePlugin implements ServicePlugin {
 
     @Override
     public void start() {
-        var pluginConfiguration = TLSPluginConfiguration.fromEnv();
-        this.certificateService.init(pluginConfiguration);
+        this.certificateService.init(tlsPluginConfiguration);
     }
 
     @Override

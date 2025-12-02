@@ -50,8 +50,6 @@ function main() {
   echo
   echo "########################################"
   cp {client,server,shared}/target/*.jar "$STAGING_DIR/"
-  #cp web-ui/target/tls-manager.war "$STAGING_DIR/"
-  #cp tls-manager.war "$STAGING_DIR/"
 
   pushd target
   mv staging "$PLUGIN_PATH"
