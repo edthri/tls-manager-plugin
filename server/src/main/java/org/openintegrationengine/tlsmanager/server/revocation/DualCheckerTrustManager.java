@@ -13,6 +13,7 @@ import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.CertificateStatus;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.bouncycastle.cert.ocsp.RevokedStatus;
+import org.openintegrationengine.tlsmanager.server.util.TrustStoreUtils;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 
@@ -33,7 +34,6 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CRL;
 import java.security.cert.CertPath;
 import java.security.cert.CertPathValidator;
@@ -55,24 +55,32 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
     private final KeyStore effectiveTrustStore;
+    private final KeyStore systemTrustStore;
     private final SubjectDnValidationMode subjectDnValidationMode;
     private final String subjectDnValidationFilter;
     private final RevocationMode ocspMode, crlMode;
     private final Collection<? extends CRL> preloadedCrls; // optional (in addition to CRLDP)
 
     private final Set<X509Certificate> trustedLeafCertSet;
+    private final Set<X509Certificate> trustedCASet;
+    private final Set<TrustAnchor> trustAnchorsSet;
+
+    private final X509Certificate[] acceptedIssuers;
 
     private final X509ExtendedTrustManager trustManagerDelegate;
 
     private final CertificateFactory certificateFactory;
+    private final CertPathValidator certPathValidator;
 
     public DualCheckerTrustManager(
         KeyStore effectiveTrustStore,
+        KeyStore systemTrustStore,
         SubjectDnValidationMode subjectDnValidationMode,
         String subjectDnValidationFilter,
         RevocationMode ocspMode,
@@ -81,6 +89,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         Set<String> trustedAliasSet
     ) {
         this.effectiveTrustStore = effectiveTrustStore;
+        this.systemTrustStore = systemTrustStore;
         this.subjectDnValidationMode = subjectDnValidationMode;
         this.subjectDnValidationFilter = subjectDnValidationFilter;
         this.ocspMode = ocspMode;
@@ -88,13 +97,16 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         this.preloadedCrls = preloadedCrls == null ? List.of() : preloadedCrls;
 
         this.trustedLeafCertSet = new HashSet<>();
+        this.trustedCASet = new HashSet<>();
+        this.trustAnchorsSet = new HashSet<>();
         initTrustedLeafSet(Objects.requireNonNullElse(trustedAliasSet, Set.of()));
 
         try {
             this.certificateFactory = CertificateFactory.getInstance("X.509");
+            this.certPathValidator = CertPathValidator.getInstance("PKIX");
 
             var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            tmf.init(effectiveTrustStore);
+            tmf.init(systemTrustStore);
 
             trustManagerDelegate = Arrays.stream(tmf.getTrustManagers())
                 .filter(X509ExtendedTrustManager.class::isInstance)
@@ -104,6 +116,14 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize TrustManager", e);
         }
+
+        // Pre-render accepted issuers array
+        var acceptedIssuers = new ArrayList<X509Certificate>();
+        if (systemTrustStore != null) {
+            acceptedIssuers.addAll(List.of(trustManagerDelegate.getAcceptedIssuers()));
+        }
+        acceptedIssuers.addAll(trustedCASet);
+        this.acceptedIssuers = acceptedIssuers.toArray(new X509Certificate[0]);
     }
 
     // --- JSSE delegation ---
@@ -111,7 +131,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
         try {
             trustManagerDelegate.checkClientTrusted(chain, authType);
-            runValidations(chain, null, null);
+            runValidations(chain, authType, null, null, true);
         } catch (CertificateException e) {
             log.error("Failed to check client trust", e);
             throw e;
@@ -121,8 +141,8 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
         try {
-            trustManagerDelegate.checkClientTrusted(chain, authType, socket);
-            runValidations(chain, socket, null);
+            //trustManagerDelegate.checkClientTrusted(chain, authType, socket);
+            runValidations(chain, authType, socket, null, true);
         } catch (CertificateException e) {
             log.error("Failed to check client trust", e);
             throw e;
@@ -133,7 +153,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine sslEngine) throws CertificateException {
         try {
             trustManagerDelegate.checkClientTrusted(chain, authType, sslEngine);
-            runValidations(chain, null, sslEngine);
+            runValidations(chain, authType, null, sslEngine, true);
         } catch (CertificateException e) {
             log.error("Failed to check client trust", e);
             throw e;
@@ -143,8 +163,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
         try {
-            trustManagerDelegate.checkServerTrusted(chain, authType);
-            runValidations(chain, null, null);
+            runValidations(chain, authType, null, null, false);
         } catch (CertificateException e) {
             log.error("Failed to check server trust", e);
             throw e;
@@ -154,8 +173,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType, Socket s) throws CertificateException {
         try {
-            trustManagerDelegate.checkServerTrusted(chain, authType, s);
-            runValidations(chain, s, null);
+            runValidations(chain, authType, s, null, false);
         } catch (CertificateException e) {
             log.error("Failed to check server trust", e);
             throw e;
@@ -165,8 +183,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine sslEngine) throws CertificateException {
         try {
-            trustManagerDelegate.checkServerTrusted(chain, authType, sslEngine);
-            runValidations(chain, null , sslEngine);
+            runValidations(chain, authType, null , sslEngine, false);
         } catch (CertificateException e) {
             log.error("Failed to check server trust", e);
             throw e;
@@ -174,7 +191,9 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     }
 
     @Override
-    public X509Certificate[] getAcceptedIssuers() { return trustManagerDelegate.getAcceptedIssuers(); }
+    public X509Certificate[] getAcceptedIssuers() {
+        return this.acceptedIssuers;
+    }
 
     private boolean hasStapledOcsp(X509Certificate[] chain, SSLSession session) throws CertificateException {
         if (session instanceof ExtendedSSLSession extendedSession) {
@@ -203,7 +222,11 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
             try {
                 var cert = effectiveTrustStore.getCertificate(alias);
                 if (cert instanceof X509Certificate x509Certificate) {
-                    trustedLeafCertSet.add(x509Certificate);
+                    if (TrustStoreUtils.isCA(x509Certificate)) {
+                        trustedCASet.add(x509Certificate);
+                    } else {
+                        trustedLeafCertSet.add(x509Certificate);
+                    }
                 } else {
                     log.debug("Truststore does not contain x509Certificate with alias {}", alias);
                 }
@@ -211,61 +234,115 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
                 throw new RuntimeException(e);
             }
         });
+
+        // Prerender trust anchors set
+        var anchors = trustedCASet
+            .stream()
+            .map(x509Certificate -> new TrustAnchor(x509Certificate, null))
+            .collect(Collectors.toSet());
+        this.trustAnchorsSet.addAll(anchors);
     }
 
-    private boolean runTrustCheck(List<X509Certificate> serverChain) {
-        if (serverChain == null || serverChain.isEmpty()) {
-            throw new IllegalStateException("Remote provided an empty certificate chain");
-        }
-
-        var leafCert = serverChain.get(0);
-        if (trustedLeafCertSet.contains(leafCert)) {
-            return true;
-        }
-
-        var anchors = new HashSet<TrustAnchor>();
-        for (X509Certificate cert : trustedLeafCertSet) {
-            anchors.add(new TrustAnchor(cert, null));
-        }
-
+    private boolean isCertIssuedByTrustedCA(X509Certificate cert) {
         try {
-            // Build a CertPath from the server chain
-            var certPath = certificateFactory.generateCertPath(serverChain);
+            var certPath = this.certificateFactory.generateCertPath(List.of(cert));
+            var params = new PKIXParameters(this.trustAnchorsSet);
+            params.setRevocationEnabled(false);
 
-            // PKIX parameters
-            var params = new PKIXParameters(anchors);
-            params.setRevocationEnabled(false); // optional, CRL/OCSP check disabled
-
-            // Optional: add intermediate certificates as CertStore
-            if (serverChain.size() > 1) {
-                var store = CertStore.getInstance(
-                    "Collection",
-                    new CollectionCertStoreParameters(serverChain.subList(1, serverChain.size()))
-                );
-                params.addCertStore(store);
-            }
-
-            // Validate the chain
-            var validator = CertPathValidator.getInstance("PKIX");
-            validator.validate(certPath, params);
-
+            certPathValidator.validate(certPath, params);
             return true;
-        } catch (CertPathValidatorException | InvalidAlgorithmParameterException | CertificateException | NoSuchAlgorithmException e) {
+        } catch (Exception e) {
             return false;
         }
     }
 
-    private void runValidations(X509Certificate[] chain, Socket socket, SSLEngine sslEngine) throws CertificateException {
+    private boolean isCertIssuedBySystemCAServer(X509Certificate[] chain, String authType, Socket socket, SSLEngine sslEngine) {
+        try {
+            if (socket != null) {
+                trustManagerDelegate.checkServerTrusted(chain, authType, socket);
+            } else if (sslEngine != null) {
+                trustManagerDelegate.checkServerTrusted(chain, authType, sslEngine);
+            } else {
+                trustManagerDelegate.checkServerTrusted(chain, authType);
+            }
+            return true;
+        } catch (CertificateException e) {
+            log.debug("Certificate chain not trusted by system cacerts", e);
+            return false;
+        }
+    }
+
+    private boolean isCertIssuedBySystemCAClient(X509Certificate[] chain, String authType, Socket socket, SSLEngine sslEngine) {
+        try {
+            if (socket != null) {
+                trustManagerDelegate.checkClientTrusted(chain, authType, socket);
+            } else if (sslEngine != null) {
+                trustManagerDelegate.checkClientTrusted(chain, authType, sslEngine);
+            } else {
+                trustManagerDelegate.checkClientTrusted(chain, authType);
+            }
+            return true;
+        } catch (CertificateException e) {
+            log.debug("Certificate chain not trusted by system cacerts", e);
+            return false;
+        }
+    }
+
+    private void runValidations(X509Certificate[] chain, String authType, Socket socket, SSLEngine sslEngine, boolean checkClientTrust) throws CertificateException {
         var serverChain = List.of(chain);
 
-        if (!trustedLeafCertSet.isEmpty()) {
-            var isRemoteLeafTrusted = runTrustCheck(serverChain);
+        boolean isCertTrusted = false;
+        CertificateException lastException = null;
 
-            if (!isRemoteLeafTrusted) {
-                throw new CertificateException("Remote leaf certificate is not trusted");
+        // Handle system cacerts
+        if (systemTrustStore != null) {
+
+            if (checkClientTrust) {
+                if (isCertIssuedBySystemCAClient(chain, authType, socket, sslEngine)) {
+                    isCertTrusted = true;
+                } else {
+                    log.debug("Truststore does not contain system certificates to validate the remote leaf certificate");
+                    lastException = new CertificateException("Remote leaf certificate is not trusted");
+                }
+            } else {
+                if (isCertIssuedBySystemCAServer(chain, authType, socket, sslEngine)) {
+                    isCertTrusted = true;
+                } else {
+                    log.debug("Truststore does not contain system certificates to validate the remote leaf certificate");
+                    lastException = new CertificateException("Remote leaf certificate is not trusted");
+                }
             }
+
+            if (isCertIssuedBySystemCAServer(chain, authType, socket, sslEngine)) {
+                isCertTrusted = true;
+            } else {
+                log.debug("Truststore does not contain system certificates to validate the remote leaf certificate");
+                lastException = new CertificateException("Remote leaf certificate is not trusted");
+            }
+        }
+
+        // Check for leaf certs
+        var leafCert = serverChain.get(0);
+        if (!isCertTrusted && trustedLeafCertSet.contains(leafCert)) {
+            isCertTrusted = true;
         } else {
-            throw new CertificateException("No trusted certificates selected");
+            log.debug("Truststore does not contain leaf certificate");
+            lastException = new CertificateException("Remote leaf certificate is not trusted");
+        }
+
+        // Check for intermediate CA certs
+        if (!isCertTrusted) {
+            if (isCertIssuedByTrustedCA(leafCert)) {
+                isCertTrusted = true;
+            } else {
+                log.debug("Truststore does not contain CA certs to validate the remote leaf certificate");
+                lastException = new CertificateException("Remote leaf certificate is not trusted");
+            }
+        }
+
+        // Throw is no mechanism succeeded
+        if (!isCertTrusted) {
+            throw lastException;
         }
 
         try {
@@ -344,10 +421,9 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
     // ---- Pass A: OCSP-only ----
     private void pkixOcspOnly(CertPath path, boolean softFail) throws GeneralSecurityException {
-        var params = new PKIXParameters(effectiveTrustStore);
+        var params = new PKIXParameters(this.trustAnchorsSet);
         params.setRevocationEnabled(true);
 
-        var certPathValidator = CertPathValidator.getInstance("PKIX");
         var revocationChecker = (PKIXRevocationChecker) certPathValidator.getRevocationChecker();
 
         var opts = EnumSet.of(
@@ -364,7 +440,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
     // ---- Pass B: CRL-only ----
     private void pkixCrlOnly(CertPath path, Collection<? extends CRL> crls, boolean softFail) throws GeneralSecurityException {
-        var params = new PKIXParameters(effectiveTrustStore);
+        var params = new PKIXParameters(this.trustAnchorsSet);
         params.setRevocationEnabled(true);
 
         if (crls != null && !crls.isEmpty()) {
@@ -372,7 +448,6 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
             params.addCertStore(cs);
         }
 
-        var certPathValidator = CertPathValidator.getInstance("PKIX");
         var revocationChecker = (PKIXRevocationChecker) certPathValidator.getRevocationChecker();
 
         var opts = EnumSet.of(

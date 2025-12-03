@@ -167,35 +167,6 @@ public final class CertificateService {
         }
     }
 
-    KeyStore getTrustStore(boolean isTrustSystem) {
-        try {
-            KeyStore finalTrustStore;
-
-            // If should trust system then base final truststore off of it.
-            // If not, then initialize a new one.
-            if (isTrustSystem) {
-                finalTrustStore = clone(systemTrustStore);
-            } else {
-                finalTrustStore = KeyStore.getInstance(PKCS12);
-                finalTrustStore.load(null, "supabase".toCharArray());
-            }
-
-            // Add every cert from external truststore
-            externalTrustStore.aliases().asIterator().forEachRemaining(alias -> {
-                try {
-                    var cert = externalTrustStore.getCertificate(alias);
-                    finalTrustStore.setCertificateEntry(alias, cert);
-                } catch (KeyStoreException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
-            return finalTrustStore;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private void loadKeyStore(KeyStore keystore, byte[] bytes, char[] password) {
         try (var bais = new ByteArrayInputStream(bytes)) {
             keystore.load(bais, password);
