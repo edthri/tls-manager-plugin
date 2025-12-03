@@ -40,6 +40,9 @@ import org.openintegrationengine.tlsmanager.shared.models.TrustedCertificate;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -47,10 +50,12 @@ import java.io.StringReader;
 import java.net.URL;
 import java.security.Key;
 import java.security.KeyFactory;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
@@ -372,8 +377,27 @@ public final class CertificateService {
         HttpsURLConnection conn = null;
 
         try {
+            SSLContext sc = SSLContext.getInstance("TLS");
+
+            TrustManager[] trustAll = new TrustManager[]{
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[0];
+                    }
+
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                    }
+
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    }
+                }
+            };
+
+            sc.init(null, trustAll, new SecureRandom());
             URL url = new URL(urlString);
             conn = (HttpsURLConnection) url.openConnection();
+            conn.setSSLSocketFactory(sc.getSocketFactory());
+            conn.setHostnameVerifier((h, s) -> true);
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
             conn.connect();
@@ -386,7 +410,7 @@ public final class CertificateService {
                     result.add(certificate);
                 }
             }
-        } catch (IOException | CertificateEncodingException e) {
+        } catch (IOException | CertificateEncodingException | KeyManagementException | NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         } finally {
             if (conn != null) {
