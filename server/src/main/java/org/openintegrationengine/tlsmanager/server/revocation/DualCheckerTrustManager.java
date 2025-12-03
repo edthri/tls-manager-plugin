@@ -296,7 +296,6 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
         // Handle system cacerts
         if (systemTrustStore != null) {
-
             if (checkClientTrust) {
                 if (isCertIssuedBySystemCAClient(chain, authType, socket, sslEngine)) {
                     isCertTrusted = true;
@@ -311,13 +310,6 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
                     log.debug("Truststore does not contain system certificates to validate the remote leaf certificate");
                     lastException = new CertificateException("Remote leaf certificate is not trusted");
                 }
-            }
-
-            if (isCertIssuedBySystemCAServer(chain, authType, socket, sslEngine)) {
-                isCertTrusted = true;
-            } else {
-                log.debug("Truststore does not contain system certificates to validate the remote leaf certificate");
-                lastException = new CertificateException("Remote leaf certificate is not trusted");
             }
         }
 
