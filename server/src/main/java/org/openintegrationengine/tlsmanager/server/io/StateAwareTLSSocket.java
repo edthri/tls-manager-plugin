@@ -4,6 +4,7 @@ import com.mirth.connect.connectors.tcp.StateAwareSocketInterface;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,17 +43,27 @@ public class StateAwareTLSSocket extends Socket implements StateAwareSocketInter
     @Override
     public void connect(SocketAddress endpoint, int timeout) throws IOException {
         if (endpoint instanceof InetSocketAddress inet) {
-            // Perform the plain TCP connection first
-            super.connect(endpoint, timeout);
 
-            this.delegate = (SSLSocket) socketFactory.createLayeredSocket(
-                this,
-                inet.getHostString(),
-                inet.getPort(),
-                null
-            );
+            try {
+                // Perform the plain TCP connection first
+                super.connect(endpoint, timeout);
 
-            remoteSideHasClosedInternal(this.delegate);
+                this.delegate = (SSLSocket) socketFactory.createLayeredSocket(
+                    this,
+                    inet.getHostString(),
+                    inet.getPort(),
+                    null
+                );
+
+                // If protocol is 1.3 read the stream to force completing the handshake
+                if (this.delegate.getSession().getProtocol().equals("TLSv1.3")) {
+                    remoteSideHasClosedInternal(this.delegate);
+                }
+            } catch (SSLHandshakeException e) {
+                log.warn("Failed to connect", e);
+                throw e;
+            }
+
         } else {
             throw new IOException("Expected InetSocketAddress for TLS connection");
         }
@@ -114,6 +125,9 @@ public class StateAwareTLSSocket extends Socket implements StateAwareSocketInter
             if (b == -1) return true;
             pbIn.unread(b);
             return false;
+        } catch (SSLHandshakeException sslHandshakeException) {
+            log.trace("SSL handshake failed", sslHandshakeException);
+            throw sslHandshakeException;
         } finally {
             if (!socket.isClosed()) {
                 socket.setSoTimeout(oldTimeout);
