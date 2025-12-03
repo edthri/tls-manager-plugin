@@ -130,6 +130,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
         try {
+            trustManagerDelegate.checkClientTrusted(chain, authType);
             runValidations(chain, authType, null, null, true);
         } catch (CertificateException e) {
             log.error("Failed to check client trust", e);
@@ -139,12 +140,24 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
 
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
-        runValidations(chain, authType, socket, null, true);
+        try {
+            //trustManagerDelegate.checkClientTrusted(chain, authType, socket);
+            runValidations(chain, authType, socket, null, true);
+        } catch (CertificateException e) {
+            log.error("Failed to check client trust", e);
+            throw e;
+        }
     }
 
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine sslEngine) throws CertificateException {
-        runValidations(chain, authType, null, sslEngine, true);
+        try {
+            trustManagerDelegate.checkClientTrusted(chain, authType, sslEngine);
+            runValidations(chain, authType, null, sslEngine, true);
+        } catch (CertificateException e) {
+            log.error("Failed to check client trust", e);
+            throw e;
+        }
     }
 
     @Override
