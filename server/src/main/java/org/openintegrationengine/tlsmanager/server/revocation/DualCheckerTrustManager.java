@@ -13,6 +13,7 @@ import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.CertificateStatus;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.bouncycastle.cert.ocsp.RevokedStatus;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.openintegrationengine.tlsmanager.server.util.TrustStoreUtils;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
@@ -31,13 +32,12 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.net.URI;
 import java.security.GeneralSecurityException;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.Security;
 import java.security.cert.CRL;
 import java.security.cert.CertPath;
 import java.security.cert.CertPathValidator;
-import java.security.cert.CertPathValidatorException;
 import java.security.cert.CertStore;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -102,8 +102,9 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         initTrustedLeafSet(Objects.requireNonNullElse(trustedAliasSet, Set.of()));
 
         try {
+            Security.addProvider(new BouncyCastleProvider());
             this.certificateFactory = CertificateFactory.getInstance("X.509");
-            this.certPathValidator = CertPathValidator.getInstance("PKIX");
+            this.certPathValidator = CertPathValidator.getInstance("PKIX", "BC");
 
             var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             tmf.init(systemTrustStore);
@@ -437,7 +438,7 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
         params.setRevocationEnabled(true);
 
         if (crls != null && !crls.isEmpty()) {
-            CertStore cs = CertStore.getInstance("Collection", new CollectionCertStoreParameters(crls));
+            var cs = CertStore.getInstance("Collection", new CollectionCertStoreParameters(crls), "BC");
             params.addCertStore(cs);
         }
 
