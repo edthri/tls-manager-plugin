@@ -286,6 +286,10 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
     }
 
     private void runValidations(X509Certificate[] chain, String authType, Socket socket, SSLEngine sslEngine, boolean checkClientTrust) throws CertificateException {
+        if (this.acceptedIssuers == null || this.acceptedIssuers.length == 0) {
+            throw new CertificateException("No trusted certificates found");
+        }
+
         var serverChain = List.of(chain);
 
         boolean isCertTrusted = false;
