@@ -29,7 +29,7 @@ import { base64ToPem, base64ToPrivateKeyPem } from '../utils/certificateUtils.js
 
 export default function CertificateDetailsDialog({ open, onClose, certificate }) {
   if (!certificate) return null
-
+console.log(certificate)
   const { parsedCertificate, rawCertificate } = certificate
   const [showPrivateKey, setShowPrivateKey] = useState(false)
   const [verificationResult, setVerificationResult] = useState(null)
@@ -71,7 +71,7 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
     
     return extensions.map(ext => ({
       name: ext.name,
-      value: ext.value || ext.critical ? 'Critical' : 'Not Critical',
+      value: ext.names?.join(', '),
       critical: ext.critical || false
     }))
   }

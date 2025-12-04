@@ -142,12 +142,12 @@ export function parseCertificate(base64Pem) {
     // Get extensions (for compatibility, create a simplified structure)
     // Wrap extension access in try-catch since some certificates may not have all extensions
     const extensions = []
-    
+     
     let basicConstraints = null
     try {
       basicConstraints = cert.getExtBasicConstraints()
       if (basicConstraints) {
-        extensions.push({ name: 'basicConstraints', cA: basicConstraints.ca })
+        extensions.push({ name: basicConstraints.extname, cA: basicConstraints.cA, critical: basicConstraints.critical })
       }
     } catch (e) {
       // Extension doesn't exist or can't be read - skip
@@ -156,8 +156,9 @@ export function parseCertificate(base64Pem) {
     let keyUsage = null
     try {
       keyUsage = cert.getExtKeyUsage()
+      
       if (keyUsage && keyUsage.names && Array.isArray(keyUsage.names)) {
-        extensions.push({ name: 'keyUsage', keyCertSign: keyUsage.names.includes('keyCertSign') })
+        extensions.push({ name: keyUsage.extname, names: keyUsage.names, critical: keyUsage.critical })
       }
     } catch (e) {
       // Extension doesn't exist or can't be read - skip
@@ -166,17 +167,17 @@ export function parseCertificate(base64Pem) {
     let extKeyUsage = null
     try {
       extKeyUsage = cert.getExtExtKeyUsage()
-      if (extKeyUsage && Array.isArray(extKeyUsage)) {
+      // console.log(extKeyUsage, fingerprintSha1)
+      if (extKeyUsage) {
         extensions.push({ 
-          name: 'extKeyUsage', 
-          serverAuth: extKeyUsage.includes('1.3.6.1.5.5.7.3.1'),
-          clientAuth: extKeyUsage.includes('1.3.6.1.5.5.7.3.2')
+          name: extKeyUsage.extname, 
+          names: extKeyUsage.names,
+          critical: extKeyUsage.critical
         })
       }
     } catch (e) {
       // Extension doesn't exist or can't be read - skip
     }
-    
     return {
       subject,
       subjectStr: subjectFormatted,
@@ -254,7 +255,6 @@ function formatDN(dn) {
 function determineCertificateType(cert) {
   try {
     // Check for CA certificate
-    // Some certificates may not have basicConstraints extension, so wrap in try-catch
     let basicConstraints = null
     try {
       basicConstraints = cert.getExtBasicConstraints()
@@ -262,12 +262,7 @@ function determineCertificateType(cert) {
       // Extension doesn't exist or can't be read - continue
     }
     
-    if (basicConstraints && basicConstraints.ca) {
-      return 'Root CA'
-    }
-    
-    // Check for intermediate CA
-    // getExtKeyUsage() returns object with 'names' array property
+    // Check for keyUsage with keyCertSign
     let keyUsage = null
     try {
       keyUsage = cert.getExtKeyUsage()
@@ -275,7 +270,17 @@ function determineCertificateType(cert) {
       // Extension doesn't exist or can't be read - continue
     }
     
-    if (keyUsage && keyUsage.names && Array.isArray(keyUsage.names) && keyUsage.names.includes('keyCertSign')) {
+    const isCA = (basicConstraints && basicConstraints.ca) || 
+                 (keyUsage && keyUsage.names && Array.isArray(keyUsage.names) && keyUsage.names.includes('keyCertSign'))
+    
+    if (isCA) {
+      // Determine if Root CA or Intermediate by checking if self-signed
+      const subject = cert.getSubjectString()
+      const issuer = cert.getIssuerString()
+      
+      if (subject === issuer) {
+        return 'Root CA'
+      }
       return 'Intermediate'
     }
     
