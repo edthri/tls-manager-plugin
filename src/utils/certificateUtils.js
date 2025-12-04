@@ -171,7 +171,7 @@ export function parseCertificate(base64Pem) {
       if (extKeyUsage) {
         extensions.push({ 
           name: extKeyUsage.extname, 
-          names: extKeyUsage.names,
+          names: extKeyUsage.array,
           critical: extKeyUsage.critical
         })
       }
