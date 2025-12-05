@@ -109,7 +109,7 @@ public class SocketFactoryService {
 
         var dualcheckerTrustManager = new DualCheckerTrustManager(
             certificateService.getExternalTrustStore(),
-            certificateService.getSystemTrustStore(),
+            properties.isTrustSystemTruststore() ? certificateService.getSystemTrustStore() : null,
             properties.getSubjectDnValidationMode(),
             properties.getSubjectDnValidationFilter(),
             properties.getOcspMode(),
