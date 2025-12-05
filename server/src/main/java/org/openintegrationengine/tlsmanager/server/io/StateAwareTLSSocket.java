@@ -57,7 +57,7 @@ public class StateAwareTLSSocket extends Socket implements StateAwareSocketInter
 
                 // If protocol is 1.3 read the stream to force completing the handshake
                 if (this.delegate.getSession().getProtocol().equals("TLSv1.3")) {
-                    remoteSideHasClosedInternal(this.delegate);
+                    //remoteSideHasClosedInternal(this.delegate);
                 }
             } catch (SSLHandshakeException e) {
                 log.warn("Failed to connect", e);
@@ -117,7 +117,7 @@ public class StateAwareTLSSocket extends Socket implements StateAwareSocketInter
         if (socket.isClosed()) return true;
 
         int oldTimeout = socket.getSoTimeout();
-        socket.setSoTimeout(100);
+        socket.setSoTimeout(200);
 
         var pbIn = new PushbackInputStream(socket.getInputStream());
         try {
