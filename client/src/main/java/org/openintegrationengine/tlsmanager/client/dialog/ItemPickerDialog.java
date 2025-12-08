@@ -35,6 +35,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.RowFilter;
 import javax.swing.WindowConstants;
@@ -60,6 +61,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.prefs.Preferences;
+import java.util.stream.Collectors;
 
 public class ItemPickerDialog extends MirthDialog {
 
@@ -73,6 +75,9 @@ public class ItemPickerDialog extends MirthDialog {
 
     private JScrollPane optionsScrollPane;
     private MirthTable optionsTable;
+
+    private JScrollPane unknownOptionsScrollPane;
+    private JTextArea unknownOptionsPanel;
 
     private JButton okButton;
     private JButton cancelButton;
@@ -236,6 +241,15 @@ public class ItemPickerDialog extends MirthDialog {
 
         optionsScrollPane = new JScrollPane(optionsTable);
 
+        unknownOptionsPanel = new JTextArea();
+        unknownOptionsPanel.setEditable(false);
+        unknownOptionsPanel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        unknownOptionsPanel.setBackground(Color.WHITE);
+
+        unknownOptionsScrollPane = new JScrollPane(unknownOptionsPanel);
+        unknownOptionsScrollPane.setBorder(new TitledBorder("Unknown Options"));
+        unknownOptionsScrollPane.setBackground(Color.WHITE);
+
         okButton = new JButton("OK");
         okButton.addActionListener(evt -> {
             processTableState();
@@ -258,6 +272,7 @@ public class ItemPickerDialog extends MirthDialog {
         containerPanel.add(optionSelectSeparator);
         containerPanel.add(deselectAllLabel);
         containerPanel.add(optionsScrollPane, "newline, grow 25, sx");
+        containerPanel.add(unknownOptionsScrollPane, "newline, grow 25, sx");
 
         add(containerPanel, "grow, push");
 
@@ -290,6 +305,17 @@ public class ItemPickerDialog extends MirthDialog {
         }
 
         ((RefreshTableModel) optionsTable.getModel()).refreshDataVector(data);
+
+        // Options present in channel config but not in the allOptions set
+        var unknownOptions = selectedOptions
+            .stream()
+            .filter(option -> !allOptions.contains(option))
+            .map(option -> "- " + option)
+            .collect(Collectors.toSet());
+
+        unknownOptionsPanel.setText(
+            String.join("\n", unknownOptions)
+        );
     }
 
     private void processTableState() {
