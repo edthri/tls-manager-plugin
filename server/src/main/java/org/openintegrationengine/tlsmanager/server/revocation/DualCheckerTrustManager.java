@@ -356,17 +356,17 @@ public final class DualCheckerTrustManager extends X509ExtendedTrustManager {
                         subjectLdapName = new LdapName(subjectDn);
                         expectedLdapName = new LdapName(expectedDn);
                     } catch (InvalidNameException e) {
-                        throw new IllegalArgumentException("Error converting DN to LdapName", e);
+                        throw new CertificateException("Error converting DN to LdapName", e);
                     }
 
                     var subjectRdns = subjectLdapName.getRdns();
                     for (var expectedRdn : expectedLdapName.getRdns()) {
                         if (!subjectRdns.contains(expectedRdn)) {
-                            throw new RuntimeException("Subject DN does not contain expected RDN");
+                            throw new CertificateException("Subject DN does not contain expected RDN");
                         }
                     }
                 } else {
-                    throw new UnsupportedOperationException("Unsupported SubjectDnValidationMode: " + subjectDnValidationMode);
+                    throw new CertificateException("Unsupported SubjectDnValidationMode: " + subjectDnValidationMode);
                 }
             }
 
