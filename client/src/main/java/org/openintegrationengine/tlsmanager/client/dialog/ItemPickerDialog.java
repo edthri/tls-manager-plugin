@@ -65,14 +65,14 @@ public class ItemPickerDialog extends MirthDialog {
 
     private JPanel containerPanel;
 
-    private JLabel certificateFilterLabel;
-    private JTextField certificateFilterField;
+    private JLabel optionFilterLabel;
+    private JTextField optionFilterField;
     private JLabel selectAllLabel;
-    private JLabel certificateSelectSeparator;
+    private JLabel optionSelectSeparator;
     private JLabel deselectAllLabel;
 
-    private JScrollPane certificateScrollPane;
-    private MirthTable certificateTable;
+    private JScrollPane optionsScrollPane;
+    private MirthTable optionsTable;
 
     private JButton okButton;
     private JButton cancelButton;
@@ -137,9 +137,9 @@ public class ItemPickerDialog extends MirthDialog {
             )
         );
 
-        certificateFilterLabel = new JLabel("Filter:");
-        certificateFilterField = new JTextField();
-        certificateFilterField.getDocument().addDocumentListener(new DocumentListener() {
+        optionFilterLabel = new JLabel("Filter:");
+        optionFilterField = new JTextField();
+        optionFilterField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void removeUpdate(DocumentEvent evt) {
                 filterChanged();
@@ -156,7 +156,7 @@ public class ItemPickerDialog extends MirthDialog {
             }
 
             private void filterChanged() {
-                certificateTable.getRowSorter().allRowsChanged();
+                optionsTable.getRowSorter().allRowsChanged();
             }
         });
 
@@ -172,7 +172,7 @@ public class ItemPickerDialog extends MirthDialog {
             }
         });
 
-        certificateSelectSeparator = new JLabel("|");
+        optionSelectSeparator = new JLabel("|");
 
         deselectAllLabel = new JLabel("<html><u>Deselect All</u></html>");
         deselectAllLabel.setForeground(Color.BLUE);
@@ -186,27 +186,27 @@ public class ItemPickerDialog extends MirthDialog {
             }
         });
 
-        certificateTable = new MirthTable();
-        certificateTable.setModel(new RefreshTableModel(new String[] { "", "Alias" }, 0) {
+        optionsTable = new MirthTable();
+        optionsTable.setModel(new RefreshTableModel(new String[] { "", "Alias" }, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return column == SELECTED_COLUMN;
             }
         });
-        certificateTable.setDragEnabled(false);
-        certificateTable.setRowSelectionAllowed(false);
-        certificateTable.setRowHeight(UIConstants.ROW_HEIGHT);
-        certificateTable.setFocusable(false);
-        certificateTable.setOpaque(true);
-        certificateTable.getTableHeader().setReorderingAllowed(false);
-        certificateTable.setEditable(true);
-        certificateTable.setSortable(true);
+        optionsTable.setDragEnabled(false);
+        optionsTable.setRowSelectionAllowed(false);
+        optionsTable.setRowHeight(UIConstants.ROW_HEIGHT);
+        optionsTable.setFocusable(false);
+        optionsTable.setOpaque(true);
+        optionsTable.getTableHeader().setReorderingAllowed(false);
+        optionsTable.setEditable(true);
+        optionsTable.setSortable(true);
 
         if (Preferences.userNodeForPackage(Mirth.class).getBoolean("highlightRows", true)) {
-            certificateTable.setHighlighters(HighlighterFactory.createAlternateStriping(UIConstants.HIGHLIGHTER_COLOR, UIConstants.BACKGROUND_COLOR));
+            optionsTable.setHighlighters(HighlighterFactory.createAlternateStriping(UIConstants.HIGHLIGHTER_COLOR, UIConstants.BACKGROUND_COLOR));
         }
 
-        var rowSorter = new TableRowSorter<>(certificateTable.getModel());
+        var rowSorter = new TableRowSorter<>(optionsTable.getModel());
         rowSorter.setComparator(0, (Comparator<Integer>) (o1, o2) -> {
             // 0, 2, 1
             if (Objects.equals(o1, o2)) {
@@ -217,24 +217,24 @@ public class ItemPickerDialog extends MirthDialog {
                 return 1;
             }
         });
-        certificateTable.setRowSorter(rowSorter);
+        optionsTable.setRowSorter(rowSorter);
 
         var rowFilter = new RowFilter<TableModel, Integer>() {
             @Override
             public boolean include(RowFilter.Entry<? extends TableModel, ? extends Integer> entry) {
                 String name = entry.getStringValue(1);
-                return StringUtils.containsIgnoreCase(name, certificateFilterField.getText());
+                return StringUtils.containsIgnoreCase(name, optionFilterField.getText());
             }
         };
         rowSorter.setRowFilter(rowFilter);
-        certificateTable.setRowFilter(rowFilter);
+        optionsTable.setRowFilter(rowFilter);
 
-        certificateTable.getColumnExt(SELECTED_COLUMN).setMinWidth(20);
-        certificateTable.getColumnExt(SELECTED_COLUMN).setMaxWidth(20);
-        certificateTable.getColumn(SELECTED_COLUMN).setCellEditor(new TagSelectionCellEditor());
-        certificateTable.getColumn(SELECTED_COLUMN).setCellRenderer(new TagSelectionCellRenderer());
+        optionsTable.getColumnExt(SELECTED_COLUMN).setMinWidth(20);
+        optionsTable.getColumnExt(SELECTED_COLUMN).setMaxWidth(20);
+        optionsTable.getColumn(SELECTED_COLUMN).setCellEditor(new TagSelectionCellEditor());
+        optionsTable.getColumn(SELECTED_COLUMN).setCellRenderer(new TagSelectionCellRenderer());
 
-        certificateScrollPane = new JScrollPane(certificateTable);
+        optionsScrollPane = new JScrollPane(optionsTable);
 
         okButton = new JButton("OK");
         okButton.addActionListener(evt -> {
@@ -252,12 +252,12 @@ public class ItemPickerDialog extends MirthDialog {
 
         containerPanel.setLayout(new MigLayout("insets 8, novisualpadding, hidemode 3, fill", "[]13[grow]", "[][][][][][][][][grow]"));
 
-        containerPanel.add(certificateFilterLabel, "right, split 5");
-        containerPanel.add(certificateFilterField, "w 100:350");
+        containerPanel.add(optionFilterLabel, "right, split 5");
+        containerPanel.add(optionFilterField, "w 100:350");
         containerPanel.add(selectAllLabel, "gapbefore 12");
-        containerPanel.add(certificateSelectSeparator);
+        containerPanel.add(optionSelectSeparator);
         containerPanel.add(deselectAllLabel);
-        containerPanel.add(certificateScrollPane, "newline, grow 25, sx");
+        containerPanel.add(optionsScrollPane, "newline, grow 25, sx");
 
         add(containerPanel, "grow, push");
 
@@ -289,15 +289,15 @@ public class ItemPickerDialog extends MirthDialog {
             data[i][NAME_COLUMN] = option.a();
         }
 
-        ((RefreshTableModel) certificateTable.getModel()).refreshDataVector(data);
+        ((RefreshTableModel) optionsTable.getModel()).refreshDataVector(data);
     }
 
     private void processTableState() {
         var localSelectedOptions = new LinkedHashSet<String>();
 
-        for (int row = 0; row < certificateTable.getModel().getRowCount(); row++) {
-            var state = (int) certificateTable.getModel().getValueAt(row, SELECTED_COLUMN);
-            var certificateAlias = (String) certificateTable.getModel().getValueAt(row, NAME_COLUMN);
+        for (int row = 0; row < optionsTable.getModel().getRowCount(); row++) {
+            var state = (int) optionsTable.getModel().getValueAt(row, SELECTED_COLUMN);
+            var certificateAlias = (String) optionsTable.getModel().getValueAt(row, NAME_COLUMN);
 
             if (certificateAlias.equals(defaultValue)) {
                 // State 0 is CHECKED
@@ -368,8 +368,8 @@ public class ItemPickerDialog extends MirthDialog {
         }
     }
     private void setAllSelected(boolean isSelected) {
-        for (int row = 0; row < certificateTable.getRowCount(); row++) {
-            certificateTable.setValueAt(
+        for (int row = 0; row < optionsTable.getRowCount(); row++) {
+            optionsTable.setValueAt(
                 isSelected ? MirthTriStateCheckBox.CHECKED : MirthTriStateCheckBox.UNCHECKED,
                 row,
                 SELECTED_COLUMN
