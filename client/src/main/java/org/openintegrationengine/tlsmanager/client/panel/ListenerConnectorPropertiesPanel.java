@@ -8,7 +8,6 @@ import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.model.Connector;
 import com.mirth.connect.util.MirthSSLUtil;
-import net.miginfocom.swing.MigLayout;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
 import org.openintegrationengine.tlsmanager.client.misc.DisplayTextEnumModeComboBoxRenderer;
 import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
@@ -34,10 +33,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorPropertiesPanel {
-
-    private JLabel managerEnabledLabel;
-    private MirthRadioButton managerEnabledRadioYes;
-    private MirthRadioButton managerEnabledRadioNo;
 
     private JLabel clientAuthLabel;
     private MirthRadioButton clientAuthRadioNone;
@@ -129,21 +124,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
     public void setLayoutComponentsEnabled(boolean b) {}
 
     protected void initComponents() {
-
-        managerEnabledLabel = new JLabel("Use TLS Manager:");
-        var managerEnabledButtonGroup = new ButtonGroup();
-
-        managerEnabledRadioYes = new MirthRadioButton();
-        managerEnabledRadioYes.setText("Yes");
-        managerEnabledRadioYes.setBackground(Color.white);
-        managerEnabledRadioYes.addActionListener(e -> handleManagerEnabledButton(true));
-        managerEnabledButtonGroup.add(managerEnabledRadioYes);
-
-        managerEnabledRadioNo = new MirthRadioButton();
-        managerEnabledRadioNo.setText("No");
-        managerEnabledRadioNo.setBackground(Color.white);
-        managerEnabledRadioNo.addActionListener(e -> handleManagerEnabledButton(false));
-        managerEnabledButtonGroup.add(managerEnabledRadioNo);
+        super.initComponents();
 
         serverCertificateLabel = new JLabel("Server Certificate:");
         serverCertificateButton = new JButton(wrenchIcon);
@@ -311,16 +292,10 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
             );
         });
         ciphersText = new JLabel("Server default: 22 enabled");
-
-        super.initComponents();
     }
 
     protected void initLayout() {
-        setLayout(new MigLayout("insets 0, novisualpadding, hidemode 3", "[]12[]", ""));
-
-        add(managerEnabledLabel, "newline, right");
-        add(managerEnabledRadioYes, "split");
-        add(managerEnabledRadioNo);
+        super.initLayout();
 
         add(serverCertificateLabel, "newline, right");
         add(serverCertificateButton, "h 22!, w 22!, split");
@@ -384,7 +359,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
         }
     }
 
-    private void handleManagerEnabledButton(boolean managerEnabled) {
+    protected void handleManagerEnabledButton(boolean managerEnabled) {
         properties.setTlsManagerEnabled(managerEnabled);
 
         serverCertificateLabel.setEnabled(managerEnabled);
