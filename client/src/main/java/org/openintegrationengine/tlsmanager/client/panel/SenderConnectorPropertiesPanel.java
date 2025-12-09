@@ -32,7 +32,6 @@ import com.mirth.connect.connectors.ws.WebServiceSender;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.model.Connector;
-import com.mirth.connect.util.MirthSSLUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
 import org.openintegrationengine.tlsmanager.client.misc.SwingMagic;
@@ -45,7 +44,6 @@ import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.SwingWorker;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
@@ -55,9 +53,7 @@ import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -81,20 +77,12 @@ public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorProperti
     private JLabel clientCertText;
 
     private TLSSenderProperties properties;
-    private Set<String> publicCertificates;
-    private Set<String> clientCertificates;
-    private Set<String> supportedProtocols;
-    private Set<String> supportedCiphers;
-
     private enum Transport { HTTP, TCP, WS };
 
     private final ResponseHandler responseHandler;
 
     public SenderConnectorPropertiesPanel() {
-
         this.properties = new TLSSenderProperties();
-        this.publicCertificates = new HashSet<>();
-        this.clientCertificates = new HashSet<>();
 
         this.responseHandler = new ResponseHandler() {
             @Override
@@ -696,44 +684,5 @@ public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorProperti
             : "%d selected".formatted(properties.getUsedCiphers().size());
 
         ciphersText.setText(ciphersString);
-    }
-
-    private void fetchData() {
-        final var workingId = PlatformUI.MIRTH_FRAME.startWorking("Fetching certificates...");
-
-        var worker = new SwingWorker<Void, Void>() {
-            private Set<String> publicCertAliasSet;
-            private Set<String> clientCertAliasSet;
-            private Map<String, String[]> cryptoMap;
-
-            public Void doInBackground() {
-                try {
-                    publicCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getPublicCertificates();
-                    clientCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
-                    cryptoMap = PlatformUI.MIRTH_FRAME.mirthClient.getProtocolsAndCipherSuites();
-                } catch (Exception e) {
-                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported certificates failed");
-                }
-
-                return null;
-            }
-
-            public void done() {
-                publicCertificates = publicCertAliasSet;
-                clientCertificates = clientCertAliasSet;
-
-                supportedProtocols = Set.of(
-                    cryptoMap.get(MirthSSLUtil.KEY_ENABLED_SERVER_PROTOCOLS)
-                );
-
-                supportedCiphers = Set.of(
-                    cryptoMap.get(MirthSSLUtil.KEY_ENABLED_CIPHER_SUITES)
-                );
-
-                PlatformUI.MIRTH_FRAME.stopWorking(workingId);
-            }
-        };
-
-        worker.execute();
     }
 }

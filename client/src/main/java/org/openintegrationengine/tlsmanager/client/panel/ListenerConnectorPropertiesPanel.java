@@ -5,26 +5,21 @@ import com.mirth.connect.client.ui.components.MirthRadioButton;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.model.Connector;
-import com.mirth.connect.util.MirthSSLUtil;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
 import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 import org.openintegrationengine.tlsmanager.shared.properties.TLSListenerProperties;
-import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.SwingWorker;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -45,18 +40,8 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
 
     private TLSListenerProperties properties;
 
-    private Set<String> publicCertificates;
-    private Set<String> serverCertificates;
-    private Set<String> supportedProtocols;
-    private Set<String> supportedCiphers;
-
     public ListenerConnectorPropertiesPanel() {
         this.properties = new TLSListenerProperties();
-
-        this.publicCertificates = new HashSet<>();
-        this.serverCertificates = new HashSet<>();
-        this.supportedProtocols = new HashSet<>();
-        this.supportedCiphers = new HashSet<>();
 
         initComponents();
         initLayout();
@@ -120,7 +105,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
             new ItemPickerDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Server Certificate Picker",
-                serverCertificates,
+                clientCertificates,
                 currentCerts,
                 false,
                 null,
@@ -379,43 +364,5 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
             : "%d selected".formatted(properties.getUsedCiphers().size());
 
         ciphersText.setText(ciphersString);
-    }
-
-    private void fetchData() {
-        final var workerId = PlatformUI.MIRTH_FRAME.startWorking("Fetching data...");
-
-        var worker = new SwingWorker<Void, Void>() {
-            private Set<String> publicCertAliasSet;
-            private Set<String> clientCertAliasSet;
-            private Map<String, String[]> cryptoMap;
-
-            public Void doInBackground() {
-                try {
-                    publicCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getPublicCertificates();
-                    clientCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
-                    cryptoMap = PlatformUI.MIRTH_FRAME.mirthClient.getProtocolsAndCipherSuites();
-                } catch (Exception e) {
-                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported certificates failed");
-                }
-
-                return null;
-            }
-
-            public void done() {
-                serverCertificates = clientCertAliasSet;
-                publicCertificates = publicCertAliasSet;
-                supportedProtocols = Set.of(
-                    cryptoMap.get(MirthSSLUtil.KEY_ENABLED_SERVER_PROTOCOLS)
-                );
-
-                supportedCiphers = Set.of(
-                    cryptoMap.get(MirthSSLUtil.KEY_ENABLED_CIPHER_SUITES)
-                );
-
-                PlatformUI.MIRTH_FRAME.stopWorking(workerId);
-            }
-        };
-
-        worker.execute();
     }
 }

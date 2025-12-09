@@ -7,23 +7,34 @@ import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.client.ui.components.MirthComboBox;
 import com.mirth.connect.client.ui.components.MirthRadioButton;
 import com.mirth.connect.client.ui.components.MirthTextField;
+import com.mirth.connect.util.MirthSSLUtil;
 import net.miginfocom.swing.MigLayout;
 import org.openintegrationengine.tlsmanager.client.misc.DisplayTextEnumModeComboBoxRenderer;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
+import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.SwingWorker;
 import java.awt.Color;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public abstract class AbstractTLSConnectorPropertiesPanel extends AbstractConnectorPropertiesPanel {
 
     protected final ImageIcon wrenchIcon;
     protected final Frame parentFrame;
+
+    protected Set<String> publicCertificates;
+    protected Set<String> clientCertificates;
+    protected Set<String> supportedProtocols;
+    protected Set<String> supportedCiphers;
 
     protected JLabel managerEnabledLabel;
     protected MirthRadioButton managerEnabledRadioYes;
@@ -50,6 +61,11 @@ public abstract class AbstractTLSConnectorPropertiesPanel extends AbstractConnec
     AbstractTLSConnectorPropertiesPanel() {
         this.wrenchIcon = new ImageIcon(Frame.class.getResource("images/wrench.png"));
         this.parentFrame = PlatformUI.MIRTH_FRAME;
+
+        this.publicCertificates = new HashSet<>();
+        this.clientCertificates = new HashSet<>();
+        this.supportedProtocols = new HashSet<>();
+        this.supportedCiphers = new HashSet<>();
     }
 
     protected void initComponents() {
@@ -149,6 +165,44 @@ public abstract class AbstractTLSConnectorPropertiesPanel extends AbstractConnec
     protected abstract void handleCrlModeChange();
     protected abstract void handleOcspModeChange();
     protected abstract void handleSubjectDnValidationModeChange();
+
+    protected void fetchData() {
+        final var workerId = PlatformUI.MIRTH_FRAME.startWorking("Fetching data...");
+
+        var worker = new SwingWorker<Void, Void>() {
+            private Set<String> publicCertAliasSet;
+            private Set<String> clientCertAliasSet;
+            private Map<String, String[]> cryptoMap;
+
+            public Void doInBackground() {
+                try {
+                    publicCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getPublicCertificates();
+                    clientCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
+                    cryptoMap = PlatformUI.MIRTH_FRAME.mirthClient.getProtocolsAndCipherSuites();
+                } catch (Exception e) {
+                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported certificates failed");
+                }
+
+                return null;
+            }
+
+            public void done() {
+                clientCertificates = clientCertAliasSet;
+                publicCertificates = publicCertAliasSet;
+                supportedProtocols = Set.of(
+                    cryptoMap.get(MirthSSLUtil.KEY_ENABLED_SERVER_PROTOCOLS)
+                );
+
+                supportedCiphers = Set.of(
+                    cryptoMap.get(MirthSSLUtil.KEY_ENABLED_CIPHER_SUITES)
+                );
+
+                PlatformUI.MIRTH_FRAME.stopWorking(workerId);
+            }
+        };
+
+        worker.execute();
+    }
 
     protected static void log(String message) {
         System.out.printf("%s - %s.%n", Instant.now(), message);
