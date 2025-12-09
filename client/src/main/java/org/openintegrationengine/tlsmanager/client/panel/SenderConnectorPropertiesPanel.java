@@ -627,7 +627,7 @@ public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorProperti
         ciphersText.setEnabled(managerEnabled);
     }
 
-    private void redrawState() {
+    protected void redrawState() {
         if (properties.isTlsManagerEnabled()) {
             managerEnabledRadioYes.setSelected(true);
         } else {

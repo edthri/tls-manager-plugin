@@ -306,7 +306,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
         ciphersText.setEnabled(managerEnabled);
     }
 
-    private void redrawState() {
+    protected void redrawState() {
         if (properties.isTlsManagerEnabled()) {
             managerEnabledRadioYes.setSelected(true);
         } else {

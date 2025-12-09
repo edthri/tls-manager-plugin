@@ -204,6 +204,8 @@ public abstract class AbstractTLSConnectorPropertiesPanel extends AbstractConnec
         worker.execute();
     }
 
+    protected abstract void redrawState();
+
     protected static void log(String message) {
         System.out.printf("%s - %s.%n", Instant.now(), message);
     }
