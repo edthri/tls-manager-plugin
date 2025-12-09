@@ -17,11 +17,9 @@
 package org.openintegrationengine.tlsmanager.client.panel;
 
 import com.mirth.connect.client.core.ClientException;
-import com.mirth.connect.client.ui.AbstractConnectorPropertiesPanel;
 import com.mirth.connect.client.ui.ConnectorTypeDecoration;
 import com.mirth.connect.client.ui.Frame;
 import com.mirth.connect.client.ui.PlatformUI;
-import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.client.ui.components.MirthComboBox;
 import com.mirth.connect.client.ui.components.MirthEditableComboBox;
 import com.mirth.connect.client.ui.components.MirthRadioButton;
@@ -51,7 +49,6 @@ import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.SwingWorker;
@@ -61,7 +58,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -72,7 +68,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 @Slf4j
-public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesPanel {
+public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorPropertiesPanel {
 
     private JLabel managerEnabledLabel;
     private MirthRadioButton managerEnabledRadioYes;
@@ -457,11 +453,7 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
         return new ConnectorTypeDecoration(Connector.Mode.DESTINATION);
     }
 
-    private void initComponents() {
-        setBackground(UIConstants.BACKGROUND_COLOR);
-
-        var wrenchIcon = new ImageIcon(Frame.class.getResource("images/wrench.png"));
-
+    protected void initComponents() {
         managerEnabledLabel = new JLabel("Use TLS Manager:");
         var managerEnabledButtonGroup = new ButtonGroup();
 
@@ -649,9 +641,11 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
             );
         });
         ciphersText = new JLabel();
+
+        super.initComponents();
     }
 
-    private void initLayout() {
+    protected void initLayout() {
         setLayout(new MigLayout("insets 0, novisualpadding, hidemode 3", "[]12[]", ""));
 
         add(managerEnabledLabel, "newline, right");
@@ -848,9 +842,5 @@ public class SenderConnectorPropertiesPanel extends AbstractConnectorPropertiesP
         };
 
         worker.execute();
-    }
-
-    private static void log(String message) {
-        System.out.printf("%s - %s.%n", Instant.now(), message);
     }
 }

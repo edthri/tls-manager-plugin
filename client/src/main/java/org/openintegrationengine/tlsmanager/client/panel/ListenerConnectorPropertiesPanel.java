@@ -1,9 +1,6 @@
 package org.openintegrationengine.tlsmanager.client.panel;
 
-import com.mirth.connect.client.ui.AbstractConnectorPropertiesPanel;
-import com.mirth.connect.client.ui.Frame;
 import com.mirth.connect.client.ui.PlatformUI;
-import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.client.ui.components.MirthComboBox;
 import com.mirth.connect.client.ui.components.MirthRadioButton;
 import com.mirth.connect.client.ui.components.MirthTextField;
@@ -22,7 +19,6 @@ import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.SwingWorker;
@@ -30,7 +26,6 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -38,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertiesPanel {
+public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorPropertiesPanel {
 
     private JLabel managerEnabledLabel;
     private MirthRadioButton managerEnabledRadioYes;
@@ -133,10 +128,7 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
     @Override
     public void setLayoutComponentsEnabled(boolean b) {}
 
-    private void initComponents() {
-        setBackground(UIConstants.BACKGROUND_COLOR);
-
-        var wrenchIcon = new ImageIcon(Frame.class.getResource("images/wrench.png"));
+    protected void initComponents() {
 
         managerEnabledLabel = new JLabel("Use TLS Manager:");
         var managerEnabledButtonGroup = new ButtonGroup();
@@ -319,9 +311,11 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
             );
         });
         ciphersText = new JLabel("Server default: 22 enabled");
+
+        super.initComponents();
     }
 
-    private void initLayout() {
+    protected void initLayout() {
         setLayout(new MigLayout("insets 0, novisualpadding, hidemode 3", "[]12[]", ""));
 
         add(managerEnabledLabel, "newline, right");
@@ -527,9 +521,5 @@ public class ListenerConnectorPropertiesPanel extends AbstractConnectorPropertie
         };
 
         worker.execute();
-    }
-
-    private static void log(String message) {
-        System.out.printf("%s - %s.%n", Instant.now(), message);
     }
 }
