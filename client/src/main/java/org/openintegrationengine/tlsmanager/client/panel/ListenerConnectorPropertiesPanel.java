@@ -1,15 +1,12 @@
 package org.openintegrationengine.tlsmanager.client.panel;
 
 import com.mirth.connect.client.ui.PlatformUI;
-import com.mirth.connect.client.ui.components.MirthComboBox;
 import com.mirth.connect.client.ui.components.MirthRadioButton;
-import com.mirth.connect.client.ui.components.MirthTextField;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.model.Connector;
 import com.mirth.connect.util.MirthSSLUtil;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
-import org.openintegrationengine.tlsmanager.client.misc.DisplayTextEnumModeComboBoxRenderer;
 import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
@@ -17,7 +14,6 @@ import org.openintegrationengine.tlsmanager.shared.properties.TLSListenerPropert
 import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
 import javax.swing.ButtonGroup;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.SwingWorker;
@@ -46,16 +42,6 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
     private JLabel serverCertificateLabel;
     private JButton serverCertificateButton;
     private JLabel serverCertificateText;
-
-    private JLabel subjectDnValidationLabel;
-    private MirthComboBox<SubjectDnValidationMode> subjectDnValidationModeComboBox;
-    private MirthTextField subjectDnValidationFilterTextField;
-
-    private JLabel crlModeLabel;
-    private MirthComboBox<RevocationMode> crlModeComboBox;
-
-    private JLabel ocspModeLabel;
-    private MirthComboBox<RevocationMode> ocspModeComboBox;
 
     private JLabel protocolsLabel;
     private JButton protocolsButton;
@@ -199,45 +185,12 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
         });
         trustedClientCertsText = new JLabel();
 
-        var comboBoxRenderer = new DisplayTextEnumModeComboBoxRenderer();
-
-        var subjectDnValidationModeModel = new SubjectDnValidationMode[]{
-            SubjectDnValidationMode.NONE,
-            SubjectDnValidationMode.PARTIAL,
-            SubjectDnValidationMode.EXACT,
-        };
-
-        subjectDnValidationLabel = new JLabel("Subject DN Validation Mode:");
-        subjectDnValidationModeComboBox = new MirthComboBox<>();
-        subjectDnValidationModeComboBox.setRenderer(comboBoxRenderer);
-        subjectDnValidationModeComboBox.setModel(new DefaultComboBoxModel<>(subjectDnValidationModeModel));
-        subjectDnValidationModeComboBox.addActionListener(evt -> handleSubjectDnValidationModeChange());
-
-        subjectDnValidationFilterTextField = new MirthTextField();
         subjectDnValidationFilterTextField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
                 properties.setSubjectDnValidationFilter(subjectDnValidationFilterTextField.getText());
             }
         });
-
-        var revocationModeModel = new RevocationMode[]{
-            RevocationMode.DISABLED,
-            RevocationMode.SOFT_FAIL,
-            RevocationMode.HARD_FAIL
-        };
-
-        crlModeLabel = new JLabel("CRL Mode:");
-        crlModeComboBox = new MirthComboBox<>();
-        crlModeComboBox.setRenderer(comboBoxRenderer);
-        crlModeComboBox.setModel(new DefaultComboBoxModel<>(revocationModeModel));
-        crlModeComboBox.addActionListener(evt -> handleCrlModeChange());
-
-        ocspModeLabel = new JLabel("OCSP Mode:");
-        ocspModeComboBox = new MirthComboBox<>();
-        ocspModeComboBox.setRenderer(comboBoxRenderer);
-        ocspModeComboBox.setModel(new DefaultComboBoxModel<>(revocationModeModel));
-        ocspModeComboBox.addActionListener(evt -> handleOcspModeChange());
 
         protocolsLabel = new JLabel("Enabled Protocols:");
         protocolsButton = new JButton(wrenchIcon);
@@ -310,16 +263,6 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
         add(trustedClientCertsButton, "h 22!, w 22!, split");
         add(trustedClientCertsText);
 
-        add(subjectDnValidationLabel, "newline, right");
-        add(subjectDnValidationModeComboBox, "split");
-        add(subjectDnValidationFilterTextField, "w 168!");
-
-        add(crlModeLabel, "newline, right");
-        add(crlModeComboBox);
-
-        add(ocspModeLabel, "newline, right");
-        add(ocspModeComboBox);
-
         add(protocolsLabel, "newline, right");
         add(protocolsButton, "h 22!, w 22!, split");
         add(protocolsText);
@@ -340,20 +283,20 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
         trustedClientCertsText.setEnabled(issuerSelectorEnabled);
     }
 
-    private void handleSubjectDnValidationModeChange() {
+    protected void handleSubjectDnValidationModeChange() {
         if (subjectDnValidationModeComboBox.getSelectedItem() instanceof SubjectDnValidationMode validationMode) {
             properties.setSubjectDnValidationMode(validationMode);
             redrawState();
         }
     }
 
-    private void handleCrlModeChange() {
+    protected void handleCrlModeChange() {
         if (crlModeComboBox.getSelectedItem() instanceof RevocationMode revocationMode) {
             properties.setCrlMode(revocationMode);
         }
     }
 
-    private void handleOcspModeChange() {
+    protected void handleOcspModeChange() {
         if (ocspModeComboBox.getSelectedItem() instanceof RevocationMode revocationMode) {
             properties.setOcspMode(revocationMode);
         }
