@@ -80,10 +80,6 @@ public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorProperti
     private JButton clientCertButton;
     private JLabel clientCertText;
 
-    private JLabel protocolsLabel;
-    private JButton protocolsButton;
-    private JLabel protocolsText;
-
     private JLabel ciphersLabel;
     private JButton ciphersButton;
     private JLabel ciphersText;
@@ -519,8 +515,6 @@ public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorProperti
         });
         clientCertText = new JLabel("");
 
-        protocolsLabel = new JLabel("Enabled Protocols:");
-        protocolsButton = new JButton(wrenchIcon);
         protocolsButton.addActionListener(e -> {
             BiConsumer<Boolean, Set<String>> completionConsumer = (trustDefaultProtocols, selectedProtocols) -> {
                 properties.setUseServerDefaultProtocols(trustDefaultProtocols);
@@ -544,7 +538,6 @@ public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorProperti
                 completionConsumer
             );
         });
-        protocolsText = new JLabel();
 
         ciphersLabel = new JLabel("Enabled Ciphers:");
         ciphersButton = new JButton(wrenchIcon);
@@ -592,10 +585,6 @@ public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorProperti
         add(clientCertLabel, "newline, right");
         add(clientCertButton, "h 22!, w 22!, split");
         add(clientCertText);
-
-        add(protocolsLabel, "newline, right");
-        add(protocolsButton, "h 22!, w 22!, split");
-        add(protocolsText);
 
         add(ciphersLabel, "newline, right");
         add(ciphersButton, "h 22!, w 22!, split");

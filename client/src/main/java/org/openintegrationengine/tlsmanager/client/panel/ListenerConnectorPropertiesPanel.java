@@ -43,10 +43,6 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
     private JButton serverCertificateButton;
     private JLabel serverCertificateText;
 
-    private JLabel protocolsLabel;
-    private JButton protocolsButton;
-    private JLabel protocolsText;
-
     private JLabel ciphersLabel;
     private JButton ciphersButton;
     private JLabel ciphersText;
@@ -192,8 +188,6 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
             }
         });
 
-        protocolsLabel = new JLabel("Enabled Protocols:");
-        protocolsButton = new JButton(wrenchIcon);
         protocolsButton.addActionListener(e -> {
             BiConsumer<Boolean, Set<String>> completionConsumer = (trustDefaultProtocols, selectedProtocols) -> {
                 properties.setUseServerDefaultProtocols(trustDefaultProtocols);
@@ -217,7 +211,6 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
                 completionConsumer
             );
         });
-        protocolsText = new JLabel("Server default: TLSv4.6");
 
         ciphersLabel = new JLabel("Enabled Ciphers:");
         ciphersButton = new JButton(wrenchIcon);
@@ -262,10 +255,6 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
         add(trustedClientCertsLabel, "newline, right");
         add(trustedClientCertsButton, "h 22!, w 22!, split");
         add(trustedClientCertsText);
-
-        add(protocolsLabel, "newline, right");
-        add(protocolsButton, "h 22!, w 22!, split");
-        add(protocolsText);
 
         add(ciphersLabel, "newline, right");
         add(ciphersButton, "h 22!, w 22!, split");

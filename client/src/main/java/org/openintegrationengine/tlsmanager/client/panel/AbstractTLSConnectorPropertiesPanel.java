@@ -15,6 +15,7 @@ import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMod
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import java.awt.Color;
 import java.time.Instant;
@@ -37,6 +38,14 @@ public abstract class AbstractTLSConnectorPropertiesPanel extends AbstractConnec
 
     protected JLabel ocspModeLabel;
     protected MirthComboBox<RevocationMode> ocspModeComboBox;
+
+    protected JLabel protocolsLabel;
+    protected JButton protocolsButton;
+    protected JLabel protocolsText;
+
+    protected JLabel ciphersLabel;
+    protected JButton ciphersButton;
+    protected JLabel ciphersText;
 
     AbstractTLSConnectorPropertiesPanel() {
         this.wrenchIcon = new ImageIcon(Frame.class.getResource("images/wrench.png"));
@@ -95,6 +104,18 @@ public abstract class AbstractTLSConnectorPropertiesPanel extends AbstractConnec
         ocspModeComboBox.setRenderer(comboBoxRenderer);
         ocspModeComboBox.setModel(new DefaultComboBoxModel<>(revocationModeModel));
         ocspModeComboBox.addActionListener(evt -> handleOcspModeChange());
+
+        protocolsLabel = new JLabel("Enabled Protocols:");
+        protocolsButton = new JButton(wrenchIcon);
+        // TODO addActionListener
+
+        protocolsText = new JLabel();
+
+        ciphersLabel = new JLabel("Enabled Ciphers:");
+        ciphersButton = new JButton(wrenchIcon);
+        // TODO addActionListener
+
+        ciphersText = new JLabel();
     }
 
     protected void initLayout() {
@@ -113,6 +134,14 @@ public abstract class AbstractTLSConnectorPropertiesPanel extends AbstractConnec
 
         add(ocspModeLabel, "newline, right");
         add(ocspModeComboBox);
+
+        add(protocolsLabel, "newline, right");
+        add(protocolsButton, "h 22!, w 22!, split");
+        add(protocolsText);
+
+        add(ciphersLabel, "newline, right");
+        add(ciphersButton, "h 22!, w 22!, split");
+        add(ciphersText);
     }
 
     protected abstract void handleManagerEnabledButton(boolean managerEnabled);
