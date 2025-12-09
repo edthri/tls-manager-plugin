@@ -43,10 +43,6 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
     private JButton serverCertificateButton;
     private JLabel serverCertificateText;
 
-    private JLabel ciphersLabel;
-    private JButton ciphersButton;
-    private JLabel ciphersText;
-
     private TLSListenerProperties properties;
 
     private Set<String> publicCertificates;
@@ -212,8 +208,6 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
             );
         });
 
-        ciphersLabel = new JLabel("Enabled Ciphers:");
-        ciphersButton = new JButton(wrenchIcon);
         ciphersButton.addActionListener(e -> {
             BiConsumer<Boolean, Set<String>> completionConsumer = (trustDefaultCiphers, selectedCiphers) -> {
                 properties.setUseServerDefaultCiphers(trustDefaultCiphers);
@@ -237,7 +231,6 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
                 completionConsumer
             );
         });
-        ciphersText = new JLabel("Server default: 22 enabled");
     }
 
     protected void initLayout() {
@@ -255,10 +248,6 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
         add(trustedClientCertsLabel, "newline, right");
         add(trustedClientCertsButton, "h 22!, w 22!, split");
         add(trustedClientCertsText);
-
-        add(ciphersLabel, "newline, right");
-        add(ciphersButton, "h 22!, w 22!, split");
-        add(ciphersText);
     }
 
     private void handleClientAuthModeChange(ClientAuthMode authMode, boolean persistChanges) {

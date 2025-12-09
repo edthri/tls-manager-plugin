@@ -80,10 +80,6 @@ public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorProperti
     private JButton clientCertButton;
     private JLabel clientCertText;
 
-    private JLabel ciphersLabel;
-    private JButton ciphersButton;
-    private JLabel ciphersText;
-
     private TLSSenderProperties properties;
     private Set<String> publicCertificates;
     private Set<String> clientCertificates;
@@ -539,8 +535,6 @@ public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorProperti
             );
         });
 
-        ciphersLabel = new JLabel("Enabled Ciphers:");
-        ciphersButton = new JButton(wrenchIcon);
         ciphersButton.addActionListener(e -> {
             BiConsumer<Boolean, Set<String>> completionConsumer = (trustDefaultCiphers, selectedCiphers) -> {
                 properties.setUseServerDefaultCiphers(trustDefaultCiphers);
@@ -564,7 +558,6 @@ public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorProperti
                 completionConsumer
             );
         });
-        ciphersText = new JLabel();
     }
 
     protected void initLayout() {
@@ -585,10 +578,6 @@ public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorProperti
         add(clientCertLabel, "newline, right");
         add(clientCertButton, "h 22!, w 22!, split");
         add(clientCertText);
-
-        add(ciphersLabel, "newline, right");
-        add(ciphersButton, "h 22!, w 22!, split");
-        add(ciphersText);
     }
 
     protected void handleSubjectDnValidationModeChange() {
