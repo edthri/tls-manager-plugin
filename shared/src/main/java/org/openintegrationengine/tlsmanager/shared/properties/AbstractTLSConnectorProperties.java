@@ -30,8 +30,6 @@ public abstract class AbstractTLSConnectorProperties extends ConnectorPluginProp
     protected boolean isUseServerDefaultCiphers;
     protected Set<String> usedCiphers;
 
-    protected AbstractTLSConnectorProperties defaults;
-
     protected AbstractTLSConnectorProperties() {
         isTlsManagerEnabled = false;
 
