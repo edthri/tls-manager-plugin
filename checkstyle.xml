@@ -31,6 +31,13 @@
 
     <module name="SuppressWarningsFilter"/>
 
+    <module name="Header">
+        <property name="header"
+                  value="/// SPDX-License-Identifier: MPL-2.0"/>
+        <property name="ignoreLines" value="2, 3, 4"/>
+        <property name="fileExtensions" value="java"/>
+    </module>
+
     <!-- https://checkstyle.org/filters/suppressionfilter.html -->
     <module name="SuppressionFilter">
         <property name="file" value="${org.checkstyle.google.suppressionfilter.config}"
