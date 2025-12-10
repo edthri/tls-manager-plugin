@@ -1,6 +1,5 @@
 package org.openintegrationengine.tlsmanager.shared.properties;
 
-import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -21,9 +20,8 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor
 @ToString(callSuper = true)
-public class TLSListenerProperties extends ConnectorPluginProperties {
+public class TLSListenerProperties extends AbstractTLSConnectorProperties {
 
-    private boolean isTlsManagerEnabled;
 
     private String serverCertificateAlias;
 
@@ -49,7 +47,7 @@ public class TLSListenerProperties extends ConnectorPluginProperties {
     private Set<String> usedCiphers;
 
     public TLSListenerProperties() {
-        isTlsManagerEnabled = false;
+        super();
 
         serverCertificateAlias = null;
 
@@ -72,9 +70,9 @@ public class TLSListenerProperties extends ConnectorPluginProperties {
     }
 
     public TLSListenerProperties(TLSListenerProperties props) {
-        var defaults = new TLSListenerProperties();
+        super(props);
 
-        isTlsManagerEnabled = props.isTlsManagerEnabled();
+        var defaults = new TLSListenerProperties();
 
         serverCertificateAlias = props.getServerCertificateAlias();
 

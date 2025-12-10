@@ -16,7 +16,6 @@
 
 package org.openintegrationengine.tlsmanager.shared.properties;
 
-import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -36,9 +35,8 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor
 @ToString(callSuper = true)
-public class TLSSenderProperties extends ConnectorPluginProperties {
+public class TLSSenderProperties extends AbstractTLSConnectorProperties {
 
-    private boolean isTlsManagerEnabled;
     private boolean isServerCertificateValidationEnabled;
 
     private SubjectDnValidationMode subjectDnValidationMode;
@@ -64,7 +62,8 @@ public class TLSSenderProperties extends ConnectorPluginProperties {
     private String clientCertificateAlias;
 
     public TLSSenderProperties() {
-        isTlsManagerEnabled = false;
+        super();
+
         isServerCertificateValidationEnabled = false;
 
         subjectDnValidationMode = SubjectDnValidationMode.NONE;
@@ -87,9 +86,10 @@ public class TLSSenderProperties extends ConnectorPluginProperties {
     }
 
     public TLSSenderProperties(TLSSenderProperties props) {
+        super(props);
+
         var defaults = new TLSSenderProperties();
 
-        isTlsManagerEnabled = props.isTlsManagerEnabled();
         isServerCertificateValidationEnabled = props.isServerCertificateValidationEnabled();
 
         subjectDnValidationMode = Objects.requireNonNullElse(
