@@ -49,8 +49,6 @@ public class TLSSenderProperties extends AbstractTLSConnectorProperties {
     public TLSSenderProperties(TLSSenderProperties props) {
         super(props);
 
-        var defaults = new TLSSenderProperties();
-
         isServerCertificateValidationEnabled = props.isServerCertificateValidationEnabled();
 
         isHostnameVerificationEnabled = props.isHostnameVerificationEnabled();

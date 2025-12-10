@@ -33,13 +33,11 @@ public class TLSListenerProperties extends AbstractTLSConnectorProperties {
     public TLSListenerProperties(TLSListenerProperties props) {
         super(props);
 
-        var defaults = new TLSListenerProperties();
-
         serverCertificateAlias = props.getServerCertificateAlias();
 
         clientAuthMode = Objects.requireNonNullElse(
             props.getClientAuthMode(),
-            defaults.getClientAuthMode()
+            ClientAuthMode.NONE
         );
     }
 
