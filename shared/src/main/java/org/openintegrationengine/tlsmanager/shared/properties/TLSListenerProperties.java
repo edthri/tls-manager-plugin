@@ -7,7 +7,6 @@ import lombok.Setter;
 import lombok.ToString;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
-import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 
 import java.util.Collections;
 import java.util.Map;
@@ -23,9 +22,6 @@ public class TLSListenerProperties extends AbstractTLSConnectorProperties {
 
     private String serverCertificateAlias;
 
-    private SubjectDnValidationMode subjectDnValidationMode;
-    private String subjectDnValidationFilter;
-
     private ClientAuthMode clientAuthMode;
 
     // Truststore to use for mtls client cert validation
@@ -36,9 +32,6 @@ public class TLSListenerProperties extends AbstractTLSConnectorProperties {
         super();
 
         serverCertificateAlias = null;
-
-        subjectDnValidationMode = SubjectDnValidationMode.NONE;
-        subjectDnValidationFilter = null;
 
         clientAuthMode = ClientAuthMode.NONE;
 
@@ -52,12 +45,6 @@ public class TLSListenerProperties extends AbstractTLSConnectorProperties {
         var defaults = new TLSListenerProperties();
 
         serverCertificateAlias = props.getServerCertificateAlias();
-
-        subjectDnValidationMode = Objects.requireNonNullElse(
-            props.getSubjectDnValidationMode(),
-            defaults.getSubjectDnValidationMode()
-        );
-        subjectDnValidationFilter = props.getSubjectDnValidationFilter();
 
         clientAuthMode = Objects.requireNonNullElse(
             props.getClientAuthMode(),

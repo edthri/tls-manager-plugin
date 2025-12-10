@@ -22,7 +22,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
-import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 
 import java.util.Collections;
 import java.util.Map;
@@ -38,9 +37,6 @@ public class TLSSenderProperties extends AbstractTLSConnectorProperties {
 
     private boolean isServerCertificateValidationEnabled;
 
-    private SubjectDnValidationMode subjectDnValidationMode;
-    private String subjectDnValidationFilter;
-
     // Public certificates
     private boolean trustSystemTruststore;
     private Set<String> trustedServerCertificates;
@@ -52,9 +48,6 @@ public class TLSSenderProperties extends AbstractTLSConnectorProperties {
         super();
 
         isServerCertificateValidationEnabled = false;
-
-        subjectDnValidationMode = SubjectDnValidationMode.NONE;
-        subjectDnValidationFilter = null;
 
         trustSystemTruststore = true;
         trustedServerCertificates = Collections.emptySet();
@@ -69,12 +62,6 @@ public class TLSSenderProperties extends AbstractTLSConnectorProperties {
         var defaults = new TLSSenderProperties();
 
         isServerCertificateValidationEnabled = props.isServerCertificateValidationEnabled();
-
-        subjectDnValidationMode = Objects.requireNonNullElse(
-            props.getSubjectDnValidationMode(),
-            defaults.getSubjectDnValidationMode()
-        );
-        subjectDnValidationFilter = props.getSubjectDnValidationFilter();
 
         trustSystemTruststore = props.isTrustSystemTruststore();
         trustedServerCertificates = Objects.requireNonNullElse(

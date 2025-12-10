@@ -4,6 +4,7 @@ import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import lombok.Getter;
 import lombok.Setter;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
+import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 
 import java.util.Collections;
 import java.util.Objects;
@@ -18,6 +19,9 @@ public abstract class AbstractTLSConnectorProperties extends ConnectorPluginProp
     protected RevocationMode crlMode;
     protected RevocationMode ocspMode;
 
+    protected SubjectDnValidationMode subjectDnValidationMode;
+    protected String subjectDnValidationFilter;
+
     // Protocols
     protected boolean isUseServerDefaultProtocols;
     protected Set<String> usedProtocols;
@@ -31,6 +35,9 @@ public abstract class AbstractTLSConnectorProperties extends ConnectorPluginProp
     protected AbstractTLSConnectorProperties() {
         isTlsManagerEnabled = false;
 
+        subjectDnValidationMode = SubjectDnValidationMode.NONE;
+        subjectDnValidationFilter = null;
+
         crlMode = RevocationMode.HARD_FAIL;
         ocspMode = RevocationMode.HARD_FAIL;
 
@@ -43,6 +50,12 @@ public abstract class AbstractTLSConnectorProperties extends ConnectorPluginProp
 
     protected AbstractTLSConnectorProperties(AbstractTLSConnectorProperties props) {
         isTlsManagerEnabled = props.isTlsManagerEnabled();
+
+        subjectDnValidationMode = Objects.requireNonNullElse(
+            props.getSubjectDnValidationMode(),
+            SubjectDnValidationMode.NONE
+        );
+        subjectDnValidationFilter = props.getSubjectDnValidationFilter();
 
         crlMode = Objects.requireNonNullElse(props.getCrlMode(), RevocationMode.HARD_FAIL);
         ocspMode = Objects.requireNonNullElse(props.getOcspMode(), RevocationMode.HARD_FAIL);
