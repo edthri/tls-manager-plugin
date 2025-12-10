@@ -36,6 +36,7 @@ public final class TLSPluginConstants {
     // This ain't no joke
     public static final String TLS_SENDER_CONNECTOR_PROPERTIES_PLUGIN_POINT_NAME = "TLS Sender Connector Properties Plugin";
     public static final String TLS_LISTENER_CONNECTOR_PROPERTIES_PLUGIN_POINT_NAME = "TLS Listener Connector Properties Plugin";
+    public static final String TLS_LISTENER_PROPERTIES_PLUGIN_POINT_NAME = "TLS Connector Properties Plugin";
 
     private TLSPluginConstants() {}
 }
