@@ -32,14 +32,6 @@ public class TLSListenerProperties extends AbstractTLSConnectorProperties {
     private boolean trustSystemTruststore;
     private Set<String> trustedServerCertificates;
 
-    // Protocols
-    private boolean isUseServerDefaultProtocols;
-    private Set<String> usedProtocols;
-
-    // Ciphers
-    private boolean isUseServerDefaultCiphers;
-    private Set<String> usedCiphers;
-
     public TLSListenerProperties() {
         super();
 
@@ -52,12 +44,6 @@ public class TLSListenerProperties extends AbstractTLSConnectorProperties {
 
         trustSystemTruststore = true;
         trustedServerCertificates = Collections.emptySet();
-
-        isUseServerDefaultProtocols = true;
-        usedProtocols = Collections.emptySet();
-
-        isUseServerDefaultCiphers = true;
-        usedCiphers = Collections.emptySet();
     }
 
     public TLSListenerProperties(TLSListenerProperties props) {
@@ -82,18 +68,6 @@ public class TLSListenerProperties extends AbstractTLSConnectorProperties {
         trustedServerCertificates = Objects.requireNonNullElse(
             props.getTrustedServerCertificates(),
             defaults.getTrustedServerCertificates()
-        );
-
-        isUseServerDefaultProtocols = props.isUseServerDefaultProtocols();
-        usedProtocols = Objects.requireNonNullElse(
-            props.getUsedProtocols(),
-            defaults.getUsedProtocols()
-        );
-
-        isUseServerDefaultCiphers = props.isUseServerDefaultCiphers();
-        usedCiphers = Objects.requireNonNullElse(
-            props.getUsedCiphers(),
-            defaults.getUsedCiphers()
         );
     }
 

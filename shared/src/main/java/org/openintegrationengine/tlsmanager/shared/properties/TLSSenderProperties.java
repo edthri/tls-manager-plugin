@@ -45,14 +45,6 @@ public class TLSSenderProperties extends AbstractTLSConnectorProperties {
     private boolean trustSystemTruststore;
     private Set<String> trustedServerCertificates;
 
-    // Protocols
-    private boolean isUseServerDefaultProtocols;
-    private Set<String> usedProtocols;
-
-    // Ciphers
-    private boolean isUseServerDefaultCiphers;
-    private Set<String> usedCiphers;
-
     private boolean isHostnameVerificationEnabled;
     private String clientCertificateAlias;
 
@@ -66,12 +58,6 @@ public class TLSSenderProperties extends AbstractTLSConnectorProperties {
 
         trustSystemTruststore = true;
         trustedServerCertificates = Collections.emptySet();
-
-        isUseServerDefaultProtocols = true;
-        usedProtocols = Collections.emptySet();
-
-        isUseServerDefaultCiphers = true;
-        usedCiphers = Collections.emptySet();
 
         isHostnameVerificationEnabled = true;
         clientCertificateAlias = null;
@@ -94,18 +80,6 @@ public class TLSSenderProperties extends AbstractTLSConnectorProperties {
         trustedServerCertificates = Objects.requireNonNullElse(
             props.getTrustedServerCertificates(),
             defaults.getTrustedServerCertificates()
-        );
-
-        isUseServerDefaultProtocols = props.isUseServerDefaultProtocols();
-        usedProtocols = Objects.requireNonNullElse(
-            props.getUsedProtocols(),
-            defaults.getUsedProtocols()
-        );
-
-        isUseServerDefaultCiphers = props.isUseServerDefaultCiphers();
-        usedCiphers = Objects.requireNonNullElse(
-            props.getUsedCiphers(),
-            defaults.getUsedCiphers()
         );
 
         isHostnameVerificationEnabled = props.isHostnameVerificationEnabled();
