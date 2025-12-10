@@ -88,7 +88,7 @@ public abstract class AbstractTLSConnectorPropertiesPanel extends AbstractConnec
 
         var comboBoxRenderer = new DisplayTextEnumModeComboBoxRenderer();
 
-        var subjectDnValidationModeModel = new SubjectDnValidationMode[]{
+        final var subjectDnValidationModeModel = new SubjectDnValidationMode[]{
             SubjectDnValidationMode.NONE,
             SubjectDnValidationMode.PARTIAL,
             SubjectDnValidationMode.EXACT,
@@ -103,7 +103,7 @@ public abstract class AbstractTLSConnectorPropertiesPanel extends AbstractConnec
         subjectDnValidationFilterTextField = new MirthTextField();
         // TODO addKeyListener
 
-        var revocationModeModel = new RevocationMode[]{
+        final var revocationModeModel = new RevocationMode[]{
             RevocationMode.DISABLED,
             RevocationMode.SOFT_FAIL,
             RevocationMode.HARD_FAIL
