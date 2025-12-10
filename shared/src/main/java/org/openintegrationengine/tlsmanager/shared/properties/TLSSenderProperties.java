@@ -22,7 +22,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
-import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 
 import java.util.Collections;
@@ -41,10 +40,6 @@ public class TLSSenderProperties extends AbstractTLSConnectorProperties {
 
     private SubjectDnValidationMode subjectDnValidationMode;
     private String subjectDnValidationFilter;
-
-    // Certificate revocation modes
-    private RevocationMode crlMode;
-    private RevocationMode ocspMode;
 
     // Public certificates
     private boolean trustSystemTruststore;
@@ -68,9 +63,6 @@ public class TLSSenderProperties extends AbstractTLSConnectorProperties {
 
         subjectDnValidationMode = SubjectDnValidationMode.NONE;
         subjectDnValidationFilter = null;
-
-        crlMode = RevocationMode.HARD_FAIL;
-        ocspMode = RevocationMode.HARD_FAIL;
 
         trustSystemTruststore = true;
         trustedServerCertificates = Collections.emptySet();
@@ -97,9 +89,6 @@ public class TLSSenderProperties extends AbstractTLSConnectorProperties {
             defaults.getSubjectDnValidationMode()
         );
         subjectDnValidationFilter = props.getSubjectDnValidationFilter();
-
-        crlMode = Objects.requireNonNullElse(props.getCrlMode(), defaults.getCrlMode());
-        ocspMode = Objects.requireNonNullElse(props.getOcspMode(), defaults.getOcspMode());
 
         trustSystemTruststore = props.isTrustSystemTruststore();
         trustedServerCertificates = Objects.requireNonNullElse(

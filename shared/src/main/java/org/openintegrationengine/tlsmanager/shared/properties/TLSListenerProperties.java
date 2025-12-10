@@ -7,7 +7,6 @@ import lombok.Setter;
 import lombok.ToString;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
-import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 
 import java.util.Collections;
@@ -22,7 +21,6 @@ import java.util.Set;
 @ToString(callSuper = true)
 public class TLSListenerProperties extends AbstractTLSConnectorProperties {
 
-
     private String serverCertificateAlias;
 
     private SubjectDnValidationMode subjectDnValidationMode;
@@ -33,10 +31,6 @@ public class TLSListenerProperties extends AbstractTLSConnectorProperties {
     // Truststore to use for mtls client cert validation
     private boolean trustSystemTruststore;
     private Set<String> trustedServerCertificates;
-
-    // Certificate revocation modes
-    private RevocationMode crlMode;
-    private RevocationMode ocspMode;
 
     // Protocols
     private boolean isUseServerDefaultProtocols;
@@ -58,9 +52,6 @@ public class TLSListenerProperties extends AbstractTLSConnectorProperties {
 
         trustSystemTruststore = true;
         trustedServerCertificates = Collections.emptySet();
-
-        crlMode = RevocationMode.HARD_FAIL;
-        ocspMode = RevocationMode.HARD_FAIL;
 
         isUseServerDefaultProtocols = true;
         usedProtocols = Collections.emptySet();
@@ -92,9 +83,6 @@ public class TLSListenerProperties extends AbstractTLSConnectorProperties {
             props.getTrustedServerCertificates(),
             defaults.getTrustedServerCertificates()
         );
-
-        crlMode = Objects.requireNonNullElse(props.getCrlMode(), defaults.getCrlMode());
-        ocspMode = Objects.requireNonNullElse(props.getOcspMode(), defaults.getOcspMode());
 
         isUseServerDefaultProtocols = props.isUseServerDefaultProtocols();
         usedProtocols = Objects.requireNonNullElse(
