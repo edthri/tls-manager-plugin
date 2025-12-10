@@ -131,6 +131,25 @@ jobs:
           --health-retries=10
           --health-timeout=2s
           --health-start-period=3s
+          --network-alias orchestrator.unreachable.crl.caddy.local
+          --network-alias orchestrator.revoked.crl.caddy.local
+          --network-alias orchestrator.invalid.crl.caddy.local
+          --network-alias orchestrator.valid.crl.caddy.local
+          --network-alias orchestrator.valid.ocsp.caddy.local
+          --network-alias orchestrator.revoked.ocsp.caddy.local
+          --network-alias orchestrator.invalid.ocsp.caddy.local
+          --network-alias orchestrator.unreachable.ocsp.caddy.local
+          --network-alias orchestrator.valid.expired.ocsp.caddy.local
+          --network-alias orchestrator.revoked.expired.ocsp.caddy.local
+          --network-alias orchestrator.wrong.san.caddy.local
+          --network-alias orchestrator.wrong.cn.caddy.local
+          --network-alias orchestrator.cn.only.caddy.local
+          --network-alias tls13.chacha20.caddy.local
+          --network-alias wrong.domain.caddy.local
+          --network-alias revoked.crl.caddy.local
+          --network-alias tls12.ecdhe.caddy.local
+          --network-alias valid.crl.caddy.local
+          --network-alias mtls.caddy.local
 
     steps:
       - name: Run integration-tests
