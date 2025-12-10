@@ -15,6 +15,9 @@ import java.util.Set;
 public abstract class AbstractTLSConnectorProperties extends ConnectorPluginProperties {
     protected boolean isTlsManagerEnabled;
 
+    protected boolean trustSystemTruststore;
+    protected Set<String> trustedServerCertificates;
+
     // Certificate revocation modes
     protected RevocationMode crlMode;
     protected RevocationMode ocspMode;
@@ -33,6 +36,9 @@ public abstract class AbstractTLSConnectorProperties extends ConnectorPluginProp
     protected AbstractTLSConnectorProperties() {
         isTlsManagerEnabled = false;
 
+        trustSystemTruststore = true;
+        trustedServerCertificates = Collections.emptySet();
+
         subjectDnValidationMode = SubjectDnValidationMode.NONE;
         subjectDnValidationFilter = null;
 
@@ -48,6 +54,12 @@ public abstract class AbstractTLSConnectorProperties extends ConnectorPluginProp
 
     protected AbstractTLSConnectorProperties(AbstractTLSConnectorProperties props) {
         isTlsManagerEnabled = props.isTlsManagerEnabled();
+
+        trustSystemTruststore = props.isTrustSystemTruststore();
+        trustedServerCertificates = Objects.requireNonNullElse(
+            props.getTrustedServerCertificates(),
+            Collections.emptySet()
+        );
 
         subjectDnValidationMode = Objects.requireNonNullElse(
             props.getSubjectDnValidationMode(),

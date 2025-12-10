@@ -8,10 +8,8 @@ import lombok.ToString;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -24,19 +22,12 @@ public class TLSListenerProperties extends AbstractTLSConnectorProperties {
 
     private ClientAuthMode clientAuthMode;
 
-    // Truststore to use for mtls client cert validation
-    private boolean trustSystemTruststore;
-    private Set<String> trustedServerCertificates;
-
     public TLSListenerProperties() {
         super();
 
         serverCertificateAlias = null;
 
         clientAuthMode = ClientAuthMode.NONE;
-
-        trustSystemTruststore = true;
-        trustedServerCertificates = Collections.emptySet();
     }
 
     public TLSListenerProperties(TLSListenerProperties props) {
@@ -49,12 +40,6 @@ public class TLSListenerProperties extends AbstractTLSConnectorProperties {
         clientAuthMode = Objects.requireNonNullElse(
             props.getClientAuthMode(),
             defaults.getClientAuthMode()
-        );
-
-        trustSystemTruststore = props.isTrustSystemTruststore();
-        trustedServerCertificates = Objects.requireNonNullElse(
-            props.getTrustedServerCertificates(),
-            defaults.getTrustedServerCertificates()
         );
     }
 

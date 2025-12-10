@@ -23,10 +23,7 @@ import lombok.Setter;
 import lombok.ToString;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 
-import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -37,10 +34,6 @@ public class TLSSenderProperties extends AbstractTLSConnectorProperties {
 
     private boolean isServerCertificateValidationEnabled;
 
-    // Public certificates
-    private boolean trustSystemTruststore;
-    private Set<String> trustedServerCertificates;
-
     private boolean isHostnameVerificationEnabled;
     private String clientCertificateAlias;
 
@@ -48,9 +41,6 @@ public class TLSSenderProperties extends AbstractTLSConnectorProperties {
         super();
 
         isServerCertificateValidationEnabled = false;
-
-        trustSystemTruststore = true;
-        trustedServerCertificates = Collections.emptySet();
 
         isHostnameVerificationEnabled = true;
         clientCertificateAlias = null;
@@ -62,12 +52,6 @@ public class TLSSenderProperties extends AbstractTLSConnectorProperties {
         var defaults = new TLSSenderProperties();
 
         isServerCertificateValidationEnabled = props.isServerCertificateValidationEnabled();
-
-        trustSystemTruststore = props.isTrustSystemTruststore();
-        trustedServerCertificates = Objects.requireNonNullElse(
-            props.getTrustedServerCertificates(),
-            defaults.getTrustedServerCertificates()
-        );
 
         isHostnameVerificationEnabled = props.isHostnameVerificationEnabled();
         clientCertificateAlias = props.getClientCertificateAlias();
