@@ -119,6 +119,7 @@ jobs:
           OIE_TLS_PLUGIN_FS_TRUSTSTOREPATH: /opt/engine/testing_truststore.p12
           OIE_TLS_PLUGIN_FS_TRUSTSTOREPASS: changeit
           OIE_TLS_PLUGIN_FS_KEYSTOREPATH: /opt/engine/testing_keystore.p12
+          OIE_TLS_PLUGIN_DISABLE_UI: true
         ports:
           - 8443:8443
           - 5005:5005
