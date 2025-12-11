@@ -117,7 +117,6 @@ jobs:
           KEYSTORE_KEYPASS: docker_keypass
           OIE_TLS_PLUGIN_PERSISTENCE_BACKEND: filesystem
           OIE_TLS_PLUGIN_FS_TRUSTSTOREPATH: /opt/engine/testing_truststore.p12
-          OIE_TLS_PLUGIN_FS_TRUSTSTOREPASS: changeit
           OIE_TLS_PLUGIN_FS_KEYSTOREPATH: /opt/engine/testing_keystore.p12
           OIE_TLS_PLUGIN_DISABLE_UI: true
         ports:
@@ -127,6 +126,7 @@ jobs:
           - 8081:8081
         options: >-
           --env OIE_TLS_PLUGIN_FS_KEYSTOREPASS=""
+          --env OIE_TLS_PLUGIN_FS_TRUSTSTOREPASS=""
           --health-cmd="curl -kfs -H 'X-Requested-With: curl' https://localhost:8443/api/server/status | grep -q '<int>0</int>'"
           --health-interval=3s
           --health-retries=10
