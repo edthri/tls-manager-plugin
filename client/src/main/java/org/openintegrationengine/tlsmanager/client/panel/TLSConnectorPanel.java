@@ -83,7 +83,7 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
     /*
     Other crap
      */
-    private final TLSConnectorProperties properties;
+    private TLSConnectorProperties properties;
     private boolean isServerMode;
     private final ResponseHandler responseHandler;
 
@@ -310,7 +310,13 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
 
     @Override
     public void setProperties(ConnectorProperties connectorProperties, ConnectorPluginProperties connectorPluginProperties, Connector.Mode mode, String s) {
+        if (connectorPluginProperties instanceof TLSConnectorProperties tlsConnectorProperties) {
+            this.properties = tlsConnectorProperties;
 
+            fetchData();
+            redrawState();
+            handleManagerEnabledButton(tlsConnectorProperties.isTlsManagerEnabled());
+        }
     }
 
     @Override
@@ -609,9 +615,15 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
         if (settingsPanel instanceof TcpListener tcpListener) {
             tcpListener.modeServerRadio.addActionListener((event) -> handleTcpModeChange(true));
             tcpListener.modeClientRadio.addActionListener((event) -> handleTcpModeChange(false));
+
+            this.isServerMode = tcpListener.modeServerRadio.isSelected();
+            handleTcpModeChange(this.isServerMode);
         } else if (settingsPanel instanceof TcpSender tcpSender) {
             tcpSender.modeServerRadio.addActionListener((event) -> handleTcpModeChange(true));
             tcpSender.modeClientRadio.addActionListener((event) -> handleTcpModeChange(false));
+
+            this.isServerMode = tcpSender.modeServerRadio.isSelected();
+            handleTcpModeChange(this.isServerMode);
         }
 
         // Register Connection testing overrides

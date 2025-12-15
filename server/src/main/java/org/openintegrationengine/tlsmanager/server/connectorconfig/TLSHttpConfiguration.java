@@ -38,8 +38,7 @@ import org.openintegrationengine.tlsmanager.server.CertificateService;
 import org.openintegrationengine.tlsmanager.server.SocketFactoryService;
 import org.openintegrationengine.tlsmanager.server.TLSServicePlugin;
 import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSListenerProperties;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import static org.openintegrationengine.tlsmanager.shared.TLSPluginConstants.PKCS12;
 
@@ -84,14 +83,14 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
 
     @Override
     public void configureReceiver(HttpReceiver connector) throws Exception {
-        var tlsConnectorProperties = getConnectorProperties(TLSListenerProperties.class, connector);
+        var tlsConnectorProperties = getConnectorProperties(TLSConnectorProperties.class, connector);
 
         // If TLS manager is not enabled, delegate to OIE default
         if (tlsConnectorProperties == null || !tlsConnectorProperties.isTlsManagerEnabled()) {
             super.configureReceiver(connector);
 
         } else {
-            var tlsContext = socketFactoryService.generateTLSContext(connector, tlsConnectorProperties);
+            var tlsContext = socketFactoryService.generateTLSContext(tlsConnectorProperties);
 
             var httpConfig = new HttpConfiguration();
             httpConfig.addCustomizer(new SecureRequestCustomizer());
@@ -133,10 +132,10 @@ public class TLSHttpConfiguration extends DefaultHttpConfiguration {
     }
 
     private void configureSocketFactory(HttpDispatcher connector) {
-        var tlsConnectorProperties = getConnectorProperties(TLSSenderProperties.class, connector);
+        var tlsConnectorProperties = getConnectorProperties(TLSConnectorProperties.class, connector);
 
         if (tlsConnectorProperties != null && tlsConnectorProperties.isTlsManagerEnabled()) {
-            var sslSocketFactory = socketFactoryService.getConnectorSocketFactory(connector, tlsConnectorProperties);
+            var sslSocketFactory = socketFactoryService.getConnectorSocketFactory(tlsConnectorProperties);
             if (sslSocketFactory != null) {
                 // FIXME
                 connector.getSocketFactoryRegistry().register("https", sslSocketFactory);

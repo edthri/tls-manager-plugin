@@ -25,7 +25,7 @@ import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 
 import java.util.Set;
 
-@MirthClientClass
+//@MirthClientClass
 public class TLSListenerConnectorPropertiesPlugin extends ConnectorPropertiesPlugin {
 
     public TLSListenerConnectorPropertiesPlugin(String name) {

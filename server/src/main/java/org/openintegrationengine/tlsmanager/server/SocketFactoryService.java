@@ -1,7 +1,5 @@
 package org.openintegrationengine.tlsmanager.server;
 
-import com.mirth.connect.donkey.server.channel.Connector;
-import com.mirth.connect.donkey.server.channel.DestinationConnector;
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.util.MirthSSLUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -10,8 +8,7 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.openintegrationengine.tlsmanager.server.revocation.DualCheckerTrustManager;
 import org.openintegrationengine.tlsmanager.shared.models.WeirdIntermediaryContextContainer;
 import org.openintegrationengine.tlsmanager.shared.models.WeirdIntermediaryListenerContextContainer;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSListenerProperties;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -36,8 +33,8 @@ public class SocketFactoryService {
         this.configurationController = configurationController;
     }
 
-    public SSLConnectionSocketFactory getConnectorSocketFactory(DestinationConnector connector, TLSSenderProperties properties) {
-        var contextContainer = generateTLSContext(connector, properties);
+    public SSLConnectionSocketFactory getConnectorSocketFactory(TLSConnectorProperties properties) {
+        var contextContainer = generateTLSContextSender(properties);
         return getConnectorSocketFactory(contextContainer);
     }
 
@@ -53,7 +50,7 @@ public class SocketFactoryService {
         );
     }
 
-    public WeirdIntermediaryContextContainer generateTLSContext(Connector connector, TLSSenderProperties properties) {
+    public WeirdIntermediaryContextContainer generateTLSContextSender(TLSConnectorProperties properties) {
         try {
 
             var dualcheckerTrustManager = new DualCheckerTrustManager(
@@ -104,7 +101,7 @@ public class SocketFactoryService {
         }
     }
 
-    public WeirdIntermediaryListenerContextContainer generateTLSContext(Connector connector, TLSListenerProperties properties) {
+    public WeirdIntermediaryListenerContextContainer generateTLSContext(TLSConnectorProperties properties) {
         var keystore = certificateService.getKeyStore(properties.getServerCertificateAlias());
 
         var dualcheckerTrustManager = new DualCheckerTrustManager(

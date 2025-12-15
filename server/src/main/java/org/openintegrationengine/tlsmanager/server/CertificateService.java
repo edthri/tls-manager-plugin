@@ -37,7 +37,7 @@ import org.openintegrationengine.tlsmanager.shared.models.ConnectionTestResult;
 import org.openintegrationengine.tlsmanager.shared.models.LocalCertificate;
 import org.openintegrationengine.tlsmanager.shared.models.TLSPluginConfiguration;
 import org.openintegrationengine.tlsmanager.shared.models.TrustedCertificate;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -427,7 +427,8 @@ public final class CertificateService {
     ) {
         var oTlsPluginProperties = dispatcherProperties.getPluginProperties()
             .stream()
-            .filter(TLSSenderProperties.class::isInstance)
+            .filter(TLSConnectorProperties.class::isInstance)
+            .map(TLSConnectorProperties.class::cast)
             .findFirst();
 
         if (oTlsPluginProperties.isEmpty()) {
@@ -435,10 +436,10 @@ public final class CertificateService {
             // TODO Actually do the test
         }
 
-        var properties = (TLSSenderProperties) oTlsPluginProperties.get();
+        var properties = oTlsPluginProperties.get();
 
         var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
-        var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
+        var socketFactory = socketFactoryService.getConnectorSocketFactory(properties);
         try {
 
             String host = templateValueReplacer.replaceValues(dispatcherProperties.getRemoteAddress(), channelId, channelName);
@@ -481,7 +482,8 @@ public final class CertificateService {
 
         var oTlsPluginProperties = dispatcherProperties.getPluginProperties()
             .stream()
-            .filter(TLSSenderProperties.class::isInstance)
+            .filter(TLSConnectorProperties.class::isInstance)
+            .map(TLSConnectorProperties.class::cast)
             .findFirst();
 
         if (oTlsPluginProperties.isEmpty()) {
@@ -489,10 +491,10 @@ public final class CertificateService {
             // TODO Actually do the test
         }
 
-        var properties = (TLSSenderProperties) oTlsPluginProperties.get();
+        var properties = oTlsPluginProperties.get();
 
         var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
-        var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
+        var socketFactory = socketFactoryService.getConnectorSocketFactory(properties);
 
         try {
             var url = new URL(templateValueReplacer.replaceValues(dispatcherProperties.getHost(), channelId, channelName));
@@ -527,7 +529,8 @@ public final class CertificateService {
 
         var oTlsPluginProperties = dispatcherProperties.getPluginProperties()
             .stream()
-            .filter(TLSSenderProperties.class::isInstance)
+            .filter(TLSConnectorProperties.class::isInstance)
+            .map(TLSConnectorProperties.class::cast)
             .findFirst();
 
         if (oTlsPluginProperties.isEmpty()) {
@@ -535,10 +538,10 @@ public final class CertificateService {
             // TODO Actually do the test
         }
 
-        var properties = (TLSSenderProperties) oTlsPluginProperties.get();
+        var properties = oTlsPluginProperties.get();
 
         var socketFactoryService = TLSServicePlugin.getPluginInstance().getSocketFactoryService();
-        var socketFactory = socketFactoryService.getConnectorSocketFactory(null, properties);
+        var socketFactory = socketFactoryService.getConnectorSocketFactory(properties);
 
         try {
             String host;

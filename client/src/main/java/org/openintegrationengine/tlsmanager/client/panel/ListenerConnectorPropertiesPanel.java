@@ -9,7 +9,7 @@ import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
 import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSListenerProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -38,10 +38,10 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
     private JButton serverCertificateButton;
     private JLabel serverCertificateText;
 
-    private TLSListenerProperties properties;
+    private TLSConnectorProperties properties;
 
     public ListenerConnectorPropertiesPanel() {
-        this.properties = new TLSListenerProperties();
+        this.properties = new TLSConnectorProperties();
 
         initComponents();
         initLayout();
@@ -49,23 +49,23 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
     }
 
     @Override
-    public TLSListenerProperties getProperties() {
+    public TLSConnectorProperties getProperties() {
         return properties.clone();
     }
 
     @Override
     public void setProperties(ConnectorProperties connectorProperties, ConnectorPluginProperties connectorPluginProperties, Connector.Mode mode, String s) {
-        if (connectorPluginProperties instanceof TLSListenerProperties tlsListenerProperties) {
-            this.properties = tlsListenerProperties;
+        if (connectorPluginProperties instanceof TLSConnectorProperties tlsConnectorProperties) {
+            this.properties = tlsConnectorProperties;
             fetchData();
             redrawState();
-            handleManagerEnabledButton(tlsListenerProperties.isTlsManagerEnabled());
+            handleManagerEnabledButton(tlsConnectorProperties.isTlsManagerEnabled());
         }
     }
 
     @Override
-    public ConnectorPluginProperties getDefaults() {
-        return new TLSListenerProperties();
+    public TLSConnectorProperties getDefaults() {
+        return new TLSConnectorProperties();
     }
 
     @Override

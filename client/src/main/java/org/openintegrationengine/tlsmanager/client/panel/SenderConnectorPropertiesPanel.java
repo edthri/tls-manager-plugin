@@ -38,7 +38,7 @@ import org.openintegrationengine.tlsmanager.client.misc.SwingMagic;
 import org.openintegrationengine.tlsmanager.shared.models.ConnectionTestResult;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
 import javax.swing.ButtonGroup;
@@ -76,13 +76,13 @@ public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorProperti
     private JButton clientCertButton;
     private JLabel clientCertText;
 
-    private TLSSenderProperties properties;
+    private TLSConnectorProperties properties;
     private enum Transport { HTTP, TCP, WS };
 
     private final ResponseHandler responseHandler;
 
     public SenderConnectorPropertiesPanel() {
-        this.properties = new TLSSenderProperties();
+        this.properties = new TLSConnectorProperties();
 
         this.responseHandler = new ResponseHandler() {
             @Override
@@ -367,23 +367,23 @@ public class SenderConnectorPropertiesPanel extends AbstractTLSConnectorProperti
     }
 
     @Override
-    public TLSSenderProperties getProperties() {
+    public TLSConnectorProperties getProperties() {
         return properties.clone();
     }
 
     @Override
     public void setProperties(ConnectorProperties connectorProperties, ConnectorPluginProperties connectorPluginProperties, Connector.Mode mode, String s) {
-        if (connectorPluginProperties instanceof TLSSenderProperties tlsSenderProperties) {
-            this.properties = tlsSenderProperties;
+        if (connectorPluginProperties instanceof TLSConnectorProperties tlsConnectorProperties) {
+            this.properties = tlsConnectorProperties;
             fetchData();
             redrawState();
-            handleManagerEnabledButton(tlsSenderProperties.isTlsManagerEnabled());
+            handleManagerEnabledButton(tlsConnectorProperties.isTlsManagerEnabled());
         }
     }
 
     @Override
-    public ConnectorPluginProperties getDefaults() {
-        return new TLSSenderProperties();
+    public TLSConnectorProperties getDefaults() {
+        return new TLSConnectorProperties();
     }
 
     @Override

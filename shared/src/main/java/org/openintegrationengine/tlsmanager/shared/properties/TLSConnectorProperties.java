@@ -63,7 +63,7 @@ public class TLSConnectorProperties extends AbstractTLSConnectorProperties {
     }
 
     @Override
-    public ConnectorPluginProperties clone() {
+    public TLSConnectorProperties clone() {
         return new TLSConnectorProperties(this);
     }
 

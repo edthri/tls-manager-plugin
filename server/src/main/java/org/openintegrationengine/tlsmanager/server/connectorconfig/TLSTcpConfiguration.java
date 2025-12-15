@@ -4,7 +4,9 @@ import com.mirth.connect.connectors.tcp.DefaultTcpConfiguration;
 import com.mirth.connect.connectors.tcp.StateAwareServerSocket;
 import com.mirth.connect.connectors.tcp.StateAwareSocket;
 import com.mirth.connect.connectors.tcp.TcpDispatcher;
+import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
 import com.mirth.connect.connectors.tcp.TcpReceiver;
+import com.mirth.connect.connectors.tcp.TcpReceiverProperties;
 import com.mirth.connect.donkey.server.channel.Connector;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -12,8 +14,7 @@ import org.openintegrationengine.tlsmanager.server.SocketFactoryService;
 import org.openintegrationengine.tlsmanager.server.TLSServicePlugin;
 import org.openintegrationengine.tlsmanager.server.io.StateAwareTLSServerSocket;
 import org.openintegrationengine.tlsmanager.server.io.StateAwareTLSSocket;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSListenerProperties;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -25,12 +26,9 @@ public class TLSTcpConfiguration extends DefaultTcpConfiguration {
 
     private final SocketFactoryService socketFactoryService;
 
-    private TLSSenderProperties tlsSenderProperties;
-    private TLSListenerProperties tlsListenerProperties;
+    private TLSConnectorProperties tlsConnectorProperties;
 
     private SSLConnectionSocketFactory socketFactory;
-
-    private Connector connector;
 
     public TLSTcpConfiguration() {
         this(TLSServicePlugin.getPluginInstance().getSocketFactoryService());
@@ -42,25 +40,34 @@ public class TLSTcpConfiguration extends DefaultTcpConfiguration {
 
     @Override
     public void configureConnectorDeploy(Connector connector) throws Exception {
-        this.connector = connector;
+        boolean isServerMode;
 
         if (connector instanceof TcpDispatcher tcpDispatcher) {
-            this.tlsSenderProperties = getConnectorProperties(TLSSenderProperties.class, tcpDispatcher);
 
-            if (tlsSenderProperties != null && tlsSenderProperties.isTlsManagerEnabled()) {
-                socketFactory = socketFactoryService.getConnectorSocketFactory(tcpDispatcher, tlsSenderProperties);
-            }
+            var dispatcherProperties = (TcpDispatcherProperties) tcpDispatcher.getConnectorProperties();
+            isServerMode = dispatcherProperties.isServerMode();
+
+
         } else if (connector instanceof TcpReceiver tcpReceiver) {
-            this.tlsListenerProperties = getConnectorProperties(TLSListenerProperties.class, tcpReceiver);
+            var receiverProperties = (TcpReceiverProperties) tcpReceiver.getConnectorProperties();
+            isServerMode = receiverProperties.isServerMode();
         } else {
             // should not get here
             throw new IllegalStateException("Unexpected connector type: %s".formatted(connector.getClass().getCanonicalName()));
+        }
+
+        this.tlsConnectorProperties = getConnectorProperties(TLSConnectorProperties.class, connector);
+
+        if (!isServerMode) {
+            if (tlsConnectorProperties != null && tlsConnectorProperties.isTlsManagerEnabled()) {
+                socketFactory = socketFactoryService.getConnectorSocketFactory(tlsConnectorProperties);
+            }
         }
     }
 
     @Override
     public Socket createSocket() {
-        if (tlsSenderProperties == null || !tlsSenderProperties.isTlsManagerEnabled()) {
+        if (tlsConnectorProperties == null || !tlsConnectorProperties.isTlsManagerEnabled()) {
             return new StateAwareSocket();
         } else {
             if (socketFactory == null) {
@@ -79,16 +86,16 @@ public class TLSTcpConfiguration extends DefaultTcpConfiguration {
 
     @Override
     public ServerSocket createServerSocket(int port, int backlog, InetAddress bindAddr) throws IOException {
-        var createTlsSocket = tlsListenerProperties != null && tlsListenerProperties.isTlsManagerEnabled();
+        var createTlsSocket = tlsConnectorProperties != null && tlsConnectorProperties.isTlsManagerEnabled();
 
         log.debug(
             "Creating server socket. Properties null - {}; Manager enabled - {}",
-            tlsListenerProperties == null,
+            tlsConnectorProperties == null,
             createTlsSocket
         );
 
         if (createTlsSocket) {
-            var contextContainer = socketFactoryService.generateTLSContext(connector, tlsListenerProperties);
+            var contextContainer = socketFactoryService.generateTLSContext(tlsConnectorProperties);
             return new StateAwareTLSServerSocket(port, backlog, bindAddr, contextContainer);
         } else {
             return new StateAwareServerSocket(port, backlog, bindAddr);

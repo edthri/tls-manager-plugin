@@ -9,7 +9,7 @@ import org.apache.cxf.wsdl11.WSDLManagerImpl;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import javax.wsdl.BindingOperation;
 import javax.wsdl.Definition;
@@ -69,8 +69,8 @@ public class WebServiceService {
             properties.getPassword()
         );
 
-        var senderProperties = getTlsSenderProperties(properties);
-        var socketFactory = socketFactoryService.getConnectorSocketFactory(null, senderProperties);
+        var connectorProperties = getTlsSenderProperties(properties);
+        var socketFactory = socketFactoryService.getConnectorSocketFactory(connectorProperties);
 
         int timeout = 30_000; // 30 seconds
         var config = RequestConfig.custom()
@@ -148,11 +148,11 @@ public class WebServiceService {
         return wsdlUri.toURL().toString();
     }
 
-    private TLSSenderProperties getTlsSenderProperties(WebServiceDispatcherProperties properties) {
+    private TLSConnectorProperties getTlsSenderProperties(WebServiceDispatcherProperties properties) {
         var oTlsPluginProperties = properties.getPluginProperties()
             .stream()
-            .filter(TLSSenderProperties.class::isInstance)
-            .map(TLSSenderProperties.class::cast)
+            .filter(TLSConnectorProperties.class::isInstance)
+            .map(TLSConnectorProperties.class::cast)
             .findFirst();
 
         return oTlsPluginProperties.orElseThrow(IllegalStateException::new);

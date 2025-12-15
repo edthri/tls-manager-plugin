@@ -15,8 +15,7 @@ import org.openintegrationengine.tlsmanager.server.TLSServicePlugin;
 import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
 import org.openintegrationengine.tlsmanager.shared.models.WeirdIntermediaryContextContainer;
 import org.openintegrationengine.tlsmanager.shared.models.WeirdIntermediaryListenerContextContainer;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSListenerProperties;
-import org.openintegrationengine.tlsmanager.shared.properties.TLSSenderProperties;
+import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProperties;
 
 import javax.net.ssl.SSLSocketFactory;
 import java.util.Map;
@@ -97,13 +96,13 @@ public class TLSWebServiceConfiguration extends DefaultWebServiceConfiguration {
     private void configureSocketFactory(WebServiceReceiver connector) {
         var tlsConnectorProperties = connector.getConnectorProperties().getPluginProperties()
             .stream()
-            .filter(TLSListenerProperties.class::isInstance)
+            .filter(TLSConnectorProperties.class::isInstance)
             .findFirst()
-            .map(TLSListenerProperties.class::cast)
+            .map(TLSConnectorProperties.class::cast)
             .orElse(null);
 
         if (tlsConnectorProperties != null && tlsConnectorProperties.isTlsManagerEnabled()) {
-            listenerContainer = socketFactoryService.generateTLSContext(connector, tlsConnectorProperties);
+            listenerContainer = socketFactoryService.generateTLSContext(tlsConnectorProperties);
         } else {
             try {
                 super.configureConnectorDeploy(connector);
@@ -117,13 +116,13 @@ public class TLSWebServiceConfiguration extends DefaultWebServiceConfiguration {
     private void configureSocketFactory(WebServiceDispatcher connector) {
         var tlsConnectorProperties = connector.getConnectorProperties().getPluginProperties()
             .stream()
-            .filter(TLSSenderProperties.class::isInstance)
+            .filter(TLSConnectorProperties.class::isInstance)
             .findFirst()
-            .map(TLSSenderProperties.class::cast)
+            .map(TLSConnectorProperties.class::cast)
             .orElse(null);
 
         if (tlsConnectorProperties != null && tlsConnectorProperties.isTlsManagerEnabled()) {
-            senderContainer = socketFactoryService.generateTLSContext(connector, tlsConnectorProperties);
+            senderContainer = socketFactoryService.generateTLSContextSender(tlsConnectorProperties);
 
             var socketConnectionFactory = socketFactoryService.getConnectorSocketFactory(senderContainer);
             if (socketConnectionFactory != null) {
