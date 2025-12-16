@@ -304,7 +304,7 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
     }
 
     @Override
-    public ConnectorPluginProperties getProperties() {
+    public TLSConnectorProperties getProperties() {
         return properties.clone();
     }
 
@@ -320,7 +320,7 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
     }
 
     @Override
-    public ConnectorPluginProperties getDefaults() {
+    public TLSConnectorProperties getDefaults() {
         return new TLSConnectorProperties();
     }
 
