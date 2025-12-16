@@ -3,6 +3,7 @@ package org.openintegrationengine.tlsmanager.shared.properties;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.openintegrationengine.tlsmanager.shared.models.RevocationMode;
 import org.openintegrationengine.tlsmanager.shared.models.SubjectDnValidationMode;
 
@@ -12,6 +13,7 @@ import java.util.Set;
 
 @Getter
 @Setter
+@ToString
 public abstract class AbstractTLSConnectorProperties extends ConnectorPluginProperties {
     protected boolean isTlsManagerEnabled;
 
