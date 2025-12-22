@@ -116,6 +116,8 @@ public class StateAwareTLSSocket extends Socket implements StateAwareSocketInter
     private boolean remoteSideHasClosedInternal(Socket socket) throws IOException {
         if (socket.isClosed()) return true;
 
+        if (socket.isInputShutdown()) return true;
+
         int oldTimeout = socket.getSoTimeout();
         socket.setSoTimeout(200);
 
