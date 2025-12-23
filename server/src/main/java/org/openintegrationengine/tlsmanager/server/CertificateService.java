@@ -20,6 +20,10 @@ import com.mirth.connect.client.core.api.MirthApiException;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
 import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
 import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
+import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
+import com.mirth.connect.model.Channel;
+import com.mirth.connect.model.Connector;
+import com.mirth.connect.server.controllers.ChannelController;
 import com.mirth.connect.server.util.TemplateValueReplacer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +75,7 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import static org.openintegrationengine.tlsmanager.shared.TLSPluginConstants.PKCS12;
 
@@ -90,14 +95,16 @@ public final class CertificateService {
     private TrustStoreBackend extraTrustStoreBackend;
     private TrustStoreBackend extraKeyStoreBackend;
 
+    private final ChannelController channelController;
     private final TemplateValueReplacer templateValueReplacer;
 
-    public CertificateService() {
-        this(new TemplateValueReplacer());
+    public CertificateService(ChannelController channelController) {
+        this(new TemplateValueReplacer(), channelController);
     }
 
-    public CertificateService(TemplateValueReplacer templateValueReplacer) {
+    public CertificateService(TemplateValueReplacer templateValueReplacer, ChannelController channelController) {
         this.templateValueReplacer = templateValueReplacer;
+        this.channelController = channelController;
     }
 
     void init(TLSPluginConfiguration pluginConfiguration) {
@@ -246,11 +253,13 @@ public final class CertificateService {
                     String encodedKey = encodeKey(keyStore.getKey(alias, password));
                     certificate.setCertificate(encodedCertificate);
                     certificate.setKey(encodedKey);
+                    certificate.setChannelsInUse(getChannelsInUse(alias));
                     certificates.add(certificate);
                 } else if (keyStore.isCertificateEntry(alias)) {
                     TrustedCertificate certificate = new TrustedCertificate(alias);
                     String encodedCertificate = encodeCertificateChain(keyStore.getCertificate(alias));
                     certificate.setCertificate(encodedCertificate);
+                    certificate.setChannelsInUse(getChannelsInUse(alias));
                     certificates.add(certificate);
                 }
             }
@@ -258,6 +267,51 @@ public final class CertificateService {
         } catch (KeyStoreException | CertificateEncodingException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Set<String> getChannelsInUse(String alias) {
+        final Set<String> channelsInUse = new HashSet<>();
+        final List<Channel> channels = channelController.getChannels(null);
+
+        BiConsumer<TLSConnectorProperties, String> addIfInUse = (TLSConnectorProperties properties, String channelName) -> {
+            if (properties != null) {
+                if (alias.equals(properties.getServerCertificateAlias())) {
+                    channelsInUse.add(channelName);
+                } else if (alias.equals(properties.getClientCertificateAlias())) {
+                    channelsInUse.add(channelName);
+                } else if (properties.getTrustedServerCertificates() != null
+                    && !properties.getTrustedServerCertificates().isEmpty()
+                    && properties.getTrustedServerCertificates().contains(alias)) {
+                    channelsInUse.add(channelName);
+                }
+            }
+        };
+
+        for (Channel channel : channels) {
+            Set<ConnectorPluginProperties> sourceProperties = channel.getSourceConnector().getProperties().getPluginProperties();
+
+            if (sourceProperties != null && !sourceProperties.isEmpty()) {
+                TLSConnectorProperties tlsSourceProperties = (TLSConnectorProperties) sourceProperties
+                    .stream()
+                    .filter(props -> props instanceof TLSConnectorProperties)
+                    .findFirst()
+                    .orElse(null);
+
+                addIfInUse.accept(tlsSourceProperties, channel.getName());
+            }
+            for (Connector destinationConnector : channel.getDestinationConnectors()) {
+                Set<ConnectorPluginProperties> destinationProperties = destinationConnector.getProperties().getPluginProperties();
+
+                TLSConnectorProperties tlsDestinationProperties = (TLSConnectorProperties) destinationProperties
+                    .stream()
+                    .filter(props -> props instanceof TLSConnectorProperties)
+                    .findFirst()
+                    .orElse(null);
+
+                addIfInUse.accept(tlsDestinationProperties, channel.getName());
+            }
+        }
+        return channelsInUse;
     }
 
     private String encodeCertificateChain(Certificate... chain) throws CertificateEncodingException {

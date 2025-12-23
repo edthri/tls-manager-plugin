@@ -59,8 +59,9 @@ public class TLSServicePlugin implements ServicePlugin {
     @Override
     public void init(Properties properties) {
         var configurationController = ControllerFactory.getFactory().createConfigurationController();
+        var channelController = ControllerFactory.getFactory().createChannelController();
 
-        this.certificateService = new CertificateService();
+        this.certificateService = new CertificateService(channelController);
         this.socketFactoryService = new SocketFactoryService(
             configurationController,
             certificateService

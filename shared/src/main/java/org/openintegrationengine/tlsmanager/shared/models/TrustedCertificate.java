@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serializable;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -17,4 +18,5 @@ public class TrustedCertificate implements Serializable {
 
     private String alias;
     private String certificate;
+    private Set<String> channelsInUse;
 }
