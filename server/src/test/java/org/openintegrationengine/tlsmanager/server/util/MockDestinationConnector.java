@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2025 NovaMap Health Limited <https://novamap.health>
+
 package org.openintegrationengine.tlsmanager.server.util;
 
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;

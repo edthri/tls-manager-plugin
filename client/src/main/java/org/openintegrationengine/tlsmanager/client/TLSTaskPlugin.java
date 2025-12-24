@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2025 NovaMap Health Limited <https://novamap.health>
+
 package org.openintegrationengine.tlsmanager.client;
 
 import com.kaurpalang.mirth.annotationsplugin.annotation.MirthClientClass;
@@ -30,7 +33,7 @@ public class TLSTaskPlugin extends TaskPlugin {
 
         tlsTaskPane = new JXTaskPane();
         tlsTaskPane.setTitle("TLS Manager Tasks");
-        tlsTaskPane.setName(TaskConstants.CHANNEL_KEY);
+        tlsTaskPane.setName(TaskConstants.DASHBOARD_KEY);
         tlsTaskPane.setFocusable(false);
 
         parent.addTask(
