@@ -342,10 +342,9 @@ public class ListenerConnectorPropertiesPanel extends AbstractTLSConnectorProper
             thingsToTrust.add("%d certificate%s".formatted(count, plural));
         }
 
-        var serverCertificatesText = "Trusting %s".formatted(
-            thingsToTrust.isEmpty()
-                ? "no one >:C"
-                : String.join(" and ", thingsToTrust)
+        var serverCertificatesText = thingsToTrust.isEmpty()
+            ? "None selected"
+            : "Trusting %s".formatted(String.join(" and ", thingsToTrust)
         );
         trustedClientCertsText.setText(serverCertificatesText);
 

@@ -299,10 +299,9 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
             thingsToTrust.add("%d certificate%s".formatted(count, plural));
         }
 
-        return "Trusting %s".formatted(
-            thingsToTrust.isEmpty()
-                ? "no one >:C"
-                : String.join(" and ", thingsToTrust)
+        return thingsToTrust.isEmpty()
+            ? "None selected"
+            : "Trusting %s".formatted(String.join(" and ", thingsToTrust)
         );
     }
 
