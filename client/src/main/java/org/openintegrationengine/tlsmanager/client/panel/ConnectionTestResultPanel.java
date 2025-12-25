@@ -1,6 +1,12 @@
-// This file uses Phosphor Icons (https://github.com/phosphor-icons)
-// Copyright (c) 2023 Phosphor Icons
-// Licensed under the MIT License
+/*
+ * SPDX-License-Identifier: MPL-2.0
+ * Copyright (c) 2023 Phosphor Icons
+ * Copyright (c) 2025 NovaMap Health Limited <https://novamap.health>
+ *
+ * This file uses Phosphor Icons (https://github.com/phosphor-icons)
+ * The Phosphor Icons portion is licensed under the MIT License:
+ *   https://github.com/phosphor-icons/phosphor-icons/blob/master/LICENSE
+ */
 
 package org.openintegrationengine.tlsmanager.client.panel;
 
