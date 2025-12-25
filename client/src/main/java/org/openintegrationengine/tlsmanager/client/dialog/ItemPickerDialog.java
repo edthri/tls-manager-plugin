@@ -325,7 +325,11 @@ public class ItemPickerDialog extends MirthDialog {
         selectedOptions = localSelectedOptions;
     }
 
-    // Proper copyright
+    /*
+     * SPDX-License-Identifier: MPL-2.0
+     * Copyright (c) 2016 Mirth Corporation
+     * Source: https://github.com/OpenIntegrationEngine/engine/blob/788a150f36a6bcd1db672e00d2e7ee609e2842d9/client/src/com/mirth/connect/client/ui/tag/SettingsPanelTags.java#L780-L800
+     */
     private class TagSelectionCellEditor extends DefaultCellEditor {
 
         private MirthTriStateCheckBox checkBox;
@@ -360,7 +364,11 @@ public class ItemPickerDialog extends MirthDialog {
         }
     }
 
-    // Proper copyright
+    /*
+     * SPDX-License-Identifier: MPL-2.0
+     * Copyright (c) 2016 Mirth Corporation
+     * Source: https://github.com/OpenIntegrationEngine/engine/blob/788a150f36a6bcd1db672e00d2e7ee609e2842d9/client/src/com/mirth/connect/client/ui/tag/SettingsPanelTags.java#L746-L778
+     */
     private class TagSelectionCellRenderer implements TableCellRenderer {
 
         private MirthTriStateCheckBox checkBox;
