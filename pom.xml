@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-License-Identifier: Apache-2.0 OR MPL-2.0 -->
 <!-- Copyright (c) 2021 Kaur Palang -->
+<!-- Copyright (c) 2025 NovaMap Health Limited <https://novamap.health> -->
+<!-- Modifications from commit d2fbac7328eda7b7a68348a4adcbb3a9961868b9 onward licensed under MPL-2.0 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -15,8 +17,15 @@
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
             <distribution>repo</distribution>
+            <comments>Original code up to and including ff753e7ff2a304a63723924fcc68c6f883c96fc2 licensed under Apache 2.0.</comments>
+        </license>
+        <license>
+            <name>Mozilla Public License 2.0</name>
+            <url>https://www.mozilla.org/en-US/MPL/2.0/</url>
+            <distribution>repo</distribution>
+            <comments>Modifications licensed under MPL-2.0.</comments>
         </license>
     </licenses>
 
@@ -45,12 +54,12 @@
         <mockito.version>5.19.0</mockito.version>
 
         <!-- Plugin details -->
-        <mirth.plugin.author>OpenIntegrationEngine</mirth.plugin.author>
+        <mirth.plugin.author>NovaMap Health</mirth.plugin.author>
         <mirth.plugin.compatible_versions>4.5.2</mirth.plugin.compatible_versions>
-        <mirth.plugin.description>TLS Management made easy</mirth.plugin.description>
+        <mirth.plugin.description>TLS-enabled networking Connectors &amp; Certificate Management</mirth.plugin.description>
         <mirth.plugin.name>TLS Manager</mirth.plugin.name>
         <mirth.plugin.path>tls-manager</mirth.plugin.path>
-        <mirth.plugin.url>https://openintegrationengine.org</mirth.plugin.url>
+        <mirth.plugin.url>https://novamap.health</mirth.plugin.url>
         <mirth.plugin.version>${project.version}</mirth.plugin.version>
     </properties>
 

@@ -1,6 +1,8 @@
 /*
  * SPDX-License-Identifier: Apache-2.0 OR MPL-2.0
  * Copyright (c) 2021 Kaur Palang
+ * Copyright (c) 2025 NovaMap Health Limited <https://novamap.health>
+ * Modifications from commit aee95e6c7ddfcb6762e23c3d27ac227a6b2772d4 onward licensed under MPL-2.0
  */
 
 package org.openintegrationengine.tlsmanager.server;
