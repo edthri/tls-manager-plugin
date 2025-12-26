@@ -23,8 +23,7 @@ public class TLSConnectorPropertiesPlugin extends ConnectorPropertiesPlugin {
 
     @Override
     public String getSettingsTitle() {
-        // TODO
-        return "TLS Settings merged";
+        return "TLS Settings";
     }
 
     @Override
