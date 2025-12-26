@@ -29,6 +29,7 @@ import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.model.Connector;
 import com.mirth.connect.util.MirthSSLUtil;
+import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
 import org.openintegrationengine.tlsmanager.client.misc.DisplayTextEnumModeComboBoxRenderer;
@@ -52,7 +53,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,6 +62,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+@Slf4j
 public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
     /*
@@ -331,7 +332,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
             clientAuthRadioRequired.setSelected(true);
         } else {
             clientAuthRadioNone.setSelected(true);
-            log("Unable to determine client auth mode: %s. Using NONE");
+            log.warn("Unable to determine client auth mode: {}. Using NONE", properties.getClientAuthMode());
         }
 
         handleClientAuthModeChange(properties.getClientAuthMode(), false);
@@ -791,8 +792,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
             button.removeActionListener(previousActionListener);
             button.addActionListener(e -> testTlsConnection(previousActionListener, e, transport));
         } else {
-            var message = "No test connection button found in settings panel %s".formatted(settingsPanel);
-            log(message);
+            log.warn("No test connection button found in settings panel {}", settingsPanel);
         }
     }
 
@@ -815,8 +815,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
             testLocationConnectionButton.removeActionListener(previousLocationActionListener);
             testLocationConnectionButton.addActionListener(e -> testWsTlsConnection(previousLocationActionListener, e, false));
         } else {
-            var message = "No Get Operations button found in settings panel %s".formatted(settingsPanel);
-            log(message);
+            log.warn("No Test Connection button found in settings panel {}", settingsPanel);
         }
 
         var getOperationsButtons = getButtonsByText("Get Operations");
@@ -831,8 +830,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
             button.removeActionListener(previousActionListener);
             button.addActionListener(e -> getOperations(previousActionListener, e));
         } else {
-            var message = "No Get Operations button found in settings panel %s".formatted(settingsPanel);
-            log(message);
+            log.warn("No Get Operations button found in settings panel {}", settingsPanel);
         }
     }
 
@@ -923,8 +921,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
-            // Should not happen?
+            log.error("Error testing TLS connection", e);
         }
     }
 
@@ -990,7 +987,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                             wsProperties.getPassword()
                         );
                 } catch (ClientException e) {
-                    // Should not happen
+                    log.error("Error retrieving cached WSDL definition map", e);
                 }
             }
         };
@@ -1010,7 +1007,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                     wsProperties
                 );
         } catch (ClientException e) {
-            // Should not happen
+            log.error("Error getting operations", e);
         }
     }
 
@@ -1063,9 +1060,5 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         };
 
         worker.execute();
-    }
-
-    protected static void log(String message) {
-        System.out.printf("%s - %s.%n", Instant.now(), message);
     }
 }
