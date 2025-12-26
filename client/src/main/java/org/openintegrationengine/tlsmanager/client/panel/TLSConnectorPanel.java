@@ -18,12 +18,14 @@ import com.mirth.connect.client.ui.components.MirthTextField;
 import com.mirth.connect.client.ui.panels.connectors.ConnectorSettingsPanel;
 import com.mirth.connect.client.ui.panels.connectors.ResponseHandler;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
+import com.mirth.connect.connectors.http.HttpListener;
 import com.mirth.connect.connectors.http.HttpSender;
 import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
 import com.mirth.connect.connectors.tcp.TcpListener;
 import com.mirth.connect.connectors.tcp.TcpSender;
 import com.mirth.connect.connectors.ws.DefinitionServiceMap;
 import com.mirth.connect.connectors.ws.WebServiceDispatcherProperties;
+import com.mirth.connect.connectors.ws.WebServiceListener;
 import com.mirth.connect.connectors.ws.WebServiceSender;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
@@ -130,6 +132,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
      */
     private TLSConnectorProperties properties;
     private boolean isServerMode;
+    private Transport transport;
     private final ResponseHandler responseHandler;
 
     protected final ImageIcon wrenchIcon;
@@ -139,6 +142,10 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
     protected Set<String> clientCertificates;
     protected Set<String> supportedProtocols;
     protected Set<String> supportedCiphers;
+
+    protected List<Component> generalLayoutComponents;
+    protected List<Component> serverModeLayoutComponents;
+    protected List<Component> clientModeLayoutComponents;
 
     private enum Transport {
         HTTP, TCP, WS
@@ -153,7 +160,11 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         this.supportedProtocols = new HashSet<>();
         this.supportedCiphers = new HashSet<>();
 
-        this.properties = new TLSConnectorProperties();
+        this.generalLayoutComponents = new ArrayList<>();
+        this.serverModeLayoutComponents = new ArrayList<>();
+        this.clientModeLayoutComponents = new ArrayList<>();
+
+        this.properties = getDefaults();
         this.isServerMode = false;
 
         this.responseHandler = new ResponseHandler() {
@@ -174,28 +185,42 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         fetchData();
     }
 
+    private void attemptDetermineTransportAndDirectionality() {
+        var settingsPanel = connectorPanel.getConnectorSettingsPanel();
+
+        if (settingsPanel instanceof TcpSender tcpSender) {
+            transport = Transport.TCP;
+            isServerMode = tcpSender.modeServerRadio.isSelected();
+        } else if (settingsPanel instanceof TcpListener tcpListener) {
+            transport = Transport.TCP;
+            isServerMode = tcpListener.modeServerRadio.isSelected();
+        } else if (settingsPanel instanceof HttpSender) {
+            transport = Transport.HTTP;
+            isServerMode = false;
+        } else if (settingsPanel instanceof HttpListener) {
+            transport = Transport.HTTP;
+            isServerMode = true;
+        } else if (settingsPanel instanceof WebServiceSender) {
+            transport = Transport.WS;
+            isServerMode = false;
+        } else if (settingsPanel instanceof WebServiceListener) {
+            transport = Transport.WS;
+            isServerMode = true;
+        } else {
+            throw new IllegalArgumentException("Unsupported settings panel type: " + settingsPanel.getClass().getName());
+        }
+
+        log.info("Determined transport: {}; isServerMode {}", transport, isServerMode);
+    }
+
     protected void handleManagerEnabledButton(boolean managerEnabled) {
         properties.setTlsManagerEnabled(managerEnabled);
 
-        subjectDnValidationLabel.setEnabled(managerEnabled);
-        subjectDnValidationModeComboBox.setEnabled(managerEnabled);
+        generalLayoutComponents.forEach(component -> component.setEnabled(managerEnabled));
+
         subjectDnValidationFilterTextField.setEnabled(
             managerEnabled && properties.getSubjectDnValidationMode() != SubjectDnValidationMode.NONE
         );
-
-        crlModeLabel.setEnabled(managerEnabled);
-        crlModeComboBox.setEnabled(managerEnabled);
-
-        ocspModeLabel.setEnabled(managerEnabled);
-        ocspModeComboBox.setEnabled(managerEnabled);
-
-        protocolsLabel.setEnabled(managerEnabled);
-        protocolsButton.setEnabled(managerEnabled);
-        protocolsText.setEnabled(managerEnabled);
-
-        ciphersLabel.setEnabled(managerEnabled);
-        ciphersButton.setEnabled(managerEnabled);
-        ciphersText.setEnabled(managerEnabled);
 
         if (isServerMode) {
             handleManagerEnabledButtonClientMode(false);
@@ -207,32 +232,11 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
     }
 
     private void handleManagerEnabledButtonClientMode(boolean managerEnabled) {
-        serverCertificateValidationLabel.setEnabled(managerEnabled);
-        serverCertificateValidationRadioYes.setEnabled(managerEnabled);
-        serverCertificateValidationRadioNo.setEnabled(managerEnabled);
-
-        trustedServerCertsLabel.setEnabled(managerEnabled);
-        trustedServerCertsButton.setEnabled(managerEnabled);
-        trustedServerCertsText.setEnabled(managerEnabled);
-
-        hostnameValidationLabel.setEnabled(managerEnabled);
-        hostnameValidationRadioYes.setEnabled(managerEnabled);
-        hostnameValidationRadioNo.setEnabled(managerEnabled);
-
-        clientCertLabel.setEnabled(managerEnabled);
-        clientCertButton.setEnabled(managerEnabled);
-        clientCertText.setEnabled(managerEnabled);
+        clientModeLayoutComponents.forEach(component -> component.setEnabled(managerEnabled));
     }
 
     private void handleManagerEnabledButtonServerMode(boolean managerEnabled) {
-        serverCertificateLabel.setEnabled(managerEnabled);
-        serverCertificateButton.setEnabled(managerEnabled);
-        serverCertificateText.setEnabled(managerEnabled);
-
-        clientAuthLabel.setEnabled(managerEnabled);
-        clientAuthRadioNone.setEnabled(managerEnabled);
-        clientAuthRadioRequested.setEnabled(managerEnabled);
-        clientAuthRadioRequired.setEnabled(managerEnabled);
+        serverModeLayoutComponents.forEach(component -> component.setEnabled(managerEnabled));
 
         if (managerEnabled) {
             handleClientAuthModeChange(properties.getClientAuthMode(), false);
@@ -371,6 +375,17 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
             fetchData();
             redrawState();
             handleManagerEnabledButton(tlsConnectorProperties.isTlsManagerEnabled());
+
+            attemptDetermineTransportAndDirectionality();
+            generalLayoutComponents.forEach(component -> component.setVisible(true));
+
+            if (transport == Transport.TCP) {
+                serverModeLayoutComponents.forEach(component -> component.setVisible(true));
+                clientModeLayoutComponents.forEach(component -> component.setVisible(true));
+            } else {
+                serverModeLayoutComponents.forEach(component -> component.setVisible(isServerMode));
+                clientModeLayoutComponents.forEach(component -> component.setVisible(!isServerMode));
+            }
         }
     }
 
@@ -408,8 +423,8 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         setBackground(UIConstants.BACKGROUND_COLOR);
 
         managerEnabledLabel = new JLabel("Use TLS Manager:");
-        var managerEnabledButtonGroup = new ButtonGroup();
 
+        var managerEnabledButtonGroup = new ButtonGroup();
         managerEnabledRadioYes = new MirthRadioButton();
         managerEnabledRadioYes.setText("Yes");
         managerEnabledRadioYes.setBackground(Color.white);
@@ -431,10 +446,13 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         };
 
         subjectDnValidationLabel = new JLabel("Subject DN Validation Mode:");
+        generalLayoutComponents.add(subjectDnValidationLabel);
+
         subjectDnValidationModeComboBox = new MirthComboBox<>();
         subjectDnValidationModeComboBox.setRenderer(comboBoxRenderer);
         subjectDnValidationModeComboBox.setModel(new DefaultComboBoxModel<>(subjectDnValidationModeModel));
         subjectDnValidationModeComboBox.addActionListener(evt -> handleSubjectDnValidationModeChange());
+        generalLayoutComponents.add(subjectDnValidationModeComboBox);
 
         subjectDnValidationFilterTextField = new MirthTextField();
         subjectDnValidationFilterTextField.addKeyListener(new KeyAdapter() {
@@ -443,6 +461,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 properties.setSubjectDnValidationFilter(subjectDnValidationFilterTextField.getText());
             }
         });
+        generalLayoutComponents.add(subjectDnValidationFilterTextField);
 
         final var revocationModeModel = new RevocationMode[]{
             RevocationMode.DISABLED,
@@ -451,18 +470,26 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         };
 
         crlModeLabel = new JLabel("CRL Mode:");
+        generalLayoutComponents.add(crlModeLabel);
+
         crlModeComboBox = new MirthComboBox<>();
         crlModeComboBox.setRenderer(comboBoxRenderer);
         crlModeComboBox.setModel(new DefaultComboBoxModel<>(revocationModeModel));
         crlModeComboBox.addActionListener(evt -> handleCrlModeChange());
+        generalLayoutComponents.add(crlModeComboBox);
 
         ocspModeLabel = new JLabel("OCSP Mode:");
+        generalLayoutComponents.add(ocspModeLabel);
+
         ocspModeComboBox = new MirthComboBox<>();
         ocspModeComboBox.setRenderer(comboBoxRenderer);
         ocspModeComboBox.setModel(new DefaultComboBoxModel<>(revocationModeModel));
         ocspModeComboBox.addActionListener(evt -> handleOcspModeChange());
+        generalLayoutComponents.add(ocspModeComboBox);
 
         protocolsLabel = new JLabel("Enabled Protocols:");
+        generalLayoutComponents.add(protocolsLabel);
+
         protocolsButton = new JButton(wrenchIcon);
         protocolsButton.addActionListener(e -> {
             BiConsumer<Boolean, Set<String>> completionConsumer = (trustDefaultProtocols, selectedProtocols) -> {
@@ -487,10 +514,14 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 completionConsumer
             );
         });
+        generalLayoutComponents.add(protocolsButton);
 
         protocolsText = new JLabel();
+        generalLayoutComponents.add(protocolsText);
 
         ciphersLabel = new JLabel("Enabled Ciphers:");
+        generalLayoutComponents.add(ciphersLabel);
+
         ciphersButton = new JButton(wrenchIcon);
         ciphersButton.addActionListener(e -> {
             BiConsumer<Boolean, Set<String>> completionConsumer = (trustDefaultCiphers, selectedCiphers) -> {
@@ -515,15 +546,22 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 completionConsumer
             );
         });
+        generalLayoutComponents.add(ciphersButton);
 
         ciphersText = new JLabel();
+        generalLayoutComponents.add(ciphersText);
 
         initClientModeComponents();
         initServerModeComponents();
+
+        clientModeLayoutComponents.forEach(component -> component.setVisible(false));
+        serverModeLayoutComponents.forEach(component -> component.setVisible(false));
     }
 
     private void initClientModeComponents() {
         serverCertificateValidationLabel = new JLabel("Server Certificate Validation:");
+        clientModeLayoutComponents.add(serverCertificateValidationLabel);
+
         final var serverCertificateValidationButtonGroup = new ButtonGroup();
 
         serverCertificateValidationRadioYes = new MirthRadioButton();
@@ -531,14 +569,18 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         serverCertificateValidationRadioYes.setText("Enabled");
         serverCertificateValidationRadioYes.addActionListener(e -> properties.setServerCertificateValidationEnabled(true));
         serverCertificateValidationButtonGroup.add(serverCertificateValidationRadioYes);
+        clientModeLayoutComponents.add(serverCertificateValidationRadioYes);
 
         serverCertificateValidationRadioNo = new MirthRadioButton();
         serverCertificateValidationRadioNo.setBackground(Color.white);
         serverCertificateValidationRadioNo.setText("Disabled");
         serverCertificateValidationRadioNo.addActionListener(e -> properties.setServerCertificateValidationEnabled(false));
         serverCertificateValidationButtonGroup.add(serverCertificateValidationRadioNo);
+        clientModeLayoutComponents.add(serverCertificateValidationRadioNo);
 
         trustedServerCertsLabel = new JLabel("Trusted Server Certificates:");
+        clientModeLayoutComponents.add(trustedServerCertsLabel);
+
         trustedServerCertsButton = new JButton(wrenchIcon);
         trustedServerCertsButton.addActionListener(e -> {
             BiConsumer<Boolean, Set<String>> completionConsumer = (isTrustSystemTrustStoreEnabled, selectedCerts) -> {
@@ -558,10 +600,14 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 completionConsumer
             );
         });
+        clientModeLayoutComponents.add(trustedServerCertsButton);
 
         trustedServerCertsText = new JLabel("Trusting some certs as a placeholder");
+        clientModeLayoutComponents.add(trustedServerCertsText);
 
         hostnameValidationLabel = new JLabel("Hostname verification:");
+        clientModeLayoutComponents.add(hostnameValidationLabel);
+
         final var hostnameValidationButtonGroup = new ButtonGroup();
 
         hostnameValidationRadioYes = new MirthRadioButton();
@@ -569,14 +615,18 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         hostnameValidationRadioYes.setText("Enabled");
         hostnameValidationRadioYes.addActionListener(e -> properties.setHostnameVerificationEnabled(true));
         hostnameValidationButtonGroup.add(hostnameValidationRadioYes);
+        clientModeLayoutComponents.add(hostnameValidationRadioYes);
 
         hostnameValidationRadioNo = new MirthRadioButton();
         hostnameValidationRadioNo.setBackground(Color.white);
         hostnameValidationRadioNo.setText("Disabled");
         hostnameValidationRadioNo.addActionListener(e -> properties.setHostnameVerificationEnabled(false));
         hostnameValidationButtonGroup.add(hostnameValidationRadioNo);
+        clientModeLayoutComponents.add(hostnameValidationRadioNo);
 
         clientCertLabel = new JLabel("Client Certificate:");
+        clientModeLayoutComponents.add(clientCertLabel);
+
         clientCertButton = new JButton(wrenchIcon);
         clientCertButton.addActionListener(e -> {
             BiConsumer<Boolean, Set<String>> completionConsumer = (unused, selectedCertificate) -> {
@@ -599,12 +649,19 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 completionConsumer
             );
         });
+        clientModeLayoutComponents.add(clientCertButton);
+
         clientCertText = new JLabel();
+        clientModeLayoutComponents.add(clientCertText);
     }
 
     protected void initServerModeComponents() {
         serverCertificateLabel = new JLabel("Server Certificate:");
+        serverModeLayoutComponents.add(serverCertificateLabel);
+
         serverCertificateButton = new JButton(wrenchIcon);
+        serverModeLayoutComponents.add(serverCertificateButton);
+
         serverCertificateButton.addActionListener(e -> {
             BiConsumer<Boolean, Set<String>> completionConsumer = (unused, selectedCertificate) -> {
                 var selectedAlias = selectedCertificate.stream().findFirst().orElse(null);
@@ -626,9 +683,13 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 completionConsumer
             );
         });
+        serverModeLayoutComponents.add(serverCertificateButton);
+
         serverCertificateText = new JLabel();
+        serverModeLayoutComponents.add(serverCertificateText);
 
         clientAuthLabel = new JLabel("Client Authentication Mode");
+        serverModeLayoutComponents.add(clientAuthLabel);
 
         final var clientAuthModeButtonGroup = new ButtonGroup();
         clientAuthRadioNone = new MirthRadioButton();
@@ -636,20 +697,25 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         clientAuthRadioNone.setBackground(Color.white);
         clientAuthRadioNone.addActionListener(e -> handleClientAuthModeChange(ClientAuthMode.NONE, true));
         clientAuthModeButtonGroup.add(clientAuthRadioNone);
+        serverModeLayoutComponents.add(clientAuthRadioNone);
 
         clientAuthRadioRequested = new MirthRadioButton();
         clientAuthRadioRequested.setText("Requested");
         clientAuthRadioRequested.setBackground(Color.white);
         clientAuthRadioRequested.addActionListener(e -> handleClientAuthModeChange(ClientAuthMode.REQUESTED, true));
         clientAuthModeButtonGroup.add(clientAuthRadioRequested);
+        serverModeLayoutComponents.add(clientAuthRadioRequested);
 
         clientAuthRadioRequired = new MirthRadioButton();
         clientAuthRadioRequired.setText("Required");
         clientAuthRadioRequired.setBackground(Color.white);
         clientAuthRadioRequired.addActionListener(e -> handleClientAuthModeChange(ClientAuthMode.REQUIRED, true));
         clientAuthModeButtonGroup.add(clientAuthRadioRequired);
+        serverModeLayoutComponents.add(clientAuthRadioRequired);
 
         trustedClientCertsLabel = new JLabel("Trusted Client Certificates:");
+        serverModeLayoutComponents.add(trustedClientCertsLabel);
+
         trustedClientCertsButton = new JButton(wrenchIcon);
         trustedClientCertsButton.addActionListener(e -> {
             BiConsumer<Boolean, Set<String>> completionConsumer = (isTrustSystemTrustStoreEnabled, selectedCertificates) -> {
@@ -674,7 +740,10 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 completionConsumer
             );
         });
+        serverModeLayoutComponents.add(trustedClientCertsButton);
+
         trustedClientCertsText = new JLabel();
+        serverModeLayoutComponents.add(trustedClientCertsText);
     }
 
     protected void initLayout() {
