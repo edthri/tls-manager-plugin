@@ -16,7 +16,8 @@ function main() {
   echo "   Building jars..."
   echo
   echo "########################################"
-  mvn install package -DskipTests
+  local shortHash=$(git rev-parse --short HEAD)
+  mvn install package -DskipTests -Dgit.hash="$shortHash"
 
   PLUGIN_PATH=$(mvn exec:exec --non-recursive --quiet -Dexec.executable="echo" -Dexec.args='${mirth.plugin.path}')
   ARTIFACT_ID=$(mvn exec:exec --non-recursive --quiet -Dexec.executable="echo" -Dexec.args='${project.artifactId}')
@@ -42,7 +43,7 @@ function main() {
   echo "   Generating plugin.xml..."
   echo
   echo "########################################"
-  mvn -N com.kaurpalang:mirth-plugin-maven-plugin:3.0.0:generate-plugin-xml
+  mvn -N com.kaurpalang:mirth-plugin-maven-plugin:3.0.0:generate-plugin-xml -Dgit.hash="$shortHash"
 
   mv plugin.xml "$STAGING_DIR"
 
@@ -55,7 +56,7 @@ function main() {
 
   pushd target
   mv staging "$PLUGIN_PATH"
-  zip -r "$PLUGIN_PATH" "$PLUGIN_PATH"
+  zip -r "$PLUGIN_PATH-$shortHash" "$PLUGIN_PATH"
   popd
 }
 
