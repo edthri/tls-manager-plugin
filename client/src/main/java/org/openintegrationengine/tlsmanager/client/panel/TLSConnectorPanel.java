@@ -6,10 +6,15 @@
 package org.openintegrationengine.tlsmanager.client.panel;
 
 import com.mirth.connect.client.core.ClientException;
+import com.mirth.connect.client.ui.AbstractConnectorPropertiesPanel;
 import com.mirth.connect.client.ui.ConnectorTypeDecoration;
+import com.mirth.connect.client.ui.Frame;
 import com.mirth.connect.client.ui.PlatformUI;
+import com.mirth.connect.client.ui.UIConstants;
+import com.mirth.connect.client.ui.components.MirthComboBox;
 import com.mirth.connect.client.ui.components.MirthEditableComboBox;
 import com.mirth.connect.client.ui.components.MirthRadioButton;
+import com.mirth.connect.client.ui.components.MirthTextField;
 import com.mirth.connect.client.ui.panels.connectors.ConnectorSettingsPanel;
 import com.mirth.connect.client.ui.panels.connectors.ResponseHandler;
 import com.mirth.connect.connectors.http.HttpDispatcherProperties;
@@ -23,7 +28,10 @@ import com.mirth.connect.connectors.ws.WebServiceSender;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.model.Connector;
+import com.mirth.connect.util.MirthSSLUtil;
+import net.miginfocom.swing.MigLayout;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
+import org.openintegrationengine.tlsmanager.client.misc.DisplayTextEnumModeComboBoxRenderer;
 import org.openintegrationengine.tlsmanager.client.misc.SwingMagic;
 import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
 import org.openintegrationengine.tlsmanager.shared.models.ConnectionTestResult;
@@ -33,22 +41,53 @@ import org.openintegrationengine.tlsmanager.shared.properties.TLSConnectorProper
 import org.openintegrationengine.tlsmanager.shared.servlet.TLSServletInterface;
 
 import javax.swing.ButtonGroup;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.SwingWorker;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
+public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
+
+    /*
+    Base UI components
+     */
+    protected JLabel managerEnabledLabel;
+    protected MirthRadioButton managerEnabledRadioYes;
+    protected MirthRadioButton managerEnabledRadioNo;
+
+    protected JLabel subjectDnValidationLabel;
+    protected MirthComboBox<SubjectDnValidationMode> subjectDnValidationModeComboBox;
+    protected MirthTextField subjectDnValidationFilterTextField;
+
+    protected JLabel crlModeLabel;
+    protected MirthComboBox<RevocationMode> crlModeComboBox;
+
+    protected JLabel ocspModeLabel;
+    protected MirthComboBox<RevocationMode> ocspModeComboBox;
+
+    protected JLabel protocolsLabel;
+    protected JButton protocolsButton;
+    protected JLabel protocolsText;
+
+    protected JLabel ciphersLabel;
+    protected JButton ciphersButton;
+    protected JLabel ciphersText;
 
     /*
     Client mode UI components
@@ -92,11 +131,27 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
     private boolean isServerMode;
     private final ResponseHandler responseHandler;
 
+    protected final ImageIcon wrenchIcon;
+    protected final Frame parentFrame;
+
+    protected Set<String> publicCertificates;
+    protected Set<String> clientCertificates;
+    protected Set<String> supportedProtocols;
+    protected Set<String> supportedCiphers;
+
     private enum Transport {
         HTTP, TCP, WS
     }
 
     public TLSConnectorPanel() {
+        this.wrenchIcon = new ImageIcon(Frame.class.getResource("images/wrench.png"));
+        this.parentFrame = PlatformUI.MIRTH_FRAME;
+
+        this.publicCertificates = new HashSet<>();
+        this.clientCertificates = new HashSet<>();
+        this.supportedProtocols = new HashSet<>();
+        this.supportedCiphers = new HashSet<>();
+
         this.properties = new TLSConnectorProperties();
         this.isServerMode = false;
 
@@ -118,7 +173,6 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
         fetchData();
     }
 
-    @Override
     protected void handleManagerEnabledButton(boolean managerEnabled) {
         properties.setTlsManagerEnabled(managerEnabled);
 
@@ -188,21 +242,18 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
         }
     }
 
-    @Override
     protected void handleCrlModeChange() {
         if (crlModeComboBox.getSelectedItem() instanceof RevocationMode revocationMode) {
             properties.setCrlMode(revocationMode);
         }
     }
 
-    @Override
     protected void handleOcspModeChange() {
         if (ocspModeComboBox.getSelectedItem() instanceof RevocationMode revocationMode) {
             properties.setOcspMode(revocationMode);
         }
     }
 
-    @Override
     protected void handleSubjectDnValidationModeChange() {
         if (subjectDnValidationModeComboBox.getSelectedItem() instanceof SubjectDnValidationMode validationMode) {
             properties.setSubjectDnValidationMode(validationMode);
@@ -221,7 +272,6 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
         trustedClientCertsText.setEnabled(issuerSelectorEnabled);
     }
 
-    @Override
     protected void redrawState() {
         if (properties.isTlsManagerEnabled()) {
             managerEnabledRadioYes.setSelected(true);
@@ -353,10 +403,39 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
         return new ConnectorTypeDecoration(Connector.Mode.DESTINATION);
     }
 
-    @Override
     protected void initComponents() {
-        super.initComponents();
+        setBackground(UIConstants.BACKGROUND_COLOR);
 
+        managerEnabledLabel = new JLabel("Use TLS Manager:");
+        var managerEnabledButtonGroup = new ButtonGroup();
+
+        managerEnabledRadioYes = new MirthRadioButton();
+        managerEnabledRadioYes.setText("Yes");
+        managerEnabledRadioYes.setBackground(Color.white);
+        managerEnabledRadioYes.addActionListener(e -> handleManagerEnabledButton(true));
+        managerEnabledButtonGroup.add(managerEnabledRadioYes);
+
+        managerEnabledRadioNo = new MirthRadioButton();
+        managerEnabledRadioNo.setText("No");
+        managerEnabledRadioNo.setBackground(Color.white);
+        managerEnabledRadioNo.addActionListener(e -> handleManagerEnabledButton(false));
+        managerEnabledButtonGroup.add(managerEnabledRadioNo);
+
+        var comboBoxRenderer = new DisplayTextEnumModeComboBoxRenderer();
+
+        final var subjectDnValidationModeModel = new SubjectDnValidationMode[]{
+            SubjectDnValidationMode.NONE,
+            SubjectDnValidationMode.PARTIAL,
+            SubjectDnValidationMode.EXACT,
+        };
+
+        subjectDnValidationLabel = new JLabel("Subject DN Validation Mode:");
+        subjectDnValidationModeComboBox = new MirthComboBox<>();
+        subjectDnValidationModeComboBox.setRenderer(comboBoxRenderer);
+        subjectDnValidationModeComboBox.setModel(new DefaultComboBoxModel<>(subjectDnValidationModeModel));
+        subjectDnValidationModeComboBox.addActionListener(evt -> handleSubjectDnValidationModeChange());
+
+        subjectDnValidationFilterTextField = new MirthTextField();
         subjectDnValidationFilterTextField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
@@ -364,6 +443,26 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
             }
         });
 
+        final var revocationModeModel = new RevocationMode[]{
+            RevocationMode.DISABLED,
+            RevocationMode.SOFT_FAIL,
+            RevocationMode.HARD_FAIL
+        };
+
+        crlModeLabel = new JLabel("CRL Mode:");
+        crlModeComboBox = new MirthComboBox<>();
+        crlModeComboBox.setRenderer(comboBoxRenderer);
+        crlModeComboBox.setModel(new DefaultComboBoxModel<>(revocationModeModel));
+        crlModeComboBox.addActionListener(evt -> handleCrlModeChange());
+
+        ocspModeLabel = new JLabel("OCSP Mode:");
+        ocspModeComboBox = new MirthComboBox<>();
+        ocspModeComboBox.setRenderer(comboBoxRenderer);
+        ocspModeComboBox.setModel(new DefaultComboBoxModel<>(revocationModeModel));
+        ocspModeComboBox.addActionListener(evt -> handleOcspModeChange());
+
+        protocolsLabel = new JLabel("Enabled Protocols:");
+        protocolsButton = new JButton(wrenchIcon);
         protocolsButton.addActionListener(e -> {
             BiConsumer<Boolean, Set<String>> completionConsumer = (trustDefaultProtocols, selectedProtocols) -> {
                 properties.setUseServerDefaultProtocols(trustDefaultProtocols);
@@ -388,6 +487,10 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
             );
         });
 
+        protocolsText = new JLabel();
+
+        ciphersLabel = new JLabel("Enabled Ciphers:");
+        ciphersButton = new JButton(wrenchIcon);
         ciphersButton.addActionListener(e -> {
             BiConsumer<Boolean, Set<String>> completionConsumer = (trustDefaultCiphers, selectedCiphers) -> {
                 properties.setUseServerDefaultCiphers(trustDefaultCiphers);
@@ -411,6 +514,8 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
                 completionConsumer
             );
         });
+
+        ciphersText = new JLabel();
 
         initClientModeComponents();
         initServerModeComponents();
@@ -571,9 +676,30 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
         trustedClientCertsText = new JLabel();
     }
 
-    @Override
     protected void initLayout() {
-        super.initLayout();
+        setLayout(new MigLayout("insets 0, novisualpadding, hidemode 3", "[]12[]", ""));
+
+        add(managerEnabledLabel, "newline, right");
+        add(managerEnabledRadioYes, "split");
+        add(managerEnabledRadioNo);
+
+        add(subjectDnValidationLabel, "newline, right");
+        add(subjectDnValidationModeComboBox, "split");
+        add(subjectDnValidationFilterTextField, "w 168!");
+
+        add(crlModeLabel, "newline, right");
+        add(crlModeComboBox);
+
+        add(ocspModeLabel, "newline, right");
+        add(ocspModeComboBox);
+
+        add(protocolsLabel, "newline, right");
+        add(protocolsButton, "h 22!, w 22!, split");
+        add(protocolsText);
+
+        add(ciphersLabel, "newline, right");
+        add(ciphersButton, "h 22!, w 22!, split");
+        add(ciphersText);
 
         initClientModeLayout();
         initServerModeLayout();
@@ -899,5 +1025,47 @@ public class TLSConnectorPanel extends AbstractTLSConnectorPropertiesPanel {
             .map(component -> (JButton) component)
             .filter(button -> button.getText().equals(text))
             .toList();
+    }
+
+    protected void fetchData() {
+        final var workerId = PlatformUI.MIRTH_FRAME.startWorking("Fetching data...");
+
+        var worker = new SwingWorker<Void, Void>() {
+            private Set<String> publicCertAliasSet;
+            private Set<String> clientCertAliasSet;
+            private Map<String, String[]> cryptoMap;
+
+            public Void doInBackground() {
+                try {
+                    publicCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getPublicCertificates();
+                    clientCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
+                    cryptoMap = PlatformUI.MIRTH_FRAME.mirthClient.getProtocolsAndCipherSuites();
+                } catch (Exception e) {
+                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported certificates failed");
+                }
+
+                return null;
+            }
+
+            public void done() {
+                clientCertificates = clientCertAliasSet;
+                publicCertificates = publicCertAliasSet;
+                supportedProtocols = Set.of(
+                    cryptoMap.get(MirthSSLUtil.KEY_ENABLED_SERVER_PROTOCOLS)
+                );
+
+                supportedCiphers = Set.of(
+                    cryptoMap.get(MirthSSLUtil.KEY_ENABLED_CIPHER_SUITES)
+                );
+
+                PlatformUI.MIRTH_FRAME.stopWorking(workerId);
+            }
+        };
+
+        worker.execute();
+    }
+
+    protected static void log(String message) {
+        System.out.printf("%s - %s.%n", Instant.now(), message);
     }
 }
