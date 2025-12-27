@@ -93,7 +93,9 @@ public class StateAwareTLSSocket extends Socket implements StateAwareSocketInter
 
     @Override
     public void close() throws IOException {
+        log.debug("Closing TLS socket");
         if (isClosing) {
+            log.debug("Prevented re-entry");
             // Prevent re-entry when sslSocket tries to close the underlying socket
             super.close();
             return;
@@ -102,11 +104,14 @@ public class StateAwareTLSSocket extends Socket implements StateAwareSocketInter
         isClosing = true;
         try {
             if (delegate != null) {
+                log.debug("Closing delegate socket");
                 delegate.close();
             } else {
+                log.debug("Closing self socket");
                 super.close();
             }
         } finally {
+            log.debug("Resetting closing flag");
             isClosing = false;
         }
     }
@@ -145,5 +150,10 @@ public class StateAwareTLSSocket extends Socket implements StateAwareSocketInter
     @Override
     public SocketAddress getRemoteSocketAddress() {
         return delegate == null ? super.getRemoteSocketAddress() : delegate.getRemoteSocketAddress();
+    }
+
+    @Override
+    public boolean isConnected() {
+        return delegate != null ? delegate.isConnected() : super.isConnected();
     }
 }
