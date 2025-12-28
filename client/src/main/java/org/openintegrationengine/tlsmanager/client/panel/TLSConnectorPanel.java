@@ -395,8 +395,77 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
     }
 
     @Override
-    public boolean checkProperties(ConnectorProperties connectorProperties, ConnectorPluginProperties connectorPluginProperties, Connector.Mode mode, String s, boolean b) {
-        return true;
+    public boolean checkProperties(ConnectorProperties connectorProperties, ConnectorPluginProperties connectorPluginProperties, Connector.Mode mode, String s, boolean shouldHighlight) {
+        boolean isValid = true;
+
+        if (properties.getSubjectDnValidationMode() != SubjectDnValidationMode.NONE) {
+            final var filter = properties.getSubjectDnValidationFilter();
+            if (filter == null || filter.isBlank()) {
+                isValid = false;
+
+                if (shouldHighlight) {
+                    subjectDnValidationFilterTextField.setBackground(UIConstants.INVALID_COLOR);
+                }
+            }
+        }
+
+        if (!properties.isUseServerDefaultProtocols() && properties.getUsedProtocols().isEmpty()) {
+            isValid = false;
+
+            if (shouldHighlight) {
+                protocolsButton.setBackground(UIConstants.INVALID_COLOR);
+            }
+        }
+
+        if (!properties.isUseServerDefaultCiphers() && properties.getUsedCiphers().isEmpty()) {
+            isValid = false;
+
+            if (shouldHighlight) {
+                ciphersButton.setBackground(UIConstants.INVALID_COLOR);
+            }
+        }
+
+        if (isServerMode) {
+
+            final var serverCertAlias = properties.getServerCertificateAlias();
+            if (serverCertAlias == null || serverCertAlias.isBlank()) {
+                isValid = false;
+
+                if (shouldHighlight) {
+                    serverCertificateButton.setBackground(UIConstants.INVALID_COLOR);
+                }
+            }
+
+            if (
+                properties.getClientAuthMode() != ClientAuthMode.NONE
+                && properties.getTrustedServerCertificates().isEmpty()
+            ) {
+                isValid = false;
+
+                if (shouldHighlight) {
+                    trustedClientCertsButton.setBackground(UIConstants.INVALID_COLOR);
+                }
+            }
+        } else {
+            if (properties.getTrustedServerCertificates().isEmpty()) {
+                isValid = false;
+
+                if (shouldHighlight) {
+                    serverCertificateButton.setBackground(UIConstants.INVALID_COLOR);
+                }
+            }
+
+            final var clientCertAlias = properties.getClientCertificateAlias();
+            if (clientCertAlias == null || clientCertAlias.isBlank()) {
+                isValid = false;
+
+                if (shouldHighlight) {
+                    clientCertButton.setBackground(UIConstants.INVALID_COLOR);
+                }
+            }
+        }
+
+        return isValid;
     }
 
     @Override
@@ -404,6 +473,20 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         // This method seems to be called after other panels have been initialized.
         // We need other panels to be initialized 'cause we'll be fiddling with one.
         registerActionListeners();
+
+        // Reset validation error backgrounds for general components
+        subjectDnValidationFilterTextField.setBackground(null);
+        protocolsButton.setBackground(null);
+        ciphersButton.setBackground(null);
+        ciphersText.setBackground(null);
+
+        // Reset validation error backgrounds for server mode components
+        serverCertificateButton.setBackground(null);
+        trustedServerCertsButton.setBackground(null);
+
+        // Reset validation error backgrounds for server client components
+        serverCertificateButton.setBackground(null);
+        clientCertButton.setBackground(null);
     }
 
     @Override
