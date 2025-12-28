@@ -34,6 +34,7 @@ import com.mirth.connect.util.MirthSSLUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
 import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
+import org.openintegrationengine.tlsmanager.client.dialog.SingleSelectDialog;
 import org.openintegrationengine.tlsmanager.client.misc.DisplayTextEnumModeComboBoxRenderer;
 import org.openintegrationengine.tlsmanager.client.misc.SwingMagic;
 import org.openintegrationengine.tlsmanager.shared.models.ClientAuthMode;
@@ -63,6 +64,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 @Slf4j
 public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
@@ -712,23 +714,19 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
         clientCertButton = new JButton(wrenchIcon);
         clientCertButton.addActionListener(e -> {
-            BiConsumer<Boolean, Set<String>> completionConsumer = (unused, selectedCertificate) -> {
-                var selectedAlias = selectedCertificate.stream().findFirst().orElse(null);
+            Consumer<String> completionConsumer = (selectedAlias) -> {
                 properties.setClientCertificateAlias(selectedAlias);
-
                 redrawState();
                 PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
             };
 
-            Set<String> currentCerts = properties.getClientCertificateAlias() == null ?  Collections.emptySet() : Set.of(properties.getClientCertificateAlias());
+            var currentCerts = properties.getClientCertificateAlias() == null ? null : properties.getClientCertificateAlias();
 
-            new ItemPickerDialog(
+            new SingleSelectDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Client Certificate Picker",
                 clientCertificates,
                 currentCerts,
-                false,
-                null,
                 completionConsumer
             );
         });
