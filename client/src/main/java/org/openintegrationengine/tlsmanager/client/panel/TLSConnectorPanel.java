@@ -33,7 +33,7 @@ import com.mirth.connect.model.Connector;
 import com.mirth.connect.util.MirthSSLUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
-import org.openintegrationengine.tlsmanager.client.dialog.ItemPickerDialog;
+import org.openintegrationengine.tlsmanager.client.dialog.MultiSelectDialog;
 import org.openintegrationengine.tlsmanager.client.dialog.SingleSelectDialog;
 import org.openintegrationengine.tlsmanager.client.misc.DisplayTextEnumModeComboBoxRenderer;
 import org.openintegrationengine.tlsmanager.client.misc.SwingMagic;
@@ -581,7 +581,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
             };
 
-            new ItemPickerDialog(
+            new MultiSelectDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Protocols Picker",
                 supportedProtocols,
@@ -613,7 +613,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
             };
 
-            new ItemPickerDialog(
+            new MultiSelectDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Ciphers Picker",
                 supportedCiphers,
@@ -667,7 +667,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
             };
 
-            new ItemPickerDialog(
+            new MultiSelectDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Certificate Picker",
                 publicCertificates,
@@ -800,7 +800,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
             };
 
-            new ItemPickerDialog(
+            new MultiSelectDialog(
                 PlatformUI.MIRTH_FRAME,
                 "Trusted Client Certificates Picker",
                 publicCertificates,

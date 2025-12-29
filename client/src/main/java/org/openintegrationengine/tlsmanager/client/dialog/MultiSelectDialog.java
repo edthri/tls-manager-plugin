@@ -52,7 +52,7 @@ import java.util.function.BiConsumer;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
-public class ItemPickerDialog extends MirthDialog {
+public class MultiSelectDialog extends MirthDialog {
 
     private JPanel containerPanel;
 
@@ -81,7 +81,7 @@ public class ItemPickerDialog extends MirthDialog {
 
     private final BiConsumer<Boolean, Set<String>> onSaveConsumer;
 
-    public ItemPickerDialog(
+    public MultiSelectDialog(
         Window owner,
         String windowTitle,
         Set<String> allOptions,
