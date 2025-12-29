@@ -128,7 +128,7 @@ public class SocketFactoryService {
             ? MirthSSLUtil.getEnabledHttpsCipherSuites(configurationController.getHttpsCipherSuites())
             : MirthSSLUtil.getEnabledHttpsCipherSuites(properties.getUsedCiphers().toArray(new String[0]));
 
-        var hostnameVerificationStrategy = true // TODO
+        var hostnameVerificationStrategy = properties.isHostnameVerificationEnabled()
             ? SSLConnectionSocketFactory.getDefaultHostnameVerifier()
             : NoopHostnameVerifier.INSTANCE;
 
