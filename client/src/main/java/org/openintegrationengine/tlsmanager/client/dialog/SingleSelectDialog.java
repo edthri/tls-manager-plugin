@@ -5,138 +5,60 @@
 
 package org.openintegrationengine.tlsmanager.client.dialog;
 
-import com.mirth.connect.client.ui.Mirth;
-import com.mirth.connect.client.ui.MirthDialog;
 import com.mirth.connect.client.ui.RefreshTableModel;
 import com.mirth.connect.client.ui.UIConstants;
-import com.mirth.connect.client.ui.components.MirthTable;
 import net.miginfocom.swing.MigLayout;
-import org.apache.commons.lang3.StringUtils;
-import org.jdesktop.swingx.decorator.HighlighterFactory;
 
 import javax.swing.AbstractCellEditor;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
 import javax.swing.JTable;
-import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
-import javax.swing.RowFilter;
-import javax.swing.WindowConstants;
-import javax.swing.border.TitledBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
-import javax.swing.table.TableRowSorter;
-import java.awt.Color;
 import java.awt.Component;
-import java.awt.Font;
-import java.awt.Window;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Comparator;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.prefs.Preferences;
+import java.util.function.Supplier;
 
-public class SingleSelectDialog extends MirthDialog {
+public class SingleSelectDialog extends AbstractDialog {
 
-    private JPanel containerPanel;
-
-    private JLabel optionFilterLabel;
-    private JTextField optionFilterField;
-
-    private JScrollPane optionsScrollPane;
-    private MirthTable optionsTable;
-
-    private JButton okButton;
-    private JButton cancelButton;
-
-    private static final int SELECTED_COLUMN = 0;
-    private static final int NAME_COLUMN = 1;
-
-    private final Set<String> allOptions;
     private final String selectedOption;
 
     private final Consumer<String> onSaveConsumer;
 
+    private TableCellRenderer cellRenderer;
+
     public SingleSelectDialog(
-        Window owner,
         String windowTitle,
-        Set<String> allOptions,
         String selectedOption,
+        Supplier<Set<String>> dataSupplier,
         Consumer<String> onSaveConsumer
     ) {
-        super(owner, windowTitle, true);
+        super(windowTitle, dataSupplier);
 
-        if (allOptions == null) {
-            throw new IllegalArgumentException("allOptions cannot be null");
-        }
-
-        this.allOptions = allOptions;
         this.selectedOption = selectedOption;
-
         this.onSaveConsumer = onSaveConsumer;
 
-        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         initComponents();
         initLayout();
-        setProperties();
+
+        handleDataFetchResult(Set.of("Loading data..."));
+        fetchData();
+
         pack();
-        setLocationRelativeTo(getOwner());
         setVisible(true);
     }
 
-    private void initComponents() {
-        setBackground(UIConstants.BACKGROUND_COLOR);
-        getContentPane().setBackground(getBackground());
+    @Override
+    protected final void initComponents() {
+        super.initComponents();
 
-        containerPanel = new JPanel();
-        containerPanel.setBackground(getBackground());
-        containerPanel.setBorder(
-            BorderFactory.createTitledBorder(
-                BorderFactory.createMatteBorder(
-                    1, 1, 1, 1,
-                    new Color(204, 204, 204)
-                ),
-                "TLS settings",
-                TitledBorder.DEFAULT_JUSTIFICATION,
-                TitledBorder.DEFAULT_POSITION,
-                new Font(Font.SANS_SERIF, Font.BOLD, 11)
-            )
-        );
+        cellRenderer = new RadioCellEditorRenderer();
 
-        optionFilterLabel = new JLabel("Filter:");
-        optionFilterField = new JTextField();
-        optionFilterField.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void removeUpdate(DocumentEvent evt) {
-                filterChanged();
-            }
-
-            @Override
-            public void insertUpdate(DocumentEvent evt) {
-                filterChanged();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent evt) {
-                filterChanged();
-            }
-
-            private void filterChanged() {
-                optionsTable.getRowSorter().allRowsChanged();
-            }
-        });
-
-        optionsTable = new MirthTable();
-        optionsTable.setModel(new RefreshTableModel(new String[]{"", "Alias"}, 0) {
+        tableModel = new RefreshTableModel(new String[]{"", "Options"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -146,48 +68,9 @@ public class SingleSelectDialog extends MirthDialog {
             public Class<?> getColumnClass(int column) {
                 return column == SELECTED_COLUMN ? Boolean.class : String.class;
             }
-        });
-        optionsTable.setDragEnabled(false);
-        optionsTable.setRowSelectionAllowed(false);
-        optionsTable.setRowHeight(UIConstants.ROW_HEIGHT);
-        optionsTable.setFocusable(false);
-        optionsTable.setOpaque(true);
-        optionsTable.getTableHeader().setReorderingAllowed(false);
-        optionsTable.setEditable(true);
-        optionsTable.setSortable(true);
-
-        if (Preferences.userNodeForPackage(Mirth.class).getBoolean("highlightRows", true)) {
-            optionsTable.setHighlighters(HighlighterFactory.createAlternateStriping(UIConstants.HIGHLIGHTER_COLOR, UIConstants.BACKGROUND_COLOR));
-        }
-
-        var rowSorter = new TableRowSorter<>(optionsTable.getModel());
-        rowSorter.setComparator(0, (Comparator<Integer>) (o1, o2) -> {
-            // 0, 2, 1
-            if (Objects.equals(o1, o2)) {
-                return 0;
-            } else if (o1 == 0 || (o1 == 2 && o2 == 1)) {
-                return -1;
-            } else {
-                return 1;
-            }
-        });
-        optionsTable.setRowSorter(rowSorter);
-
-        var rowFilter = new RowFilter<TableModel, Integer>() {
-            @Override
-            public boolean include(Entry<? extends TableModel, ? extends Integer> entry) {
-                String name = entry.getStringValue(1);
-                return StringUtils.containsIgnoreCase(name, optionFilterField.getText());
-            }
         };
-        rowSorter.setRowFilter(rowFilter);
-        optionsTable.setRowFilter(rowFilter);
-
-        optionsTable.getColumnExt(SELECTED_COLUMN).setMinWidth(20);
-        optionsTable.getColumnExt(SELECTED_COLUMN).setMaxWidth(20);
-
-        var radioDelegate = new RadioCellEditorRenderer();
-        optionsTable.getColumnModel().getColumn(SELECTED_COLUMN).setCellRenderer(radioDelegate);
+        optionsTable.setModel(tableModel);
+        formatTable();
 
         optionsTable.addMouseListener(new MouseAdapter() {
             @Override
@@ -207,52 +90,40 @@ public class SingleSelectDialog extends MirthDialog {
 
         optionsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        optionsScrollPane = new JScrollPane(optionsTable);
-
-        okButton = new JButton("OK");
         okButton.addActionListener(evt -> {
             var selectedItem = getSelectedItem();
             onSaveConsumer.accept(selectedItem);
             dispose();
         });
-
-        cancelButton = new JButton("Cancel");
-        cancelButton.addActionListener(evt -> dispose());
     }
 
-    private void initLayout() {
-        setLayout(new MigLayout("insets 8, novisualpadding, hidemode 3, fill", "", "[grow][][]"));
-
-        containerPanel.setLayout(new MigLayout("insets 8, novisualpadding, hidemode 3, fill", "[]13[grow]", "[][][][][][][][][grow]"));
-
-        containerPanel.add(optionFilterLabel, "right, split 5");
-        containerPanel.add(optionFilterField, "w 100:350");
-        containerPanel.add(optionsScrollPane, "newline, grow 25, sx");
-
-        add(containerPanel, "grow, push");
-
-        add(new JSeparator(), "newline, growx, sx");
-
-        add(okButton, "newline, w 50!, sx, right, split");
-        add(cancelButton, "w 50!");
-    }
-
-    private void setProperties() {
-        var data = new Object[allOptions.size()][2];
-
-        int i = 0;
-        for (var option : allOptions) {
-            data[i][SELECTED_COLUMN] = option.equals(selectedOption);
-            data[i][NAME_COLUMN] = option;
-            i++;
-        }
-
-        ((RefreshTableModel) optionsTable.getModel()).refreshDataVector(data);
+    @Override
+    protected final void initLayout() {
+        super.initLayout();
     }
 
     private String getSelectedItem() {
         var selectedIndex = optionsTable.getSelectedModelIndex();
         return optionsTable.getModel().getValueAt(selectedIndex, NAME_COLUMN).toString();
+    }
+
+    @Override
+    protected void applyRenderers() {
+        optionsTable.getColumnExt(SELECTED_COLUMN).setCellRenderer(cellRenderer);
+    }
+
+    @Override
+    protected void handleDataFetchResult(Set<String> options) {
+        var data = new Object[options.size()][2];
+
+        int i = 0;
+        for (var option : options) {
+            data[i][SELECTED_COLUMN] = option.equals(selectedOption);
+            data[i][NAME_COLUMN] = option;
+            i++;
+        }
+
+        tableModel.refreshDataVector(data);
     }
 
     private static class RadioCellEditorRenderer extends AbstractCellEditor implements TableCellRenderer {

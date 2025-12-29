@@ -65,6 +65,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 @Slf4j
 public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
@@ -711,13 +712,14 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
             };
 
-            var currentCerts = properties.getClientCertificateAlias() == null ? null : properties.getClientCertificateAlias();
+            var currentCertificateAlias = properties.getClientCertificateAlias();
+
+            Supplier<Set<String>> dataSupplier = () -> PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
 
             new SingleSelectDialog(
-                PlatformUI.MIRTH_FRAME,
                 "Client Certificate Picker",
-                clientCertificates,
-                currentCerts,
+                currentCertificateAlias,
+                dataSupplier,
                 completionConsumer
             );
         });
