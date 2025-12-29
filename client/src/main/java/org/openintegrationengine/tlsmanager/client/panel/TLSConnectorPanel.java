@@ -737,23 +737,19 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         serverModeLayoutComponents.add(serverCertificateButton);
 
         serverCertificateButton.addActionListener(e -> {
-            BiConsumer<Boolean, Set<String>> completionConsumer = (unused, selectedCertificate) -> {
-                var selectedAlias = selectedCertificate.stream().findFirst().orElse(null);
+            Consumer<String> completionConsumer = (selectedAlias) -> {
                 properties.setServerCertificateAlias(selectedAlias);
-
                 redrawState();
                 PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
             };
 
-            Set<String> currentCerts = properties.getServerCertificateAlias() == null ?  Collections.emptySet() : Set.of(properties.getServerCertificateAlias());
+            var currentCertificateAlias = properties.getClientCertificateAlias();
+            Supplier<Set<String>> dataSupplier = () -> PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
 
-            new ItemPickerDialog(
-                PlatformUI.MIRTH_FRAME,
+            new SingleSelectDialog(
                 "Server Certificate Picker",
-                clientCertificates,
-                currentCerts,
-                false,
-                null,
+                currentCertificateAlias,
+                dataSupplier,
                 completionConsumer
             );
         });
