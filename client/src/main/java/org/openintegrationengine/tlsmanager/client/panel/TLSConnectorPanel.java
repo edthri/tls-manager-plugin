@@ -456,15 +456,6 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                     serverCertificateButton.setBackground(UIConstants.INVALID_COLOR);
                 }
             }
-
-            final var clientCertAlias = properties.getClientCertificateAlias();
-            if (clientCertAlias == null || clientCertAlias.isBlank()) {
-                isValid = false;
-
-                if (shouldHighlight) {
-                    clientCertButton.setBackground(UIConstants.INVALID_COLOR);
-                }
-            }
         }
 
         return isValid;
