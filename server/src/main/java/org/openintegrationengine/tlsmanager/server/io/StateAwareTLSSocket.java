@@ -146,14 +146,4 @@ public class StateAwareTLSSocket extends Socket implements StateAwareSocketInter
             }
         }
     }
-
-    @Override
-    public SocketAddress getRemoteSocketAddress() {
-        return delegate == null ? super.getRemoteSocketAddress() : delegate.getRemoteSocketAddress();
-    }
-
-    @Override
-    public boolean isConnected() {
-        return delegate != null ? delegate.isConnected() : super.isConnected();
-    }
 }
