@@ -60,12 +60,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
@@ -141,8 +143,6 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
     protected final ImageIcon wrenchIcon;
     protected final Frame parentFrame;
 
-    protected Set<String> publicCertificates;
-    protected Set<String> clientCertificates;
     protected Set<String> supportedProtocols;
     protected Set<String> supportedCiphers;
 
@@ -158,8 +158,6 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         this.wrenchIcon = new ImageIcon(Frame.class.getResource("images/wrench.png"));
         this.parentFrame = PlatformUI.MIRTH_FRAME;
 
-        this.publicCertificates = new HashSet<>();
-        this.clientCertificates = new HashSet<>();
         this.supportedProtocols = new HashSet<>();
         this.supportedCiphers = new HashSet<>();
 
@@ -581,14 +579,28 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
             };
 
+            Supplier<Set<String>> dataSupplier = () -> {
+                try {
+                    var cryptoMap = PlatformUI.MIRTH_FRAME.mirthClient.getProtocolsAndCipherSuites();
+                    var protocolArray = cryptoMap.get(MirthSSLUtil.KEY_ENABLED_SERVER_PROTOCOLS);
+                    var protocolSet = Set.of(protocolArray)
+                        .stream()
+                        .sorted()
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+
+                    return protocolSet;
+                } catch (ClientException ex) {
+                    throw new RuntimeException(ex);
+                }
+            };
+
             new MultiSelectDialog(
-                PlatformUI.MIRTH_FRAME,
                 "Protocols Picker",
-                supportedProtocols,
                 properties.getUsedProtocols(),
                 properties.isUseServerDefaultProtocols(),
                 "[Server default]",
-                completionConsumer
+                completionConsumer,
+                dataSupplier
             );
         });
         generalLayoutComponents.add(protocolsButton);
@@ -613,14 +625,29 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
             };
 
+            Supplier<Set<String>> dataSupplier = () -> {
+                try {
+                    var cryptoMap = PlatformUI.MIRTH_FRAME.mirthClient.getProtocolsAndCipherSuites();
+                    var ciphersArray = cryptoMap.get(MirthSSLUtil.KEY_ENABLED_CIPHER_SUITES);
+
+                    var ciphersSet = Set.of(ciphersArray)
+                        .stream()
+                        .sorted()
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+
+                    return ciphersSet;
+                } catch (ClientException ex) {
+                    throw new RuntimeException(ex);
+                }
+            };
+
             new MultiSelectDialog(
-                PlatformUI.MIRTH_FRAME,
                 "Ciphers Picker",
-                supportedCiphers,
                 properties.getUsedCiphers(),
                 properties.isUseServerDefaultCiphers(),
                 "[Server default]",
-                completionConsumer
+                completionConsumer,
+                dataSupplier
             );
         });
         generalLayoutComponents.add(ciphersButton);
@@ -667,14 +694,22 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
             };
 
+            Supplier<Set<String>> dataSupplier = () -> {
+                var certs = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class)
+                    .getPublicCertificates()
+                    .stream()
+                    .sorted()
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+                return certs;
+            };
+
             new MultiSelectDialog(
-                PlatformUI.MIRTH_FRAME,
                 "Certificate Picker",
-                publicCertificates,
                 properties.getTrustedServerCertificates(),
                 properties.isTrustSystemTruststore(),
                 "[JVM Truststore]",
-                completionConsumer
+                completionConsumer,
+                dataSupplier
             );
         });
         clientModeLayoutComponents.add(trustedServerCertsButton);
@@ -714,7 +749,14 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
             var currentCertificateAlias = properties.getClientCertificateAlias();
 
-            Supplier<Set<String>> dataSupplier = () -> PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
+            Supplier<Set<String>> dataSupplier = () -> {
+                var certs = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class)
+                    .getClientCertificates()
+                    .stream()
+                    .sorted()
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+                return certs;
+            };
 
             new SingleSelectDialog(
                 "Client Certificate Picker",
@@ -744,7 +786,14 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
             };
 
             var currentCertificateAlias = properties.getClientCertificateAlias();
-            Supplier<Set<String>> dataSupplier = () -> PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
+            Supplier<Set<String>> dataSupplier = () -> {
+                var certs = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class)
+                    .getClientCertificates()
+                    .stream()
+                    .sorted()
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+                return certs;
+            };
 
             new SingleSelectDialog(
                 "Server Certificate Picker",
@@ -800,14 +849,22 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
             };
 
+            Supplier<Set<String>> dataSupplier = () -> {
+                var certs = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class)
+                    .getPublicCertificates()
+                    .stream()
+                    .sorted()
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+                return certs;
+            };
+
             new MultiSelectDialog(
-                PlatformUI.MIRTH_FRAME,
                 "Trusted Client Certificates Picker",
-                publicCertificates,
                 properties.getTrustedServerCertificates(),
                 properties.isTrustSystemTruststore(),
                 "[Server default]",
-                completionConsumer
+                completionConsumer,
+                dataSupplier
             );
         });
         serverModeLayoutComponents.add(trustedClientCertsButton);
@@ -1167,15 +1224,10 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         final var workerId = PlatformUI.MIRTH_FRAME.startWorking("Fetching data...");
 
         var worker = new SwingWorker<Void, Void>() {
-            private Set<String> publicCertAliasSet;
-            private Set<String> clientCertAliasSet;
             private Map<String, String[]> cryptoMap;
 
             public Void doInBackground() {
-                try {
-                    publicCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getPublicCertificates();
-                    clientCertAliasSet = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class).getClientCertificates();
-                    cryptoMap = PlatformUI.MIRTH_FRAME.mirthClient.getProtocolsAndCipherSuites();
+                try {cryptoMap = PlatformUI.MIRTH_FRAME.mirthClient.getProtocolsAndCipherSuites();
                 } catch (Exception e) {
                     PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching imported certificates failed");
                 }
@@ -1184,8 +1236,6 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
             }
 
             public void done() {
-                clientCertificates = clientCertAliasSet;
-                publicCertificates = publicCertAliasSet;
                 supportedProtocols = Set.of(
                     cryptoMap.get(MirthSSLUtil.KEY_ENABLED_SERVER_PROTOCOLS)
                 );
