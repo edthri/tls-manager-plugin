@@ -959,9 +959,8 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         } else if (settingsPanel instanceof TcpSender) {
             registerTestConnectionActionHandlers(settingsPanel, Transport.TCP);
         } else if (settingsPanel instanceof WebServiceSender) {
-
+            registerWsTestConnectionActionHandlers(settingsPanel);
         }
-
     }
 
     private void handleTcpModeChange(boolean isServerMode) {
