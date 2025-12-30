@@ -37,7 +37,7 @@ public class SingleSelectDialog extends AbstractDialog {
         Supplier<Set<String>> dataSupplier,
         Consumer<String> onSaveConsumer
     ) {
-        super(windowTitle, dataSupplier);
+        super(windowTitle, dataSupplier, false);
 
         this.selectedOption = selectedOption;
         this.onSaveConsumer = onSaveConsumer;

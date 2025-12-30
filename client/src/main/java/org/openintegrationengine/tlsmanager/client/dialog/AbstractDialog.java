@@ -31,6 +31,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Font;
 import java.util.Comparator;
 import java.util.Objects;
@@ -46,6 +47,10 @@ public abstract class AbstractDialog extends MirthDialog {
     protected JLabel optionFilterLabel;
     protected JTextField optionFilterField;
 
+    protected JLabel selectAllLabel;
+    protected JLabel optionSelectSeparator;
+    protected JLabel deselectAllLabel;
+
     protected JScrollPane optionsScrollPane;
     protected MirthTable optionsTable;
 
@@ -55,16 +60,20 @@ public abstract class AbstractDialog extends MirthDialog {
     protected static final int SELECTED_COLUMN = 0;
     protected static final int NAME_COLUMN = 1;
 
+    private final boolean shouldShowAllSelects;
+
     protected RefreshTableModel tableModel;
 
     protected Supplier<Set<String>> dataSupplier;
 
     public AbstractDialog(
         String windowTitle,
-        Supplier<Set<String>> dataSupplier
+        Supplier<Set<String>> dataSupplier,
+        boolean shouldShowAllSelects
     ) {
         super(PlatformUI.MIRTH_FRAME, windowTitle, true);
         this.dataSupplier = dataSupplier;
+        this.shouldShowAllSelects = shouldShowAllSelects;
 
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(getOwner());
@@ -111,6 +120,18 @@ public abstract class AbstractDialog extends MirthDialog {
                 optionsTable.getRowSorter().allRowsChanged();
             }
         });
+
+        selectAllLabel = new JLabel("<html><u>Select All</u></html>");
+        selectAllLabel.setForeground(Color.BLUE);
+        selectAllLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        // Add actionlisteners in subclasses
+
+        optionSelectSeparator = new JLabel("|");
+
+        deselectAllLabel = new JLabel("<html><u>Deselect All</u></html>");
+        deselectAllLabel.setForeground(Color.BLUE);
+        deselectAllLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        // Add actionlisteners in subclasses
 
         tableModel = new RefreshTableModel(new String[]{"", "Option"}, 0);
         optionsTable = new MirthTable();
@@ -170,6 +191,13 @@ public abstract class AbstractDialog extends MirthDialog {
 
         containerPanel.add(optionFilterLabel, "right, split 5");
         containerPanel.add(optionFilterField, "w 100:350");
+
+        if (shouldShowAllSelects) {
+            containerPanel.add(selectAllLabel, "gapbefore 12");
+            containerPanel.add(optionSelectSeparator);
+            containerPanel.add(deselectAllLabel);
+        }
+
         containerPanel.add(optionsScrollPane, "newline, grow 25, sx");
 
         add(containerPanel, "grow, push");
