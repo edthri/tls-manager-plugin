@@ -452,7 +452,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 isValid = false;
 
                 if (shouldHighlight) {
-                    serverCertificateButton.setBackground(UIConstants.INVALID_COLOR);
+                    trustedServerCertsButton.setBackground(UIConstants.INVALID_COLOR);
                 }
             }
         }
@@ -474,10 +474,10 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
         // Reset validation error backgrounds for server mode components
         serverCertificateButton.setBackground(null);
-        trustedServerCertsButton.setBackground(null);
+        trustedClientCertsButton.setBackground(null);
 
-        // Reset validation error backgrounds for server client components
-        serverCertificateButton.setBackground(null);
+        // Reset validation error backgrounds for client mode components
+        trustedServerCertsButton.setBackground(null);
         clientCertButton.setBackground(null);
     }
 
