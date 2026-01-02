@@ -53,7 +53,6 @@ public class TLSConnectorProperties extends ConnectorPluginProperties {
     private ClientAuthMode clientAuthMode;
 
     // Client mode properties
-    private boolean isServerCertificateValidationEnabled;
     private boolean isHostnameVerificationEnabled;
     private String clientCertificateAlias;
 
@@ -80,7 +79,6 @@ public class TLSConnectorProperties extends ConnectorPluginProperties {
         clientAuthMode = ClientAuthMode.NONE;
 
         // Client mode properties
-        isServerCertificateValidationEnabled = false;
         isHostnameVerificationEnabled = true;
         clientCertificateAlias = null;
     }
@@ -123,7 +121,6 @@ public class TLSConnectorProperties extends ConnectorPluginProperties {
         );
 
         // Client mode properties
-        isServerCertificateValidationEnabled = props.isServerCertificateValidationEnabled();
         isHostnameVerificationEnabled = props.isHostnameVerificationEnabled();
         clientCertificateAlias = props.getClientCertificateAlias();
     }

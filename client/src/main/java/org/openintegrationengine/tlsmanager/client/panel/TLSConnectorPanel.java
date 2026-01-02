@@ -100,10 +100,6 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
     /*
     Client mode UI components
      */
-    private JLabel serverCertificateValidationLabel;
-    private MirthRadioButton serverCertificateValidationRadioYes;
-    private MirthRadioButton serverCertificateValidationRadioNo;
-
     private JLabel trustedServerCertsLabel;
     private JButton trustedServerCertsButton;
     private JLabel trustedServerCertsText;
@@ -310,12 +306,6 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
     }
 
     private void redrawClientModeState() {
-        if (properties.isServerCertificateValidationEnabled()) {
-            serverCertificateValidationRadioYes.setSelected(true);
-        } else {
-            serverCertificateValidationRadioNo.setSelected(true);
-        }
-
         trustedServerCertsText.setText(renderTrustTginfWhatevs());
 
         if (properties.isHostnameVerificationEnabled()) {
@@ -668,25 +658,6 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
     }
 
     private void initClientModeComponents() {
-        serverCertificateValidationLabel = new JLabel("Server Certificate Validation:");
-        clientModeLayoutComponents.add(serverCertificateValidationLabel);
-
-        final var serverCertificateValidationButtonGroup = new ButtonGroup();
-
-        serverCertificateValidationRadioYes = new MirthRadioButton();
-        serverCertificateValidationRadioYes.setBackground(Color.white);
-        serverCertificateValidationRadioYes.setText("Enabled");
-        serverCertificateValidationRadioYes.addActionListener(e -> properties.setServerCertificateValidationEnabled(true));
-        serverCertificateValidationButtonGroup.add(serverCertificateValidationRadioYes);
-        clientModeLayoutComponents.add(serverCertificateValidationRadioYes);
-
-        serverCertificateValidationRadioNo = new MirthRadioButton();
-        serverCertificateValidationRadioNo.setBackground(Color.white);
-        serverCertificateValidationRadioNo.setText("Disabled");
-        serverCertificateValidationRadioNo.addActionListener(e -> properties.setServerCertificateValidationEnabled(false));
-        serverCertificateValidationButtonGroup.add(serverCertificateValidationRadioNo);
-        clientModeLayoutComponents.add(serverCertificateValidationRadioNo);
-
         trustedServerCertsLabel = new JLabel("Trusted Server Certificates:");
         clientModeLayoutComponents.add(trustedServerCertsLabel);
 
@@ -1025,10 +996,6 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
     }
 
     private void initClientModeLayout() {
-        add(serverCertificateValidationLabel, "newline, right");
-        add(serverCertificateValidationRadioYes, "split");
-        add(serverCertificateValidationRadioNo);
-
         add(trustedServerCertsLabel, "newline, right");
         add(trustedServerCertsButton, "h 22!, w 22!, split");
         add(trustedServerCertsText);
