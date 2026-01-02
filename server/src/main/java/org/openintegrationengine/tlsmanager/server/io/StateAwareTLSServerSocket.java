@@ -60,7 +60,7 @@ public class StateAwareTLSServerSocket extends ServerSocket {
 
         var sslSocket = (SSLSocket) delegate.accept();
         sslSocket.startHandshake();
-        return new StateAwareTLSSocket(sslSocket);
+        return sslSocket;
     }
 
     @Override
