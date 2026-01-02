@@ -75,9 +75,6 @@ public class TLSWebServiceConfiguration extends DefaultWebServiceConfiguration {
                     sslParams.setNeedClientAuth(true);
                 }
 
-                // TODO Stapling?
-                //sslParams.setEndpointIdentificationAlgorithm("HTTPS");
-
                 params.setSSLParameters(sslParams);
             }
         });
