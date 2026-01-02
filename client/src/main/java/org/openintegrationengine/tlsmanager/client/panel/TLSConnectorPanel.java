@@ -785,7 +785,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 PlatformUI.MIRTH_FRAME.setSaveEnabled(true);
             };
 
-            var currentCertificateAlias = properties.getClientCertificateAlias();
+            var currentCertificateAlias = properties.getServerCertificateAlias();
             Supplier<Set<String>> dataSupplier = () -> {
                 var certs = PlatformUI.MIRTH_FRAME.mirthClient.getServlet(TLSServletInterface.class)
                     .getClientCertificates()
