@@ -399,6 +399,10 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
     public boolean checkProperties(ConnectorProperties connectorProperties, ConnectorPluginProperties connectorPluginProperties, Connector.Mode mode, String s, boolean shouldHighlight) {
         boolean isValid = true;
 
+        if (!properties.isTlsManagerEnabled()) {
+            return true;
+        }
+
         if (properties.getSubjectDnValidationMode() != SubjectDnValidationMode.NONE) {
             final var filter = properties.getSubjectDnValidationFilter();
             if (filter == null || filter.isBlank()) {
@@ -965,11 +969,12 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
     private void handleTcpModeChange(boolean isServerMode) {
         this.isServerMode = isServerMode;
+        var isTlsEnabled = properties.isTlsManagerEnabled();
         if (isServerMode) {
             handleManagerEnabledButtonClientMode(false);
-            handleManagerEnabledButtonServerMode(true);
+            handleManagerEnabledButtonServerMode(isTlsEnabled);
         } else {
-            handleManagerEnabledButtonClientMode(true);
+            handleManagerEnabledButtonClientMode(isTlsEnabled);
             handleManagerEnabledButtonServerMode(false);
         }
     }
