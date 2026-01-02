@@ -182,6 +182,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
         };
 
         initComponents();
+        initTooltips();
         initLayout();
         fetchData();
     }
@@ -875,6 +876,123 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
         trustedClientCertsText = new JLabel();
         serverModeLayoutComponents.add(trustedClientCertsText);
+    }
+
+    private void initTooltips() {
+        final var tlsRadioToolTip = """
+            <html>
+            TLS Manager enables TLS support for the connector.<br/>
+            When enabled, the connector will use the configured TLS settings for secure communication.<br/>
+            When disabled, the connector will not use TLS and will communicate in plain text.
+            </html>""";
+        managerEnabledLabel.setToolTipText(tlsRadioToolTip);
+        managerEnabledRadioYes.setToolTipText(tlsRadioToolTip);
+        managerEnabledRadioNo.setToolTipText(tlsRadioToolTip);
+
+        final var subjectDNToolTip = """
+            <html>
+            Subject DN Validation Mode determines how the connector validates the subject DN of incoming TLS connections.<br/>
+            <b>NONE:</b> No validation is performed.<br/>
+            <b>PARTIAL:</b> The subject DN must contain all of the configured RDNs.<br/>
+            <b>EXACT:</b> The subject DN must match the configured subject DN exactly.
+            </html>""";
+        subjectDnValidationLabel.setToolTipText(subjectDNToolTip);
+        subjectDnValidationModeComboBox.setToolTipText(subjectDNToolTip);
+        subjectDnValidationFilterTextField.setToolTipText(subjectDNToolTip);
+
+        final var crlModeToolTip = """
+            <html>
+            CRL Mode determines how the connector handles Certificate Revocation Lists (CRLs) for incoming TLS connections.<br/>
+            <b>NONE:</b> CRL checking is disabled.<br/>
+            <b>SOFT FAIL:</b> CRL checking is enabled but not mandatory for the connection to be established.<br/>
+            <b>HARD FAIL:</b> CRL checking is enabled and must be successful for the connection to be established.
+            </html>""";
+        crlModeLabel.setToolTipText(crlModeToolTip);
+        crlModeComboBox.setToolTipText(crlModeToolTip);
+
+        final var ocspModeToolTip = """
+            <html>
+            OCSP Mode determines how the connector handles Online Certificate Status Protocol (OCSP) responses for incoming TLS connections.<br/>
+            <b>NONE:</b> OCSP checking is disabled.<br/>
+            <b>SOFT FAIL:</b> OCSP checking is enabled and must be successful for the connection to be established.<br/>
+            <b>HARD FAIL:</b> OCSP checking is enabled but not mandatory for the connection to be established.
+            </html>""";
+        ocspModeLabel.setToolTipText(ocspModeToolTip);
+        ocspModeComboBox.setToolTipText(ocspModeToolTip);
+
+        final var protocolsToolTip = """
+            <html>
+            Determines which TLS protocols the connector supports.
+            </html>""";
+        protocolsLabel.setToolTipText(protocolsToolTip);
+        protocolsButton.setToolTipText(protocolsToolTip);
+        protocolsText.setToolTipText(protocolsToolTip);
+
+        final var cipherSuitesToolTip = """
+            <html>
+            Determines which cipher suites the connector supports.
+            </html>""";
+        ciphersLabel.setToolTipText(cipherSuitesToolTip);
+        ciphersButton.setToolTipText(cipherSuitesToolTip);
+        ciphersText.setToolTipText(cipherSuitesToolTip);
+
+        final var trustedServerCertsToolTip = """
+            <html>
+            Determines which remote certificates to trust.<br/>
+            <b>Client Mode only</b>
+            </html>""";
+        trustedServerCertsLabel.setToolTipText(trustedServerCertsToolTip);
+        trustedServerCertsButton.setToolTipText(trustedServerCertsToolTip);
+        trustedServerCertsText.setToolTipText(trustedServerCertsToolTip);
+
+        final var hostnameVerificationToolTip = """
+            <html>
+            Determines whether the remote server's hostname is validated.<br/>
+            <b>Client Mode only</b>
+            </html>""";
+        hostnameValidationLabel.setToolTipText(hostnameVerificationToolTip);
+        hostnameValidationRadioYes.setToolTipText(hostnameVerificationToolTip);
+        hostnameValidationRadioNo.setToolTipText(hostnameVerificationToolTip);
+
+        final var clientCertificateToolTip = """
+            <html>
+            Allows setting a certificate used for mTLS authentication.<br/>
+            <b>Client Mode only</b>
+            </html>""";
+        clientCertLabel.setToolTipText(clientCertificateToolTip);
+        clientCertButton.setToolTipText(clientCertificateToolTip);
+        clientCertText.setToolTipText(cipherSuitesToolTip);
+
+        final var serverCertificateToolTip = """
+            <html>
+            Determines which certificate is used to serve the endpoint.<br/>
+            <b>Server Mode only</b>
+            </html>""";
+        serverCertificateLabel.setToolTipText(serverCertificateToolTip);
+        serverCertificateButton.setToolTipText(serverCertificateToolTip);
+        serverCertificateText.setToolTipText(cipherSuitesToolTip);
+
+        final var clientAuthModeToolTip = """
+            <html>
+            Determines whether client authentication is required for the endpoint.<br/>
+            <b>NONE:</b> No client authentication is required.<br/>
+            <b>REQUESTED:</b> Client authentication is requested but not mandatory.<br/>
+            <b>REQUIRED:</b> Client authentication is required for the connection to be established.<br/>
+            <b>Server Mode only</b>
+            </html>""";
+        clientAuthLabel.setToolTipText(clientAuthModeToolTip);
+        clientAuthRadioNone.setToolTipText(clientAuthModeToolTip);
+        clientAuthRadioRequested.setToolTipText(clientAuthModeToolTip);
+        clientAuthRadioRequired.setToolTipText(clientAuthModeToolTip);
+
+        final var trustedClientCertsToolTip = """
+            <html>
+            Determines which client certificates to trust.<br/>
+            <b>Server Mode only</b>
+            </html>""";
+        trustedClientCertsLabel.setToolTipText(trustedClientCertsToolTip);
+        trustedClientCertsButton.setToolTipText(trustedClientCertsToolTip);
+        trustedClientCertsText.setToolTipText(trustedClientCertsToolTip);
     }
 
     protected void initLayout() {
