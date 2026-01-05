@@ -852,9 +852,8 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
     private void initTooltips() {
         final var tlsRadioToolTip = """
             <html>
-            TLS Manager enables TLS support for the connector.<br/>
-            When enabled, the connector will use the configured TLS settings for secure communication.<br/>
-            When disabled, the connector will not use TLS and will communicate in plain text.
+            Enabling the TLS Manager permits a greater degree of control over the TLS connections.<br/>
+            When enabled, the connector will use the settings below for TLS connections, else the JVM settings will be used.
             </html>""";
         managerEnabledLabel.setToolTipText(tlsRadioToolTip);
         managerEnabledRadioYes.setToolTipText(tlsRadioToolTip);
