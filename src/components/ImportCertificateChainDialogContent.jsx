@@ -77,6 +77,14 @@ export default function ImportCertificateChainDialogContent({
       return
     }
 
+    // Validate file extension
+    const name = (uploadedFile.name || '').toLowerCase()
+    if (!(name.endsWith('.pem') || name.endsWith('.crt'))) {
+      setParseError('Please select a .pem or .crt file.')
+      setFile(null)
+      return
+    }
+
     setFile(uploadedFile)
     setParseError(null)
 
@@ -100,7 +108,7 @@ export default function ImportCertificateChainDialogContent({
     setSelectedCertificatePem(selectedCert.certificate)
   }
 
-  const fileAccept = '.pem,.crt,.cer,.cert'
+  const fileAccept = '.pem,.crt'
 
   const performFinalVerification = async (pemText) => {
     try {

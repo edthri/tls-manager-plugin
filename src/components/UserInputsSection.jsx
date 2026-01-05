@@ -26,7 +26,8 @@ const UserInputsSection = ({
   // Refs
   fileInputRef,
   privateKeyFileInputRef,
-  fileAccept,
+  certFileAccept,
+  keyFileAccept,
 
   // Handlers
   handleAliasChange,
@@ -80,7 +81,7 @@ const UserInputsSection = ({
             <input
               ref={fileInputRef}
               type="file"
-              accept={fileAccept}
+              accept={certFileAccept}
               style={{ display: 'none' }}
               onChange={handleFileUpload}
             />
@@ -100,7 +101,7 @@ const UserInputsSection = ({
           label={"PEM" + (readOnlyPem ? '' : ' (paste contents including BEGIN/END)')}
           placeholder={"-----BEGIN CERTIFICATE-----\n...base64...\n-----END CERTIFICATE-----"}
           value={pemText}
-          helperText={readOnlyPem ? 'PEM certificate.' : errors.pemText || 'Paste PEM certificate. Uploading a .pem file fills this field.'}
+          helperText={readOnlyPem ? 'PEM certificate.' : errors.pemText || 'Paste PEM certificate. Uploading a .pem or .crt file fills this field.'}
           onChange={handlePemTextChange}
           error={Boolean(errors.pemText)}
           multiline
@@ -116,7 +117,7 @@ const UserInputsSection = ({
             <input
               ref={privateKeyFileInputRef}
               type="file"
-              accept={fileAccept}
+              accept={keyFileAccept}
               style={{ display: 'none' }}
               onChange={handlePrivateKeyFileUpload}
             />
@@ -136,7 +137,7 @@ const UserInputsSection = ({
               value={privateKeyText}
               onChange={handlePrivateKeyTextChange}
               error={Boolean(errors.privateKeyText)}
-              helperText={errors.privateKeyText || 'Paste private key. Uploading a .key file fills this field.'}
+              helperText={errors.privateKeyText || 'Paste private key. Uploading a .pem or .key file fills this field.'}
               multiline
               minRows={4}
               maxRows={6}

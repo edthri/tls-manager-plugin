@@ -50,7 +50,8 @@ const ImportPrivateCertificateDialog = forwardRef(function ImportPrivateCertific
     // Refs
     fileInputRef,
     privateKeyFileInputRef,
-    fileAccept,
+    certFileAccept,
+    keyFileAccept,
     
     // Actions
     setLoading,
@@ -217,7 +218,8 @@ const ImportPrivateCertificateDialog = forwardRef(function ImportPrivateCertific
           aliasWarning={aliasWarning}
           fileInputRef={fileInputRef}
           privateKeyFileInputRef={privateKeyFileInputRef}
-          fileAccept={fileAccept}
+          certFileAccept={certFileAccept}
+          keyFileAccept={keyFileAccept}
           handleAliasChange={handleAliasChange}
           handlePemTextChange={handlePemTextChange}
           handlePrivateKeyTextChange={handlePrivateKeyTextChange}

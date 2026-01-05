@@ -26,7 +26,8 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
   const fileInputRef = useRef(null)
   const privateKeyFileInputRef = useRef(null)
 
-  const fileAccept = '.pem,.key,text/plain,application/x-pem-file'
+  const certFileAccept = '.pem,.crt'
+  const keyFileAccept = '.pem,.key'
 
   // Load existing certificates to check for alias conflicts
   const loadExistingCertificates = async () => {
@@ -87,7 +88,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
     if (!isValidPemCertificate(pemText)) {
       setCertificateDetails(null)
       setVerificationResult(null)
-      setErrors((prev) => ({ ...prev, pemText: 'Invalid certificate. Make sure the file is a .pem.' }))
+      setErrors((prev) => ({ ...prev, pemText: 'Invalid certificate format. Accepted file types: .pem, .crt' }))
       return
     }
 
@@ -117,7 +118,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
       showError('Failed to parse certificate details. Please check the certificate format.')
       setCertificateDetails(null)
       setVerificationResult(null)
-      setErrors((prev) => ({ ...prev, pemText: 'Invalid certificate. Make sure the file is a .pem.' }))
+      setErrors((prev) => ({ ...prev, pemText: 'Invalid certificate format. Accepted file types: .pem, .crt' }))
     }
   }
 
@@ -184,15 +185,15 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
       setFile(f || null)
       if (!f) return
       const name = (f.name || '').toLowerCase()
-      if (!(name.endsWith('.pem') || name.endsWith('.key') || f.type === 'text/plain' || f.type === 'application/x-pem-file')) {
-        setErrors((prev) => ({ ...prev, file: 'Please select a .pem or .key file.' }))
+      if (!(name.endsWith('.pem') || name.endsWith('.crt'))) {
+        setErrors((prev) => ({ ...prev, file: 'Please select a .pem or .crt file.' }))
         return
       }
       const text = await f.text()
       
       // Validate certificate format
       if (!isValidPemCertificate(text)) {
-        setErrors((prev) => ({ ...prev, file: 'Invalid certificate. Make sure the file is a .pem.', pemText: 'Invalid certificate. Make sure the file is a .pem.' }))
+        setErrors((prev) => ({ ...prev, file: 'Invalid certificate format. Accepted file types: .pem, .crt', pemText: 'Invalid certificate format. Accepted file types: .pem, .crt' }))
         setPemText(text) // Still set the text so user can see what was uploaded
         setCertificateDetails(null)
         setVerificationResult(null)
@@ -214,7 +215,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
       setPrivateKeyFile(f || null)
       if (!f) return
       const name = (f.name || '').toLowerCase()
-      if (!(name.endsWith('.pem') || name.endsWith('.key') || f.type === 'text/plain' || f.type === 'application/x-pem-file')) {
+      if (!(name.endsWith('.pem') || name.endsWith('.key'))) {
         setErrors((prev) => ({ ...prev, privateKeyFile: 'Please select a .pem or .key file.' }))
         return
       }
@@ -222,7 +223,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
       
       // Validate private key format
       if (!isValidPemPrivateKey(text)) {
-        setErrors((prev) => ({ ...prev, privateKeyFile: 'Invalid private key. Make sure the file is a .key.', privateKeyText: 'Invalid private key. Make sure the file is a .key.' }))
+        setErrors((prev) => ({ ...prev, privateKeyFile: 'Invalid private key format. Accepted file types: .pem, .key', privateKeyText: 'Invalid private key format. Accepted file types: .pem, .key' }))
         setPrivateKeyText(text) // Still set the text so user can see what was uploaded
         setVerificationResult(null)
         return
@@ -255,7 +256,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
     // Validate private key format if text is provided
     if (newPrivateKeyText.trim()) {
       if (!isValidPemPrivateKey(newPrivateKeyText)) {
-        setErrors((prev) => ({ ...prev, privateKeyText: 'Invalid private key. Make sure the file is a .key.' }))
+        setErrors((prev) => ({ ...prev, privateKeyText: 'Invalid private key format. Accepted file types: .pem, .key' }))
         setVerificationResult(null)
         return
       } else {
@@ -297,7 +298,8 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
     // Refs
     fileInputRef,
     privateKeyFileInputRef,
-    fileAccept,
+    certFileAccept,
+    keyFileAccept,
     
     // Actions
     setAlias,

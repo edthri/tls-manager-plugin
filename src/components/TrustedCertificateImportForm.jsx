@@ -34,7 +34,8 @@ const TrustedCertificateImportForm = forwardRef(function TrustedCertificateImpor
     // Refs
     fileInputRef,
     privateKeyFileInputRef,
-    fileAccept,
+    certFileAccept,
+    keyFileAccept,
     
     // Actions
     setLoading,
@@ -98,7 +99,8 @@ const TrustedCertificateImportForm = forwardRef(function TrustedCertificateImpor
         aliasWarning={aliasWarning}
         fileInputRef={fileInputRef}
         privateKeyFileInputRef={privateKeyFileInputRef}
-        fileAccept={fileAccept}
+        certFileAccept={certFileAccept}
+        keyFileAccept={keyFileAccept}
         handleAliasChange={handleAliasChange}
         handlePemTextChange={handlePemTextChange}
         handlePrivateKeyTextChange={handlePrivateKeyTextChange}
