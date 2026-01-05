@@ -22,7 +22,7 @@ import {
   ListItem,
   ListItemText,
 } from '@mui/material'
-import { Visibility, VisibilityOff, ExpandMore, CheckCircle, Error, Warning } from '@mui/icons-material'
+import { Visibility, VisibilityOff, ExpandMore, ExpandLess, CheckCircle, Error, Warning } from '@mui/icons-material'
 import { formatDate } from '../utils/dateUtils.js'
 import { verifyCertificate } from '../utils/verificationUtils.js'
 import { base64ToPem, base64ToPrivateKeyPem } from '../utils/certificateUtils.js'
@@ -34,6 +34,7 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
   const [showPrivateKey, setShowPrivateKey] = useState(false)
   const [verificationResult, setVerificationResult] = useState(null)
   const [isVerifying, setIsVerifying] = useState(false)
+  const [sanExpanded, setSanExpanded] = useState(false)
 
   const getStatusColor = (validFrom, validTo) => {
     const now = new Date()
@@ -157,8 +158,25 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
             parsedCertificate.subjectAltNames.email?.length > 0 ||
             parsedCertificate.subjectAltNames.dn?.length > 0) && (
             <Paper variant="outlined" sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>Subject Alternative Names</Typography>
-              <Stack spacing={2}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6">Subject Alternative Names</Typography>
+                <Button
+                  size="small"
+                  onClick={() => setSanExpanded(!sanExpanded)}
+                  endIcon={sanExpanded ? <ExpandLess /> : <ExpandMore />}
+                  sx={{ minWidth: 'auto', textTransform: 'none' }}
+                >
+                  {sanExpanded ? 'Show Less' : 'Show More'}
+                </Button>
+              </Box>
+              <Box
+                sx={{
+                  maxHeight: sanExpanded ? 'none' : '200px',
+                  overflow: sanExpanded ? 'visible' : 'auto',
+                  transition: 'max-height 0.3s ease-in-out'
+                }}
+              >
+                <Stack spacing={2}>
                 {parsedCertificate.subjectAltNames.dns?.length > 0 && (
                   <Box>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -234,7 +252,8 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
                     </Stack>
                   </Box>
                 )}
-              </Stack>
+                </Stack>
+              </Box>
             </Paper>
           )}
 

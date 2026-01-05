@@ -237,12 +237,6 @@ export function parseCertificate(base64Pem) {
           }
         })
         
-        // Add to extensions array
-        extensions.push({
-          name: subjectAltName.extname || 'subjectAltName',
-          critical: subjectAltName.critical || false,
-          subjectAltNames: subjectAltNames
-        })
       }
     } catch (e) {
       // Extension doesn't exist or can't be read - skip

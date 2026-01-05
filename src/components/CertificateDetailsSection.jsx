@@ -1,13 +1,17 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   Box,
   Typography,
   Stack,
-  Chip
+  Chip,
+  Button,
+  Collapse
 } from '@mui/material'
-import { Info } from '@mui/icons-material'
+import { Info, ExpandMore, ExpandLess } from '@mui/icons-material'
 
 const CertificateDetailsSection = ({ certificateDetails }) => {
+  const [sanExpanded, setSanExpanded] = useState(false)
+  
   if (!certificateDetails) return null
 
   return (
@@ -76,10 +80,27 @@ const CertificateDetailsSection = ({ certificateDetails }) => {
             certificateDetails.subjectAltNames.email?.length > 0 ||
             certificateDetails.subjectAltNames.dn?.length > 0) && (
             <Box>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                Subject Alternative Names
-              </Typography>
-              <Stack spacing={1}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Subject Alternative Names
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={() => setSanExpanded(!sanExpanded)}
+                  endIcon={sanExpanded ? <ExpandLess /> : <ExpandMore />}
+                  sx={{ minWidth: 'auto', textTransform: 'none' }}
+                >
+                  {sanExpanded ? 'Show Less' : 'Show More'}
+                </Button>
+              </Box>
+              <Box
+                sx={{
+                  maxHeight: sanExpanded ? 'none' : '300px',
+                  overflow: sanExpanded ? 'visible' : 'auto',
+                  transition: 'max-height 0.3s ease-in-out'
+                }}
+              >
+                <Stack spacing={1}>
                 {certificateDetails.subjectAltNames.dns?.length > 0 && (
                   <Box>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
@@ -155,7 +176,8 @@ const CertificateDetailsSection = ({ certificateDetails }) => {
                     </Stack>
                   </Box>
                 )}
-              </Stack>
+                </Stack>
+              </Box>
             </Box>
           )}
         </Stack>
