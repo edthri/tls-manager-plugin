@@ -44,31 +44,6 @@ function saveToStorage() {
   }
 }
 
-// === CHANNEL ASSIGNMENT HELPERS ===
-// Get or create channel assignments from localStorage
-function getOrCreateChannelAssignments() {
-  try {
-    const stored = localStorage.getItem(CHANNEL_ASSIGNMENTS_KEY)
-    if (stored) {
-      return JSON.parse(stored)
-    }
-  } catch (e) {
-    console.warn('Failed to load channel assignments from localStorage:', e)
-  }
-  
-  // Create new assignments if none exist
-  return {
-    trusted: {},
-    private: {}
-  }
-}
-
-// Get channels for a specific certificate
-function getChannelsForCertificate(store, alias, assignments) {
-  const storeAssignments = assignments[store] || {}
-  return storeAssignments[alias] || []
-}
-
 /**
  * Fetch system certificates (native store)
  * @returns {Promise<Array>} Array of parsed certificate objects
@@ -259,9 +234,6 @@ export async function fetchTrustedCertificates() {
       certArray = [certList]
     }
     
-    // Get channel assignments (still using mock for now)
-    const channelAssignments = getOrCreateChannelAssignments()
-    
     for (const cert of certArray) {
       // Skip certificates with missing or empty certificate data
       if (!cert.certificate || !cert.certificate.trim()) {
@@ -270,7 +242,8 @@ export async function fetchTrustedCertificates() {
       }
       
       const parsed = await parseCertificate(cert.certificate)
-      const channelsInUse = getChannelsForCertificate('trusted', cert.alias, channelAssignments)
+      // Use channelsInUse from API response (channelsInUse.string is an array)
+      const channelsInUse = getChannelsInUse(cert)
       
       // Handle parse errors gracefully
       if (parsed.error) {
@@ -340,9 +313,6 @@ export async function fetchLocalCertificates() {
       certArray = [certList]
     }
     
-    // Get channel assignments (still using mock for now)
-    const channelAssignments = getOrCreateChannelAssignments()
-    
     for (const cert of certArray) {
       // Skip certificates with missing or empty certificate data
       if (!cert.certificate || !cert.certificate.trim()) {
@@ -351,7 +321,8 @@ export async function fetchLocalCertificates() {
       }
       
       const parsed = await parseCertificate(cert.certificate)
-      const channelsInUse = getChannelsForCertificate('private', cert.alias, channelAssignments)
+      // Use channelsInUse from API response (channelsInUse.string is an array)
+      const channelsInUse = getChannelsInUse(cert)
       
       // Handle parse errors gracefully
       if (parsed.error) {
@@ -401,6 +372,13 @@ export async function fetchLocalCertificates() {
   }
 }
 
+function getChannelsInUse(cert) {
+  if (typeof cert.channelsInUse?.string === 'string') {
+    return [cert.channelsInUse.string]
+  }
+  return cert.channelsInUse?.string || []
+}
+
 // Legacy function - kept for backward compatibility, but should use tab-specific functions instead
 export async function fetchCertificates() {
   try {
@@ -409,9 +387,6 @@ export async function fetchCertificates() {
     await new Promise(resolve => setTimeout(resolve, 300))
     
     const data = internalStore
-    
-    // Get channel assignments
-    const channelAssignments = getOrCreateChannelAssignments()
     
     // === REAL API (uncomment when API is ready) ===
     // const response = await api.get('/api/tlsmanager/certificates')
@@ -444,7 +419,8 @@ export async function fetchCertificates() {
     if (data.certificates) {
       for (const cert of data.certificates) {
         const parsed = await parseCertificate(cert.certificate)
-        const channelsInUse = getChannelsForCertificate('trusted', cert.alias, channelAssignments)
+        // Use channelsInUse from API response (channelsInUse.string is an array)
+        const channelsInUse = cert.channelsInUse?.string || []
         certificates.push({
           alias: cert.alias,
           name: parsed.subject?.CN || cert.alias,
@@ -467,7 +443,8 @@ export async function fetchCertificates() {
     if (data.pairs) {
       for (const pair of data.pairs) {
         const parsed = await parseCertificate(pair.certificate)
-        const channelsInUse = getChannelsForCertificate('private', pair.alias, channelAssignments)
+        // Use channelsInUse from API response (channelsInUse.string is an array)
+        const channelsInUse = pair.channelsInUse?.string || []
         certificates.push({
           alias: pair.alias,
           name: parsed.subject?.CN || pair.alias,

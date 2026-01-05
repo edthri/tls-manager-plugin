@@ -11,11 +11,11 @@ import {
   Paper,
   Grid,
   Alert,
-  Chip,
   Stack
 } from '@mui/material'
 import { Warning } from '@mui/icons-material'
 import { removeCertificate } from '../services/tlsService'
+import ChannelsInUseWarning from './ChannelsInUseWarning'
 
 export default function RemoveCertificateDialog({ 
   open, 
@@ -54,10 +54,6 @@ export default function RemoveCertificateDialog({
   }
 
   if (!certificate) return null
-
-  // Check if certificate is in use by channels
-  const isInUse = certificate.channelsInUse && certificate.channelsInUse.length > 0
-  const canRemove = !isInUse
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -105,36 +101,21 @@ export default function RemoveCertificateDialog({
           </Paper>
 
           {/* Channels in Use Warning */}
-          {isInUse && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Cannot remove certificate. It is currently in use by the following channels:
-              </Typography>
-              <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap">
-                {certificate.channelsInUse.map((channel, index) => (
-                  <Chip key={index} label={channel} size="small" color="error" />
-                ))}
-              </Stack>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                Please remove the certificate from these channels first before deletion.
-              </Typography>
-            </Alert>
-          )}
+          <ChannelsInUseWarning 
+            channelsInUse={certificate.channelsInUse} 
+            severity="warning"
+            message="Removing this certificate may affect channel configurations. Please ensure channels are updated accordingly."
+          />
 
           {/* Warning Message */}
-          {canRemove && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              <Typography variant="body2">
-                This action cannot be undone. The certificate will be permanently removed from the {certificate.store} store.
-              </Typography>
-            </Alert>
-          )}
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              This action cannot be undone. The certificate will be permanently removed from the {certificate.store} store.
+            </Typography>
+          </Alert>
 
           <DialogContentText>
-            {canRemove 
-              ? 'Are you sure you want to remove this certificate?'
-              : 'This certificate cannot be removed because it is currently in use.'
-            }
+            Are you sure you want to remove this certificate?
           </DialogContentText>
         </Box>
       </DialogContent>
@@ -146,7 +127,7 @@ export default function RemoveCertificateDialog({
           onClick={handleRemove}
           variant="contained"
           color="error"
-          disabled={loading || !canRemove}
+          disabled={loading}
         >
           {loading ? 'Removing...' : 'Remove Certificate'}
         </Button>

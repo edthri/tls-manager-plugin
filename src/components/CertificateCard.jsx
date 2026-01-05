@@ -129,25 +129,7 @@ export default function CertificateCard({ certificate, onViewDetails, onExport, 
         {/* Channels in Use Section */}
         {channelsInUse && channelsInUse.length > 0 && (
           <Box sx={{ flex: '0 0 auto' }}>
-            <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Used by Channels:</Typography>
-            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-              {channelsInUse.map((channel, index) => (
-                <Chip
-                  key={index}
-                  label={channel}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                  sx={{
-                    fontSize: '0.75rem',
-                    height: '24px',
-                    '& .MuiChip-label': {
-                      px: 1
-                    }
-                  }}
-                />
-              ))}
-            </Stack>
+            <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Channels in Use: <b>{channelsInUse.length}</b> </Typography>
           </Box>
         )}
 

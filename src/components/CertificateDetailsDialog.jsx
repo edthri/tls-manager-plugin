@@ -35,6 +35,7 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
   const [verificationResult, setVerificationResult] = useState(null)
   const [isVerifying, setIsVerifying] = useState(false)
   const [sanExpanded, setSanExpanded] = useState(false)
+  const [channelsExpanded, setChannelsExpanded] = useState(false)
 
   const getStatusColor = (validFrom, validTo) => {
     const now = new Date()
@@ -316,12 +317,30 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
           {/* Channels in Use */}
           {certificate.channelsInUse && certificate.channelsInUse.length > 0 && (
             <Paper variant="outlined" sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>Channels in Use</Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
-                {certificate.channelsInUse.map((channel, index) => (
-                  <Chip key={index} label={channel} size="small" />
-                ))}
-              </Stack>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6">Channels in Use</Typography>
+                <Button
+                  size="small"
+                  onClick={() => setChannelsExpanded(!channelsExpanded)}
+                  endIcon={channelsExpanded ? <ExpandLess /> : <ExpandMore />}
+                  sx={{ minWidth: 'auto', textTransform: 'none' }}
+                >
+                  {channelsExpanded ? 'Show Less' : 'Show More'}
+                </Button>
+              </Box>
+              <Box
+                sx={{
+                  maxHeight: channelsExpanded ? 'none' : '100px',
+                  overflow: channelsExpanded ? 'visible' : 'auto',
+                  transition: 'max-height 0.3s ease-in-out'
+                }}
+              >
+                <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                  {certificate.channelsInUse.map((channel, index) => (
+                    <Chip key={index} label={channel} size="small" />
+                  ))}
+                </Stack>
+              </Box>
             </Paper>
           )}
 

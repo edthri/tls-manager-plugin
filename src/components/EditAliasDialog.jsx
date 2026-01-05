@@ -15,6 +15,7 @@ import {
 } from '@mui/material'
 import { useAliasEdit } from '../hooks/useAliasEdit'
 import { updateCertificateAlias } from '../services/tlsService'
+import ChannelsInUseWarning from './ChannelsInUseWarning'
 
 export default function EditAliasDialog({ 
   open, 
@@ -103,6 +104,13 @@ export default function EditAliasDialog({
                 {apiError}
               </Alert>
             )}
+
+            {/* Channels in Use Warning */}
+            <ChannelsInUseWarning 
+              channelsInUse={certificate.channelsInUse} 
+              severity="warning"
+              message="Changing the alias may affect channel configurations. Please ensure channels are updated accordingly."
+            />
 
             {/* Alias Input */}
             <TextField
