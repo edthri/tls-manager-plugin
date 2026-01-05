@@ -164,10 +164,10 @@ export default function TlsManagement() {
       ],
     },
     private: {
-      title: 'Local Certificates',
+      title: 'Local Key Pairs',
       actions: [
         { key: 'show-private-keys', label: showPrivateKeys ? 'Hide Private Keys' : 'Show Private Keys', color: 'warning', onClick: handleTogglePrivateKeys },
-        { key: 'import-cert', label: 'Import Certificate', color: 'info', onClick: () => openImportDialog() },
+        { key: 'import-cert', label: 'Import Key Pair', color: 'info', onClick: () => openImportDialog() },
 
       ],
     },
