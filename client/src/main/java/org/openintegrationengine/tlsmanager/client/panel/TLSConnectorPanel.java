@@ -909,8 +909,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
         final var trustedServerCertsToolTip = """
             <html>
-            Determines which remote certificates to trust.<br/>
-            <b>Client Mode only</b>
+            Determines which remote certificates to trust.
             </html>""";
         trustedServerCertsLabel.setToolTipText(trustedServerCertsToolTip);
         trustedServerCertsButton.setToolTipText(trustedServerCertsToolTip);
@@ -918,8 +917,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
         final var hostnameVerificationToolTip = """
             <html>
-            Determines whether the remote server's hostname is validated.<br/>
-            <b>Client Mode only</b>
+            Determines whether the remote server's hostname is validated.
             </html>""";
         hostnameValidationLabel.setToolTipText(hostnameVerificationToolTip);
         hostnameValidationRadioYes.setToolTipText(hostnameVerificationToolTip);
@@ -927,8 +925,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
         final var clientCertificateToolTip = """
             <html>
-            Allows setting a certificate used for mTLS authentication.<br/>
-            <b>Client Mode only</b>
+            Allows setting a certificate used for mTLS authentication.
             </html>""";
         clientCertLabel.setToolTipText(clientCertificateToolTip);
         clientCertButton.setToolTipText(clientCertificateToolTip);
@@ -936,8 +933,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
         final var serverCertificateToolTip = """
             <html>
-            Determines which certificate is used to serve the endpoint.<br/>
-            <b>Server Mode only</b>
+            Determines which certificate is used to serve the endpoint.
             </html>""";
         serverCertificateLabel.setToolTipText(serverCertificateToolTip);
         serverCertificateButton.setToolTipText(serverCertificateToolTip);
@@ -948,8 +944,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
             Determines whether client authentication is required for the endpoint.<br/>
             <b>NONE:</b> No client authentication is required.<br/>
             <b>REQUESTED:</b> Client authentication is requested but not mandatory.<br/>
-            <b>REQUIRED:</b> Client authentication is required for the connection to be established.<br/>
-            <b>Server Mode only</b>
+            <b>REQUIRED:</b> Client authentication is required for the connection to be established.
             </html>""";
         clientAuthLabel.setToolTipText(clientAuthModeToolTip);
         clientAuthRadioNone.setToolTipText(clientAuthModeToolTip);
@@ -958,8 +953,8 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
         final var trustedClientCertsToolTip = """
             <html>
-            Determines which client certificates to trust.<br/>
-            <b>Server Mode only</b>
+            Determines which client certificates to trust.
+            Determines which client certificates to trust.
             </html>""";
         trustedClientCertsLabel.setToolTipText(trustedClientCertsToolTip);
         trustedClientCertsButton.setToolTipText(trustedClientCertsToolTip);
