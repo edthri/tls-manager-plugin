@@ -29,7 +29,7 @@ import { base64ToPem, base64ToPrivateKeyPem } from '../utils/certificateUtils.js
 
 export default function CertificateDetailsDialog({ open, onClose, certificate }) {
   if (!certificate) return null
-console.log(certificate)
+
   const { parsedCertificate, rawCertificate } = certificate
   const [showPrivateKey, setShowPrivateKey] = useState(false)
   const [verificationResult, setVerificationResult] = useState(null)
@@ -148,6 +148,95 @@ console.log(certificate)
               {parsedCertificate?.subjectStr || 'Unknown'}
             </Typography>
           </Paper>
+
+          {/* Subject Alternative Names */}
+          {parsedCertificate?.subjectAltNames && 
+           (parsedCertificate.subjectAltNames.dns?.length > 0 ||
+            parsedCertificate.subjectAltNames.ip?.length > 0 ||
+            parsedCertificate.subjectAltNames.uri?.length > 0 ||
+            parsedCertificate.subjectAltNames.email?.length > 0 ||
+            parsedCertificate.subjectAltNames.dn?.length > 0) && (
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>Subject Alternative Names</Typography>
+              <Stack spacing={2}>
+                {parsedCertificate.subjectAltNames.dns?.length > 0 && (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      DNS Names:
+                    </Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                      {parsedCertificate.subjectAltNames.dns.map((dns, index) => (
+                        <Chip key={index} label={dns} size="small" variant="outlined" />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                {parsedCertificate.subjectAltNames.ip?.length > 0 && (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      IP Addresses:
+                    </Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                      {parsedCertificate.subjectAltNames.ip.map((ip, index) => (
+                        <Chip key={index} label={ip} size="small" variant="outlined" />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                {parsedCertificate.subjectAltNames.uri?.length > 0 && (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      URIs:
+                    </Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                      {parsedCertificate.subjectAltNames.uri.map((uri, index) => (
+                        <Chip key={index} label={uri} size="small" variant="outlined" />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                {parsedCertificate.subjectAltNames.email?.length > 0 && (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Email Addresses:
+                    </Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                      {parsedCertificate.subjectAltNames.email.map((email, index) => (
+                        <Chip key={index} label={email} size="small" variant="outlined" />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                {parsedCertificate.subjectAltNames.dn?.length > 0 && (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Distinguished Names:
+                    </Typography>
+                    <Stack spacing={1}>
+                      {parsedCertificate.subjectAltNames.dn.map((dn, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            p: 1.5,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            backgroundColor: 'grey.50',
+                            fontFamily: 'monospace',
+                            fontSize: '0.875rem',
+                            wordBreak: 'break-all',
+                            whiteSpace: 'pre-wrap'
+                          }}
+                        >
+                          {dn}
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+              </Stack>
+            </Paper>
+          )}
 
           {/* Issuer Information */}
           <Paper variant="outlined" sx={{ p: 2 }}>

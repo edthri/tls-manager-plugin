@@ -67,6 +67,97 @@ const CertificateDetailsSection = ({ certificateDetails }) => {
               {certificateDetails.fingerprintSha1 || 'Unknown'}
             </Typography>
           </Box>
+          
+          {/* Subject Alternative Names */}
+          {certificateDetails.subjectAltNames && 
+           (certificateDetails.subjectAltNames.dns?.length > 0 ||
+            certificateDetails.subjectAltNames.ip?.length > 0 ||
+            certificateDetails.subjectAltNames.uri?.length > 0 ||
+            certificateDetails.subjectAltNames.email?.length > 0 ||
+            certificateDetails.subjectAltNames.dn?.length > 0) && (
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                Subject Alternative Names
+              </Typography>
+              <Stack spacing={1}>
+                {certificateDetails.subjectAltNames.dns?.length > 0 && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                      DNS Names:
+                    </Typography>
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                      {certificateDetails.subjectAltNames.dns.map((dns, index) => (
+                        <Chip key={index} label={dns} size="small" variant="outlined" />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                {certificateDetails.subjectAltNames.ip?.length > 0 && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                      IP Addresses:
+                    </Typography>
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                      {certificateDetails.subjectAltNames.ip.map((ip, index) => (
+                        <Chip key={index} label={ip} size="small" variant="outlined" />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                {certificateDetails.subjectAltNames.uri?.length > 0 && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                      URIs:
+                    </Typography>
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                      {certificateDetails.subjectAltNames.uri.map((uri, index) => (
+                        <Chip key={index} label={uri} size="small" variant="outlined" />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                {certificateDetails.subjectAltNames.email?.length > 0 && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                      Email Addresses:
+                    </Typography>
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                      {certificateDetails.subjectAltNames.email.map((email, index) => (
+                        <Chip key={index} label={email} size="small" variant="outlined" />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                {certificateDetails.subjectAltNames.dn?.length > 0 && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                      Distinguished Names:
+                    </Typography>
+                    <Stack spacing={0.5}>
+                      {certificateDetails.subjectAltNames.dn.map((dn, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            p: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            backgroundColor: 'background.paper',
+                            fontFamily: 'monospace',
+                            fontSize: '0.7rem',
+                            wordBreak: 'break-all',
+                            whiteSpace: 'pre-wrap'
+                          }}
+                        >
+                          {dn}
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+              </Stack>
+            </Box>
+          )}
         </Stack>
       </Box>
     </Box>

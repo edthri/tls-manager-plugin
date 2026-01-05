@@ -178,6 +178,76 @@ export function parseCertificate(base64Pem) {
     } catch (e) {
       // Extension doesn't exist or can't be read - skip
     }
+    
+    // Extract Subject Alternative Names (SAN)
+    let subjectAltName = null
+    let subjectAltNames = {
+      dns: [],
+      ip: [],
+      uri: [],
+      email: [],
+      dn: []
+    }
+    try {
+      subjectAltName = cert.getExtSubjectAltName()
+      if (subjectAltName && subjectAltName.array && Array.isArray(subjectAltName.array)) {
+        // Process SAN array and group by type
+        // GeneralName is a union type: { dns: string } | { ip: string } | { uri: string } | { rfc822: string } | { dn: X500Name } | { other: ... } | undefined
+        subjectAltName.array.forEach(item => {
+          // Each item is a GeneralName union type - check each possible property
+          if (item && typeof item === 'object') {
+            if (item.dns) {
+              // DNS name
+              subjectAltNames.dns.push(item.dns)
+            } else if (item.ip) {
+              // IP address
+              subjectAltNames.ip.push(item.ip)
+            } else if (item.uri) {
+              // URI
+              subjectAltNames.uri.push(item.uri)
+            } else if (item.rfc822) {
+              // RFC 822 email address
+              subjectAltNames.email.push(item.rfc822)
+            } else if (item.dn) {
+              // Distinguished Name (X500Name object)
+              // X500Name has a str property for string representation
+              if (item.dn.str) {
+                subjectAltNames.dn.push(item.dn.str)
+              } else if (typeof item.dn === 'string') {
+                // Fallback if it's already a string
+                subjectAltNames.dn.push(item.dn)
+              } else if (item.dn.array && Array.isArray(item.dn.array)) {
+                // Format DN from array structure if str is not available
+                const dnParts = []
+                item.dn.array.forEach(dnPart => {
+                  if (Array.isArray(dnPart) && dnPart.length > 0) {
+                    const dnObj = dnPart[0]
+                    if (dnObj && dnObj.value) {
+                      const attrName = dnObj.type || 'UNKNOWN'
+                      dnParts.push(`${attrName}=${dnObj.value}`)
+                    }
+                  }
+                })
+                if (dnParts.length > 0) {
+                  subjectAltNames.dn.push(dnParts.join(', '))
+                }
+              }
+            }
+            // Note: item.other is not currently handled, but could be added if needed
+          }
+        })
+        
+        // Add to extensions array
+        extensions.push({
+          name: subjectAltName.extname || 'subjectAltName',
+          critical: subjectAltName.critical || false,
+          subjectAltNames: subjectAltNames
+        })
+      }
+    } catch (e) {
+      // Extension doesn't exist or can't be read - skip
+    }
+    
     return {
       subject,
       subjectStr: subjectFormatted,
@@ -190,6 +260,7 @@ export function parseCertificate(base64Pem) {
       serialNumber,
       version,
       extensions,
+      subjectAltNames,
       raw: cert
     }
   } catch (error) {
