@@ -302,7 +302,7 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
                         {ext.name}
                       </Typography>
                       {ext.critical && (
-                        <Chip label="Critical" color="error" size="small" />
+                        <Chip label="Critical" size="small" />
                       )}
                     </Stack>
                     <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
