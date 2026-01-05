@@ -862,10 +862,10 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
         final var subjectDNToolTip = """
             <html>
-            Subject DN Validation Mode determines how the connector validates the subject DN of incoming TLS connections.<br/>
+            Certificate's Subject DN Validation Mode determines how the connector validates the Subject DN of incoming TLS connections.<br/>
             <b>NONE:</b> No validation is performed.<br/>
-            <b>PARTIAL:</b> The subject DN must contain all of the configured RDNs.<br/>
-            <b>EXACT:</b> The subject DN must match the configured subject DN exactly.
+            <b>PARTIAL:</b> The Subject DN must contain all of the configured RDNs.<br/>
+            <b>EXACT:</b> The Subject DN must match the configured Subject DN exactly.
             </html>""";
         subjectDnValidationLabel.setToolTipText(subjectDNToolTip);
         subjectDnValidationModeComboBox.setToolTipText(subjectDNToolTip);
@@ -875,7 +875,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
             <html>
             CRL Mode determines how the connector handles Certificate Revocation Lists (CRLs) for incoming TLS connections.<br/>
             <b>NONE:</b> CRL checking is disabled.<br/>
-            <b>SOFT FAIL:</b> CRL checking is enabled but not mandatory for the connection to be established.<br/>
+            <b>SOFT FAIL:</b> CRL checking is enabled but if the CRL cannot be retrieved, the connection will still be established.<br/>
             <b>HARD FAIL:</b> CRL checking is enabled and must be successful for the connection to be established.
             </html>""";
         crlModeLabel.setToolTipText(crlModeToolTip);
@@ -885,8 +885,8 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
             <html>
             OCSP Mode determines how the connector handles Online Certificate Status Protocol (OCSP) responses for incoming TLS connections.<br/>
             <b>NONE:</b> OCSP checking is disabled.<br/>
-            <b>SOFT FAIL:</b> OCSP checking is enabled and must be successful for the connection to be established.<br/>
-            <b>HARD FAIL:</b> OCSP checking is enabled but not mandatory for the connection to be established.
+            <b>SOFT FAIL:</b> OCSP checking is enabled but if the response cannot be retrieved, the connection will still be established.<br/>
+            <b>HARD FAIL:</b> OCSP checking is enabled and must be successful for the connection to be established.
             </html>""";
         ocspModeLabel.setToolTipText(ocspModeToolTip);
         ocspModeComboBox.setToolTipText(ocspModeToolTip);
@@ -925,7 +925,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
         final var clientCertificateToolTip = """
             <html>
-            Allows setting a certificate used for mTLS authentication.
+            Permits the selection of the certificate to be sent when using mTLS authentication.
             </html>""";
         clientCertLabel.setToolTipText(clientCertificateToolTip);
         clientCertButton.setToolTipText(clientCertificateToolTip);
