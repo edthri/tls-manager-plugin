@@ -87,7 +87,7 @@ jobs:
         run: |
           tree .
           mv tls-manager-ui/  tls-manager/
-          ZIP_NAME=$(find tls-manager/ -maxdepth 1 -name "tls-manager-*" -exec basename {} \;)
+          ZIP_NAME=$(find tls-manager-plugin/ -maxdepth 1 -name "tls-manager-*" -exec basename {} \;)
           zip -g tls-manager-plugin/"$ZIP_NAME" tls-manager/tls-manager.war
 
       - uses: actions/upload-artifact@v6
