@@ -41,6 +41,8 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
     private JPanel teamPanel;
     private JLabel copyright;
 
+    private static final String tlsManagerUrl = PlatformUI.SERVER_URL + "/tls-manager";
+
     public TLSManagerPanel(String tabName, SettingsPanelPlugin plugin) {
         super(tabName);
         setVisibleTasks(0, 1, false);
@@ -124,8 +126,6 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
             "[] [grow] []"
         ));
 
-        String url = PlatformUI.SERVER_URL + "/tls-manager";
-
         JLabel whereText1 = new JLabel(
             "<html>" +
                 "<body>" +
@@ -153,7 +153,7 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
             "<html>" +
                 style +
                 "<body>" +
-                "<a href=\"" + url + "\">" + url + "</a>" +
+                "<a href=\"" + tlsManagerUrl + "\">" + tlsManagerUrl + "</a>" +
                 "</body></html>"
         );
 
@@ -234,6 +234,6 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
     }
 
     public void openManagerInBrowser() {
-        BareBonesBrowserLaunch.openURL(PlatformUI.SERVER_URL + "/tls-manager");
+        BareBonesBrowserLaunch.openURL(tlsManagerUrl);
     }
 }
