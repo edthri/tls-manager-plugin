@@ -127,10 +127,10 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
         ));
 
         JLabel whereText1 = new JLabel(
-            "<html>" +
-                "<body>" +
-                "Certificate management for the TLS Manager Plugin is done using a web-based user interface available at:<br/><br/>" +
-                "</body></html>"
+            """
+                <html>
+                Certificate management for the TLS Manager Plugin is done using a web-based user interface available at:<br/><br/>
+                </html>"""
         );
 
         JEditorPane whereText2 = new JEditorPane();
@@ -164,31 +164,33 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
         });
 
         JLabel whereText3 = new JLabel(
-            "<html>" +
-                "<body>" +
-                "<br/>The access credentials are the same ones used to log in to this Administrator Client." +
-                "</body></html>"
+            """
+                <html>
+                <br/>The access credentials are the same ones used to log in to this Administrator Client.
+                </html>"""
         );
 
         JLabel aboutText = new JLabel(
-            "<html>" +
-                "Jointly sponsored by NovaMap Health Limited & Diridium Technologies Inc.<br/>" +
-                "and donated to the Open Integration Engine initiative." +
-                "</html>"
+            """
+                <html>
+                Jointly sponsored by NovaMap Health Limited & Diridium Technologies Inc.<br/>
+                and donated to the Open Integration Engine initiative.
+                </html>"""
         );
 
         JLabel teamList = new JLabel(
-            "<html>" +
-                "•&nbsp;&nbsp;Alex Frîncu<br/>" +
-                "•&nbsp;&nbsp;Andreea Dincă<br/>" +
-                "•&nbsp;&nbsp;Andrei Haiducu<br/>" +
-                "•&nbsp;&nbsp;Ed Riordan<br/>" +
-                "•&nbsp;&nbsp;Kaur Palang<br/>" +
-                "•&nbsp;&nbsp;Paul Coyne<br/>" +
-                "•&nbsp;&nbsp;Paul Hristea<br/>" +
-                "•&nbsp;&nbsp;Paul Richardson<br/><br/>" +
-                "<i>Thank you!</i>" +
-                "</html>"
+            """
+                <html>
+                •  Alex Frîncu<br/>
+                •  Andreea Dincă<br/>
+                •  Andrei Haiducu<br/>
+                •  Ed Riordan<br/>
+                •  Kaur Palang<br/>
+                •  Paul Coyne<br/>
+                •  Paul Hristea<br/>
+                •  Paul Richardson<br/><br/>
+                <i>Thank you!</i>
+                </html>"""
         );
 
         infoPanel.setLayout(new MigLayout("insets 8", "[grow]"));
