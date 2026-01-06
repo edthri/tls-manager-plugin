@@ -306,7 +306,9 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
     }
 
     private void redrawClientModeState() {
-        trustedServerCertsText.setText(renderTrustTginfWhatevs());
+        trustedServerCertsText.setText(
+            !isServerMode ? renderTrustTginfWhatevs() : ""
+        );
 
         if (properties.isHostnameVerificationEnabled()) {
             hostnameValidationRadioYes.setSelected(true);
@@ -333,7 +335,9 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
         handleClientAuthModeChange(properties.getClientAuthMode(), false);
 
-        trustedClientCertsText.setText(renderTrustTginfWhatevs());
+        trustedClientCertsText.setText(
+            isServerMode ? renderTrustTginfWhatevs() : ""
+        );
     }
 
     private String renderTrustTginfWhatevs() {
