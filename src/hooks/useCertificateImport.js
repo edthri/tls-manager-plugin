@@ -92,7 +92,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
     if (!isValidPemCertificate(pemText)) {
       setCertificateDetails(null)
       setVerificationResult(null)
-      setErrors((prev) => ({ ...prev, pemText: 'Invalid certificate format. Accepted file types: .pem, .crt' }))
+      setErrors((prev) => ({ ...prev, pemText: 'Invalid certificate format. Content must contain a valid certificate (BEGIN CERTIFICATE).' }))
       return
     }
 
@@ -122,7 +122,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
       showError('Failed to parse certificate details. Please check the certificate format.')
       setCertificateDetails(null)
       setVerificationResult(null)
-      setErrors((prev) => ({ ...prev, pemText: 'Invalid certificate format. Accepted file types: .pem, .crt' }))
+      setErrors((prev) => ({ ...prev, pemText: 'Invalid certificate format. Content must contain a valid certificate (BEGIN CERTIFICATE).' }))
     }
   }
 
@@ -197,7 +197,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
       
       // Validate certificate format
       if (!isValidPemCertificate(text)) {
-        setErrors((prev) => ({ ...prev, file: 'Invalid certificate format. Accepted file types: .pem, .crt', pemText: 'Invalid certificate format. Accepted file types: .pem, .crt' }))
+        setErrors((prev) => ({ ...prev, file: 'Invalid certificate format. File must contain a valid certificate (BEGIN CERTIFICATE).', pemText: 'Invalid certificate format. File must contain a valid certificate (BEGIN CERTIFICATE).' }))
         setPemText(text) // Still set the text so user can see what was uploaded
         setCertificateDetails(null)
         setVerificationResult(null)
@@ -227,7 +227,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
       
       // Validate private key format
       if (!isValidPemPrivateKey(text)) {
-        setErrors((prev) => ({ ...prev, privateKeyFile: 'Invalid private key format. Accepted file types: .pem, .key', privateKeyText: 'Invalid private key format. Accepted file types: .pem, .key' }))
+        setErrors((prev) => ({ ...prev, privateKeyFile: 'Invalid private key format. File must contain a valid private key (BEGIN PRIVATE KEY or BEGIN RSA PRIVATE KEY).', privateKeyText: 'Invalid private key format. File must contain a valid private key (BEGIN PRIVATE KEY or BEGIN RSA PRIVATE KEY).' }))
         setPrivateKeyText(text) // Still set the text so user can see what was uploaded
         setVerificationResult(null)
         return
@@ -260,7 +260,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
     // Validate private key format if text is provided
     if (newPrivateKeyText.trim()) {
       if (!isValidPemPrivateKey(newPrivateKeyText)) {
-        setErrors((prev) => ({ ...prev, privateKeyText: 'Invalid private key format. Accepted file types: .pem, .key' }))
+        setErrors((prev) => ({ ...prev, privateKeyText: 'Invalid private key format. Content must contain a valid private key (BEGIN PRIVATE KEY or BEGIN RSA PRIVATE KEY).' }))
         setVerificationResult(null)
         return
       } else {

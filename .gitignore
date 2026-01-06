@@ -32,5 +32,6 @@ scratchpad.md
 *.key
 *.csr
 *.srl
+*.pem
 /tls-manager
 /development
