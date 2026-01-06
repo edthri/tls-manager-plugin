@@ -60,7 +60,7 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
         setBackground(UIConstants.BACKGROUND_COLOR);
 
         JLabel title = new JLabel();
-        title.setFont(new java.awt.Font("Tahoma", Font.BOLD, 18)); // NOI18N
+        title.setFont(new java.awt.Font(Font.SANS_SERIF, Font.BOLD, 18)); // NOI18N
         title.setForeground(new java.awt.Color(255, 255, 255));
 
         String version = getClass().getPackage().getImplementationVersion();
