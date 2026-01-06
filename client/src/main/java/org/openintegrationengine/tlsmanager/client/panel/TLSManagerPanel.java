@@ -18,10 +18,17 @@ import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.plugins.SettingsPanelPlugin;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.GroupLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JEditorPane;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.HyperlinkEvent;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
 
 public class TLSManagerPanel extends AbstractSettingsPanel {
 
