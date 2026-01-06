@@ -434,6 +434,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
 
             if (
                 properties.getClientAuthMode() != ClientAuthMode.NONE
+                && !properties.isTrustSystemTruststore()
                 && properties.getTrustedServerCertificates().isEmpty()
             ) {
                 isValid = false;
@@ -443,7 +444,7 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
                 }
             }
         } else {
-            if (properties.getTrustedServerCertificates().isEmpty()) {
+            if (!properties.isTrustSystemTruststore() && properties.getTrustedServerCertificates().isEmpty()) {
                 isValid = false;
 
                 if (shouldHighlight) {
