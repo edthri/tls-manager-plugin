@@ -225,9 +225,10 @@ jobs:
         run: |
           tree .
           mv tls-manager-ui/  tls-manager/
-          zip -g tls-manager-plugin/tls-manager.zip tls-manager/tls-manager.war
+          ZIP_NAME=$(find tls-manager/ -maxdepth 1 -name "tls-manager-*" -exec basename {} \;)
+          zip -g tls-manager-plugin/"$ZIP_NAME" tls-manager/tls-manager.war
 
       - uses: actions/upload-artifact@v4
         with:
           name: tls-manager-plugin-webui
-          path: tls-manager-plugin/tls-manager.zip
+          path: tls-manager-plugin/tls-manager-*.zip
