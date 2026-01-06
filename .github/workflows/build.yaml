@@ -13,13 +13,24 @@ jobs:
       - name: Checkout WebUI
         uses: actions/checkout@v6
         with:
-          token: ${{ secrets.TESTS_REPO_CLONE_PAT }}
-          repository: NovaMap-Health/dashboard-tls-manager
+          sparse-checkout: |
+            web-ui/
+
+      - name: Prepare directory
+        run: |
+          shopt -s dotglob
+          mv web-ui/* .
+          rm -rf web-ui
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: '24'
           cache: 'npm'
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "24"
 
       - name: Install dependencies
         run: npm ci
