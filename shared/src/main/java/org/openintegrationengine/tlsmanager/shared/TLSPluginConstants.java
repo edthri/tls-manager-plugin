@@ -29,7 +29,7 @@ public final class TLSPluginConstants {
     public static final String TLS_LISTENER_CONNECTOR_PROPERTIES_PLUGIN_POINT_NAME = "TLS Listener Connector Properties Plugin";
     public static final String TLS_LISTENER_PROPERTIES_PLUGIN_POINT_NAME = "TLS Connector Properties Plugin";
 
-    public static final String TLS_TASK_PLUGIN_POINT_NAME = "TLS Tasks";
+    public static final String TLS_TASK_PLUGIN_POINT_NAME = "TLS Manager Tasks";
 
     private TLSPluginConstants() {}
 }

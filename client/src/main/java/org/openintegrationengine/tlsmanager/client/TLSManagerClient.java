@@ -9,8 +9,7 @@ import com.kaurpalang.mirth.annotationsplugin.annotation.MirthClientClass;
 import com.mirth.connect.client.ui.AbstractSettingsPanel;
 import com.mirth.connect.plugins.SettingsPanelPlugin;
 import org.openintegrationengine.tlsmanager.client.panel.TLSManagerPanel;
-
-import javax.swing.*;
+import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 
 @MirthClientClass
 public class TLSManagerClient extends SettingsPanelPlugin {
@@ -42,6 +41,6 @@ public class TLSManagerClient extends SettingsPanelPlugin {
 
     @Override
     public String getPluginPointName() {
-        return "TLS Manager";
+        return TLSPluginConstants.TLS_TASK_PLUGIN_POINT_NAME;
     }
 }
