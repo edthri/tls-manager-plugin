@@ -33,7 +33,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.util.concurrent.ExecutionException;
 
-public class TLSManagerPanel extends AbstractSettingsPanel {
+public class TLSManagerSettingsPanel extends AbstractSettingsPanel {
 
     // https://github.com/phosphor-icons/core/blob/main/raw/duotone/gear-duotone.svg
     private static final String SETTINGS_ICON_PATH = "images/tls_plugin_settings.png";
@@ -50,7 +50,7 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
 
     private static final String tlsManagerUrl = PlatformUI.SERVER_URL + "/tls-manager";
 
-    public TLSManagerPanel(String tabName, SettingsPanelPlugin plugin) {
+    public TLSManagerSettingsPanel(String tabName, SettingsPanelPlugin plugin) {
         super(tabName);
 
         this.plugin = plugin;

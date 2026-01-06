@@ -8,18 +8,18 @@ package org.openintegrationengine.tlsmanager.client;
 import com.kaurpalang.mirth.annotationsplugin.annotation.MirthClientClass;
 import com.mirth.connect.client.ui.AbstractSettingsPanel;
 import com.mirth.connect.plugins.SettingsPanelPlugin;
-import org.openintegrationengine.tlsmanager.client.panel.TLSManagerPanel;
+import org.openintegrationengine.tlsmanager.client.panel.TLSManagerSettingsPanel;
 import org.openintegrationengine.tlsmanager.shared.TLSPluginConstants;
 
 @MirthClientClass
-public class TLSManagerClient extends SettingsPanelPlugin {
+public class TLSSettingsPanelPlugin extends SettingsPanelPlugin {
 
-    private AbstractSettingsPanel settingsPanel = null;
+    private final AbstractSettingsPanel settingsPanel;
 
-    public TLSManagerClient(String name) {
+    public TLSSettingsPanelPlugin(String name) {
         super(name);
 
-        settingsPanel = new TLSManagerPanel("TLS Manager", this);
+        settingsPanel = new TLSManagerSettingsPanel("TLS Manager", this);
     }
 
     @Override
