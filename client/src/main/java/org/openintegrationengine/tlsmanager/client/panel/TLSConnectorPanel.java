@@ -868,8 +868,8 @@ public class TLSConnectorPanel extends AbstractConnectorPropertiesPanel {
             <html>
             Certificate's Subject DN Validation Mode determines how the connector validates the Subject DN of incoming TLS connections.<br/>
             <b>NONE:</b> No validation is performed.<br/>
-            <b>PARTIAL:</b> The Subject DN must contain all of the configured RDNs.<br/>
-            <b>EXACT:</b> The Subject DN must match the configured Subject DN exactly.
+            <b>PARTIAL:</b> The certificate's Subject DN must contain all of the specified RDNs.<br/>
+            <b>EXACT:</b> The certificate's Subject DN must match the specified Subject DN exactly.
             </html>""";
         subjectDnValidationLabel.setToolTipText(subjectDNToolTip);
         subjectDnValidationModeComboBox.setToolTipText(subjectDNToolTip);
