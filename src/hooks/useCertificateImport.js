@@ -21,6 +21,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
   const [isVerifying, setIsVerifying] = useState(false)
   const [existingCertificates, setExistingCertificates] = useState(currentCertificates || [])
   const [aliasWarning, setAliasWarning] = useState(null)
+  const [existingCertificateInfo, setExistingCertificateInfo] = useState(null)
 
   // Refs
   const fileInputRef = useRef(null)
@@ -56,19 +57,22 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
   const checkAliasExists = (aliasToCheck) => {
     if (!aliasToCheck.trim()) {
       setAliasWarning(null)
+      setExistingCertificateInfo(null)
       return false
     }
 
-    const exists = existingCertificates.some(cert => 
+    const existingCert = existingCertificates.find(cert => 
       cert.store === targetStore &&
       cert.alias.toLowerCase() === aliasToCheck.toLowerCase()
     )
     
-    if (exists) {
+    if (existingCert) {
       setAliasWarning('This alias is already in use in this store')
+      setExistingCertificateInfo(existingCert)
       return true
     } else {
       setAliasWarning(null)
+      setExistingCertificateInfo(null)
       return false
     }
   }
@@ -294,6 +298,7 @@ export const useCertificateImport = (targetStore, currentCertificates = null) =>
     isVerifying,
     existingCertificates,
     aliasWarning,
+    existingCertificateInfo,
     
     // Refs
     fileInputRef,

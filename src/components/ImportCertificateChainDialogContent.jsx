@@ -15,6 +15,7 @@ import {
 import { parseCertificateChainFromPem } from '../utils/certificateUtils.js'
 import TrustedCertificateImportForm from './TrustedCertificateImportForm'
 import CertificateChainSelector from './CertificateChainSelector'
+import ConfirmReplaceCertificateDialog from './ConfirmReplaceCertificateDialog'
 import { updateCertificates } from '../services/tlsService.js'
 import { verifyCertificate } from '../utils/verificationUtils.js'
 
@@ -34,6 +35,8 @@ export default function ImportCertificateChainDialogContent({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showValidationDialog, setShowValidationDialog] = useState(false)
   const [validationError, setValidationError] = useState(null)
+  const [existingCertificateInfo, setExistingCertificateInfo] = useState(null)
+  const [confirmAlias, setConfirmAlias] = useState('')
   const formRef = useRef(null)
   const fileInputRef = useRef(null)
 
@@ -159,6 +162,14 @@ export default function ImportCertificateChainDialogContent({
     // Check if alias already exists
     const aliasExists = formRef.current.checkAliasExists()
     if (aliasExists) {
+      // Find the existing certificate info for the confirmation dialog
+      const alias = formRef.current.alias
+      setConfirmAlias(alias)
+      const existingCert = currentCertificates?.find(c => 
+        c.alias.toLowerCase() === alias.toLowerCase() && 
+        c.store === targetStore
+      )
+      setExistingCertificateInfo(existingCert || null)
       setShowConfirmDialog(true)
       return
     }
@@ -304,36 +315,15 @@ export default function ImportCertificateChainDialogContent({
       )}
 
       {/* Confirmation Dialog for Replacing Existing Certificate */}
-      <Dialog
+      <ConfirmReplaceCertificateDialog
         open={showConfirmDialog}
         onClose={() => setShowConfirmDialog(false)}
-        aria-labelledby="confirm-dialog-title"
-        aria-describedby="confirm-dialog-description"
-      >
-        <DialogTitle id="confirm-dialog-title">
-          Replace Existing Certificate
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="confirm-dialog-description">
-            {formRef.current && (
-              <>A certificate with the alias "{formRef.current.alias}" already exists. This will replace the existing certificate. Are you sure you want to continue?</>
-            )}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowConfirmDialog(false)} disabled={importLoading}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleConfirmReplace} 
-            variant="contained" 
-            color="warning"
-            disabled={importLoading}
-          >
-            {importLoading ? 'Replacing...' : 'Replace Certificate'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleConfirmReplace}
+        alias={confirmAlias}
+        store={targetStore}
+        loading={importLoading}
+        existingCertificateInfo={existingCertificateInfo}
+      />
 
       {/* Validation Error Dialog */}
       <Dialog

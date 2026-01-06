@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import {
   Alert,
   Typography,
@@ -22,15 +22,54 @@ export default function ChannelsInUseWarning({
   message 
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [showExpandButton, setShowExpandButton] = useState(false)
+  const contentRef = useRef(null)
+
+  // Measure content height
+  const measureHeight = useCallback(() => {
+    if (contentRef.current) {
+      const element = contentRef.current
+      if (!expanded) {
+        // Check if content is scrollable (scrollHeight > clientHeight)
+        // Also check if scrollHeight exceeds threshold as fallback
+        const isScrollable = element.scrollHeight > element.clientHeight
+        const exceedsThreshold = element.scrollHeight > 200
+        setShowExpandButton(isScrollable || exceedsThreshold)
+      } else {
+        // When expanded, always show button to allow collapsing
+        setShowExpandButton(true)
+      }
+    }
+  }, [expanded])
+
+  // Use ResizeObserver to detect when content size changes
+  useEffect(() => {
+    if (!contentRef.current || !channelsInUse || channelsInUse.length === 0) return
+
+    const element = contentRef.current
+    // Initial measurements with multiple delays to catch flexbox layout
+    const timer1 = setTimeout(() => measureHeight(), 0)
+    const timer2 = setTimeout(() => measureHeight(), 100)
+    const timer3 = setTimeout(() => measureHeight(), 500)
+    const timer4 = setTimeout(() => measureHeight(), 1000)
+
+    const resizeObserver = new ResizeObserver(() => {
+      measureHeight()
+    })
+    resizeObserver.observe(element)
+
+    return () => {
+      resizeObserver.disconnect()
+      clearTimeout(timer1)
+      clearTimeout(timer2)
+      clearTimeout(timer3)
+      clearTimeout(timer4)
+    }
+  }, [measureHeight, channelsInUse])
   
   if (!channelsInUse || channelsInUse.length === 0) {
     return null
   }
-
-  const hasManyChannels = channelsInUse.length > 10
-  const displayChannels = expanded || !hasManyChannels 
-    ? channelsInUse 
-    : channelsInUse.slice(0, 10)
 
   return (
     <Alert severity={severity} sx={{ mb: 2 }}>
@@ -38,6 +77,7 @@ export default function ChannelsInUseWarning({
         This certificate is currently in use by the following channels:
       </Typography>
       <Box
+        ref={contentRef}
         sx={{
           maxHeight: expanded ? 'none' : '200px',
           overflow: expanded ? 'visible' : 'auto',
@@ -46,7 +86,7 @@ export default function ChannelsInUseWarning({
         }}
       >
         <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
-          {displayChannels.map((channel, index) => (
+          {channelsInUse.map((channel, index) => (
             <Chip 
               key={index} 
               label={channel} 
@@ -57,7 +97,7 @@ export default function ChannelsInUseWarning({
           ))}
         </Stack>
       </Box>
-      {hasManyChannels && (
+      {showExpandButton && (
         <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end' }}>
           <Button
             size="small"

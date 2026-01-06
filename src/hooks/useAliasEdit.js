@@ -72,14 +72,19 @@ export const useAliasEdit = (currentAlias, currentStore, currentCertificates = n
     return true
   }
 
-  // Initialize with current alias
+  // Initialize with current alias and reset warning state
   useEffect(() => {
     setNewAlias(currentAlias)
+    setAliasWarning(null)
+    setExistingCertificateInfo(null)
   }, [currentAlias])
 
   // Load existing certificates on mount or when currentCertificates changes
   useEffect(() => {
     loadExistingCertificates()
+    // Reset warning state when certificates are reloaded (dialog opened fresh)
+    setAliasWarning(null)
+    setExistingCertificateInfo(null)
   }, [currentCertificates])
 
   return {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -36,6 +36,106 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
   const [isVerifying, setIsVerifying] = useState(false)
   const [sanExpanded, setSanExpanded] = useState(false)
   const [channelsExpanded, setChannelsExpanded] = useState(false)
+  const [showSanExpandButton, setShowSanExpandButton] = useState(false)
+  const [showChannelsExpandButton, setShowChannelsExpandButton] = useState(false)
+  const sanContentRef = useRef(null)
+  const channelsContentRef = useRef(null)
+
+  // Measure SAN content height
+  const measureSanHeight = useCallback(() => {
+    if (sanContentRef.current && !sanExpanded) {
+      const element = sanContentRef.current
+      // Check if content is scrollable (scrollHeight > clientHeight)
+      // This is the most reliable way to detect if content exceeds maxHeight
+      const isScrollable = element.scrollHeight > element.clientHeight
+      setShowSanExpandButton(isScrollable)
+    } else if (sanExpanded) {
+      // When expanded, always show button to allow collapsing
+      setShowSanExpandButton(true)
+    }
+  }, [sanExpanded])
+
+  // Measure channels content height
+  const measureChannelsHeight = useCallback(() => {
+    if (channelsContentRef.current) {
+      const element = channelsContentRef.current
+      if (!channelsExpanded) {
+        // Check if content is scrollable (scrollHeight > clientHeight)
+        // Also check if scrollHeight exceeds threshold as fallback
+        const scrollHeight = element.scrollHeight
+        const clientHeight = element.clientHeight
+        const isScrollable = scrollHeight > clientHeight
+        const exceedsThreshold = scrollHeight > 100
+        
+        // Debug logging (remove after testing)
+        console.log('Channels measurement:', { scrollHeight, clientHeight, isScrollable, exceedsThreshold, channelsCount: certificate?.channelsInUse?.length })
+        
+        setShowChannelsExpandButton(isScrollable || exceedsThreshold)
+      } else {
+        // When expanded, always show button to allow collapsing
+        setShowChannelsExpandButton(true)
+      }
+    }
+  }, [channelsExpanded, certificate?.channelsInUse])
+
+  // Use ResizeObserver for SAN
+  useEffect(() => {
+    if (!sanContentRef.current) return
+
+    const element = sanContentRef.current
+    // Initial measurement
+    const timer1 = setTimeout(() => measureSanHeight(), 0)
+    const timer2 = setTimeout(() => measureSanHeight(), 100)
+    const timer3 = setTimeout(() => measureSanHeight(), 500)
+
+    const resizeObserver = new ResizeObserver(() => {
+      measureSanHeight()
+    })
+    resizeObserver.observe(element)
+
+    return () => {
+      resizeObserver.disconnect()
+      clearTimeout(timer1)
+      clearTimeout(timer2)
+      clearTimeout(timer3)
+    }
+  }, [measureSanHeight, parsedCertificate?.subjectAltNames])
+
+  // Use ResizeObserver for channels
+  useEffect(() => {
+    if (!channelsContentRef.current || !certificate?.channelsInUse) return
+
+    const element = channelsContentRef.current
+    
+    // Use requestAnimationFrame to measure after paint
+    const measureAfterPaint = () => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          measureChannelsHeight()
+        })
+      })
+    }
+    
+    // Initial measurements with multiple delays to catch flexbox layout
+    measureAfterPaint()
+    const timer1 = setTimeout(measureAfterPaint, 0)
+    const timer2 = setTimeout(measureAfterPaint, 100)
+    const timer3 = setTimeout(measureAfterPaint, 500)
+    const timer4 = setTimeout(measureAfterPaint, 1000)
+
+    const resizeObserver = new ResizeObserver(() => {
+      measureAfterPaint()
+    })
+    resizeObserver.observe(element)
+
+    return () => {
+      resizeObserver.disconnect()
+      clearTimeout(timer1)
+      clearTimeout(timer2)
+      clearTimeout(timer3)
+      clearTimeout(timer4)
+    }
+  }, [measureChannelsHeight, certificate?.channelsInUse])
 
   const getStatusColor = (validFrom, validTo) => {
     const now = new Date()
@@ -161,16 +261,19 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="h6">Subject Alternative Names</Typography>
-                <Button
-                  size="small"
-                  onClick={() => setSanExpanded(!sanExpanded)}
-                  endIcon={sanExpanded ? <ExpandLess /> : <ExpandMore />}
-                  sx={{ minWidth: 'auto', textTransform: 'none' }}
-                >
-                  {sanExpanded ? 'Show Less' : 'Show More'}
-                </Button>
+                {showSanExpandButton && (
+                  <Button
+                    size="small"
+                    onClick={() => setSanExpanded(!sanExpanded)}
+                    endIcon={sanExpanded ? <ExpandLess /> : <ExpandMore />}
+                    sx={{ minWidth: 'auto', textTransform: 'none' }}
+                  >
+                    {sanExpanded ? 'Show Less' : 'Show More'}
+                  </Button>
+                )}
               </Box>
               <Box
+                ref={sanContentRef}
                 sx={{
                   maxHeight: sanExpanded ? 'none' : '200px',
                   overflow: sanExpanded ? 'visible' : 'auto',
@@ -319,16 +422,19 @@ export default function CertificateDetailsDialog({ open, onClose, certificate })
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="h6">Channels in Use</Typography>
-                <Button
-                  size="small"
-                  onClick={() => setChannelsExpanded(!channelsExpanded)}
-                  endIcon={channelsExpanded ? <ExpandLess /> : <ExpandMore />}
-                  sx={{ minWidth: 'auto', textTransform: 'none' }}
-                >
-                  {channelsExpanded ? 'Show Less' : 'Show More'}
-                </Button>
+                {showChannelsExpandButton && (
+                  <Button
+                    size="small"
+                    onClick={() => setChannelsExpanded(!channelsExpanded)}
+                    endIcon={channelsExpanded ? <ExpandLess /> : <ExpandMore />}
+                    sx={{ minWidth: 'auto', textTransform: 'none' }}
+                  >
+                    {channelsExpanded ? 'Show Less' : 'Show More'}
+                  </Button>
+                )}
               </Box>
               <Box
+                ref={channelsContentRef}
                 sx={{
                   maxHeight: channelsExpanded ? 'none' : '100px',
                   overflow: channelsExpanded ? 'visible' : 'auto',

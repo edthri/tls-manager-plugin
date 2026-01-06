@@ -14,6 +14,7 @@ import CertificateDetailsSection from './CertificateDetailsSection'
 import CertificateVerificationSection from './CertificateVerificationSection'
 import UserInputsSection from './UserInputsSection'
 import MobileCertificateSection from './MobileCertificateSection'
+import ConfirmReplaceCertificateDialog from './ConfirmReplaceCertificateDialog'
 import { updateCertificates } from '../services/tlsService.js'
 import { verifyCertificate } from '../utils/verificationUtils.js'
 
@@ -46,6 +47,7 @@ const ImportTrustedCertificateDialog = forwardRef(function ImportTrustedCertific
     isVerifying,
     existingCertificates,
     aliasWarning,
+    existingCertificateInfo,
     
     // Refs
     fileInputRef,
@@ -280,34 +282,15 @@ const ImportTrustedCertificateDialog = forwardRef(function ImportTrustedCertific
       )}
 
       {/* Confirmation Dialog for Replacing Existing Certificate */}
-      <Dialog
+      <ConfirmReplaceCertificateDialog
         open={showConfirmDialog}
         onClose={handleCancelReplace}
-        aria-labelledby="confirm-dialog-title"
-        aria-describedby="confirm-dialog-description"
-      >
-        <DialogTitle id="confirm-dialog-title">
-          Replace Existing Certificate
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="confirm-dialog-description">
-            A certificate with the alias "{alias}" already exists. This will replace the existing certificate. Are you sure you want to continue?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelReplace} disabled={loading}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleConfirmReplace} 
-            variant="contained" 
-            color="warning"
-            disabled={loading}
-          >
-            {loading ? 'Replacing...' : 'Replace Certificate'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleConfirmReplace}
+        alias={alias}
+        store={targetStore}
+        loading={loading}
+        existingCertificateInfo={existingCertificateInfo}
+      />
 
       {/* Validation Error Dialog */}
       <Dialog

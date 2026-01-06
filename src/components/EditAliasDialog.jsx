@@ -3,7 +3,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogContentText,
   DialogActions,
   Button,
   TextField,
@@ -16,6 +15,7 @@ import {
 import { useAliasEdit } from '../hooks/useAliasEdit'
 import { updateCertificateAlias } from '../services/tlsService'
 import ChannelsInUseWarning from './ChannelsInUseWarning'
+import ConfirmReplaceCertificateDialog from './ConfirmReplaceCertificateDialog'
 
 export default function EditAliasDialog({ 
   open, 
@@ -186,62 +186,15 @@ export default function EditAliasDialog({
       </Dialog>
 
       {/* Confirmation Dialog for Replacing Existing Certificate */}
-      <Dialog
+      <ConfirmReplaceCertificateDialog
         open={showConfirmDialog}
         onClose={handleCancelReplace}
-        aria-labelledby="confirm-dialog-title"
-        aria-describedby="confirm-dialog-description"
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle id="confirm-dialog-title">
-          Replace Existing Certificate
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="confirm-dialog-description" sx={{ mb: 2 }}>
-            A certificate with the alias "{newAlias}" already exists in the {certificate?.store} store. This will replace the existing certificate. Are you sure you want to continue?
-          </DialogContentText>
-          
-          {existingCertificateInfo && (
-            <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 152, 0, 0.1)' }}>
-              <Typography variant="subtitle2" gutterBottom color="warning.dark">
-                Certificate that will be replaced:
-              </Typography>
-              <Grid container spacing={1}>
-                <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">Alias</Typography>
-                  <Typography variant="body1">{existingCertificateInfo.alias}</Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">Subject</Typography>
-                  <Typography variant="body1" sx={{ wordBreak: 'break-all' }}>
-                    {existingCertificateInfo.subject}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">Issuer</Typography>
-                  <Typography variant="body1" sx={{ wordBreak: 'break-all' }}>
-                    {existingCertificateInfo.issuer}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </Paper>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelReplace} disabled={loading}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleConfirmReplace} 
-            variant="contained" 
-            color="warning"
-            disabled={loading}
-          >
-            {loading ? 'Replacing...' : 'Replace Certificate'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleConfirmReplace}
+        alias={newAlias}
+        store={certificate?.store}
+        loading={loading}
+        existingCertificateInfo={existingCertificateInfo}
+      />
     </>
   )
 }
