@@ -10,6 +10,7 @@
 
 package org.openintegrationengine.tlsmanager.client.panel;
 
+import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.ui.AbstractSettingsPanel;
 import com.mirth.connect.client.ui.BareBonesBrowserLaunch;
 import com.mirth.connect.client.ui.MirthHeadingPanel;
@@ -24,11 +25,13 @@ import javax.swing.ImageIcon;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.HyperlinkEvent;
 import java.awt.Color;
 import java.awt.Font;
+import java.util.concurrent.ExecutionException;
 
 public class TLSManagerPanel extends AbstractSettingsPanel {
 
@@ -41,10 +44,17 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
     private JPanel teamPanel;
     private JLabel copyright;
 
+    private JLabel versionLabel;
+
+    private final SettingsPanelPlugin plugin;
+
     private static final String tlsManagerUrl = PlatformUI.SERVER_URL + "/tls-manager";
 
     public TLSManagerPanel(String tabName, SettingsPanelPlugin plugin) {
         super(tabName);
+
+        this.plugin = plugin;
+
         setVisibleTasks(0, 1, false);
         addTask(
             "openManagerInBrowser",
@@ -54,17 +64,16 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
             new ImageIcon(this.getClass().getClassLoader().getResource(SETTINGS_ICON_PATH)));
         initComponents();
         initLayout();
+
+        fetchData();
     }
 
     private void initComponents() {
         setBackground(UIConstants.BACKGROUND_COLOR);
 
-        JLabel title = new JLabel();
-        title.setFont(new java.awt.Font(Font.SANS_SERIF, Font.BOLD, 18)); // NOI18N
-        title.setForeground(new java.awt.Color(255, 255, 255));
-
-        String version = getClass().getPackage().getImplementationVersion();
-        title.setText("TLS Manager Plugin " + version);
+        versionLabel = new JLabel();
+        versionLabel.setFont(new java.awt.Font(Font.SANS_SERIF, Font.BOLD, 18));
+        versionLabel.setForeground(Color.WHITE);
 
         mirthHeadingPanel = new MirthHeadingPanel();
         GroupLayout mirthHeadingPanelLayout = new GroupLayout(mirthHeadingPanel);
@@ -73,14 +82,14 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
             mirthHeadingPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
                 .addGroup(mirthHeadingPanelLayout.createSequentialGroup()
                     .addContainerGap()
-                    .addComponent(title, GroupLayout.DEFAULT_SIZE, 353, Short.MAX_VALUE)
+                    .addComponent(versionLabel, GroupLayout.DEFAULT_SIZE, 353, Short.MAX_VALUE)
                     .addContainerGap())
         );
         mirthHeadingPanelLayout.setVerticalGroup(
             mirthHeadingPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(mirthHeadingPanelLayout.createSequentialGroup()
                     .addContainerGap()
-                    .addComponent(title, javax.swing.GroupLayout.DEFAULT_SIZE, 29, Short.MAX_VALUE)
+                    .addComponent(versionLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 29, Short.MAX_VALUE)
                     .addContainerGap())
         );
 
@@ -237,5 +246,33 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
 
     public void openManagerInBrowser() {
         BareBonesBrowserLaunch.openURL(tlsManagerUrl);
+    }
+
+    protected final void fetchData() {
+        final var workerId = PlatformUI.MIRTH_FRAME.startWorking("Fetching data...");
+
+        var worker = new SwingWorker<String, Void>() {
+            protected String doInBackground() {
+                try {
+                    return PlatformUI.MIRTH_FRAME.mirthClient.getExtensionMetaData(plugin.getPluginName()).getPluginVersion();
+                } catch (ClientException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            protected void done() {
+                try {
+                    var pluginVersion = get();
+                    versionLabel.setText("TLS Manager Plugin " + pluginVersion);
+                } catch (InterruptedException | ExecutionException e) {
+                    PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e, "Fetching failed");
+                    throw new RuntimeException(e);
+                }
+
+                PlatformUI.MIRTH_FRAME.stopWorking(workerId);
+            }
+        };
+
+        worker.execute();
     }
 }
