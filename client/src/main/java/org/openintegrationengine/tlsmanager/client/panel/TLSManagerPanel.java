@@ -12,24 +12,27 @@ package org.openintegrationengine.tlsmanager.client.panel;
 
 import com.mirth.connect.client.ui.AbstractSettingsPanel;
 import com.mirth.connect.client.ui.BareBonesBrowserLaunch;
+import com.mirth.connect.client.ui.MirthHeadingPanel;
 import com.mirth.connect.client.ui.PlatformUI;
 import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.plugins.SettingsPanelPlugin;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.border.TitledBorder;
-import java.awt.Color;
-import java.awt.Font;
+import javax.swing.event.HyperlinkEvent;
+import java.awt.*;
 
 public class TLSManagerPanel extends AbstractSettingsPanel {
 
     // https://github.com/phosphor-icons/core/blob/main/raw/duotone/gear-duotone.svg
     private static final String SETTINGS_ICON_PATH = "images/tls_plugin_settings.png";
 
+    private MirthHeadingPanel mirthHeadingPanel;
     private JPanel infoPanel;
+    private JPanel aboutPanel;
+    private JPanel teamPanel;
+    private JLabel copyright;
 
     public TLSManagerPanel(String tabName, SettingsPanelPlugin plugin) {
         super(tabName);
@@ -47,23 +50,170 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
     private void initComponents() {
         setBackground(UIConstants.BACKGROUND_COLOR);
 
+        JLabel title = new JLabel();
+        title.setFont(new java.awt.Font("Tahoma", Font.BOLD, 18)); // NOI18N
+        title.setForeground(new java.awt.Color(255, 255, 255));
+
+        String version = getClass().getPackage().getImplementationVersion();
+        title.setText("TLS Manager Plugin " + version);
+
+        mirthHeadingPanel = new MirthHeadingPanel();
+        GroupLayout mirthHeadingPanelLayout = new GroupLayout(mirthHeadingPanel);
+        mirthHeadingPanel.setLayout(mirthHeadingPanelLayout);
+        mirthHeadingPanelLayout.setHorizontalGroup(
+            mirthHeadingPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                .addGroup(mirthHeadingPanelLayout.createSequentialGroup()
+                    .addContainerGap()
+                    .addComponent(title, GroupLayout.DEFAULT_SIZE, 353, Short.MAX_VALUE)
+                    .addContainerGap())
+        );
+        mirthHeadingPanelLayout.setVerticalGroup(
+            mirthHeadingPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(mirthHeadingPanelLayout.createSequentialGroup()
+                    .addContainerGap()
+                    .addComponent(title, javax.swing.GroupLayout.DEFAULT_SIZE, 29, Short.MAX_VALUE)
+                    .addContainerGap())
+        );
+
         infoPanel = new JPanel();
         infoPanel.setBackground(UIConstants.BACKGROUND_COLOR);
         infoPanel.setBorder(
             BorderFactory.createTitledBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(204, 204, 204)),
-                "TLS Manager Plugin", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION,
+                "Where are the settings?", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION,
                 new Font(Font.SANS_SERIF, Font.BOLD, 11)
             )
         );
+
+        aboutPanel = new JPanel();
+        aboutPanel.setBackground(UIConstants.BACKGROUND_COLOR);
+        aboutPanel.setBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(204, 204, 204)),
+                "About the TLS Manager Plugin", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION,
+                new Font(Font.SANS_SERIF, Font.BOLD, 11)
+            )
+        );
+
+        teamPanel = new JPanel();
+        teamPanel.setBackground(UIConstants.BACKGROUND_COLOR);
+        teamPanel.setBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(204, 204, 204)),
+                "The team members involved", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION,
+                new Font(Font.SANS_SERIF, Font.BOLD, 11)
+            )
+        );
+
+        copyright = new JLabel("© 2025 NovaMap Health Limited");
+        copyright.setFont(copyright.getFont().deriveFont(Font.PLAIN, 10f));
+        copyright.setForeground(new Color(120, 120, 120));
     }
 
     private void initLayout() {
-        setLayout(new MigLayout("hidemode 3, novisualpadding, insets 12", "[grow]"));
+        setLayout(new MigLayout(
+            "hidemode 3, novisualpadding, insets 0",
+            "[grow]",
+            "[] [grow] []"
+        ));
 
-        infoPanel.setLayout(new MigLayout("hidemode 3, novisualpadding, insets 0", "12[right][left]"));
+        String url = PlatformUI.SERVER_URL + "/tls-manager";
 
-        add(infoPanel, "growx, sx, wrap");
+        JLabel whereText1 = new JLabel(
+            "<html>" +
+                "<body>" +
+                "Certificate management for the TLS Manager Plugin is done using a web-based user interface available at:<br/><br/>" +
+                "</body></html>"
+        );
+
+        JEditorPane whereText2 = new JEditorPane();
+        whereText2.setContentType("text/html");
+        whereText2.setEditable(false);
+        whereText2.setOpaque(false);
+        whereText2.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+        Font labelFont = UIManager.getFont("Label.font");
+
+        String style =
+            "<style>" +
+                "body { " +
+                "  font-family: '" + labelFont.getFamily() + "';" +
+                "  font-size: " + labelFont.getSize() + "pt;" +
+                "  color: rgb(0,0,0);" +
+                "}" +
+                "</style>";
+
+        whereText2.setText(
+            "<html>" +
+                style +
+                "<body>" +
+                "<a href=\"" + url + "\">" + url + "</a>" +
+                "</body></html>"
+        );
+
+        whereText2.addHyperlinkListener(e -> {
+            if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                openManagerInBrowser();
+            }
+        });
+
+        JLabel whereText3 = new JLabel(
+            "<html>" +
+                "<body>" +
+                "<br/>The access credentials are the same ones used to log in to this Administrator Client." +
+                "</body></html>"
+        );
+
+        JLabel aboutText = new JLabel(
+            "<html>" +
+                "Jointly sponsored by NovaMap Health Limited & Diridium Technologies Inc.<br/>" +
+                "and donated to the Open Integration Engine initiative." +
+                "</html>"
+        );
+
+        JLabel teamList = new JLabel(
+            "<html>" +
+                "•&nbsp;&nbsp;Alex Frîncu<br/>" +
+                "•&nbsp;&nbsp;Andreea Dincă<br/>" +
+                "•&nbsp;&nbsp;Andrei Haiducu<br/>" +
+                "•&nbsp;&nbsp;Ed Riordan<br/>" +
+                "•&nbsp;&nbsp;Kaur Palang<br/>" +
+                "•&nbsp;&nbsp;Paul Coyne<br/>" +
+                "•&nbsp;&nbsp;Paul Hristea<br/>" +
+                "•&nbsp;&nbsp;Paul Richardson<br/><br/>" +
+                "<i>Thank you!</i>" +
+                "</html>"
+        );
+
+        infoPanel.setLayout(new MigLayout("insets 8", "[grow]"));
+        aboutPanel.setLayout(new MigLayout("insets 8", "[grow]"));
+        teamPanel.setLayout(new MigLayout("insets 8", "[grow]"));
+
+        infoPanel.add(whereText1, "growx, wrap");
+        infoPanel.add(whereText2, "growx, wrap");
+        infoPanel.add(whereText3, "growx, wrap");
+        aboutPanel.add(aboutText, "growx, wrap");
+        teamPanel.add(teamList, "growx, wrap");
+
+        JPanel contentPanel = new JPanel(
+            new MigLayout("insets 12", "[grow]", "[] [] []")
+        );
+        contentPanel.setOpaque(true);
+        contentPanel.setBackground(UIConstants.BACKGROUND_COLOR);
+        contentPanel.add(infoPanel, "growx, wrap");
+        contentPanel.add(aboutPanel, "growx, wrap");
+        contentPanel.add(teamPanel, "growx, wrap");
+        contentPanel.add(copyright, "gapy 24");
+
+        JPanel headerWrapper = new JPanel(new MigLayout("insets 0", "[grow]", "[]"));
+        headerWrapper.setOpaque(true);
+        headerWrapper.setBackground(UIConstants.BACKGROUND_COLOR);
+
+        headerWrapper.add(
+            mirthHeadingPanel,
+            "growx, gaptop 7, gapleft 7, gapafter 7"
+        );
+        add(headerWrapper, "growx, wrap");
+        add(contentPanel, "grow, push, wrap");
     }
 
     @Override
@@ -76,10 +226,6 @@ public class TLSManagerPanel extends AbstractSettingsPanel {
         return false;
     }
 
-    /**
-     * No touch! I know IntelliJ marks this function as unused, but OIE does this stupid callback reflection crap where callback function names
-     * are defined as strings. This function is used to... open the TLS Manager in a browser... I know, right!
-     */
     public void openManagerInBrowser() {
         BareBonesBrowserLaunch.openURL(PlatformUI.SERVER_URL + "/tls-manager");
     }
