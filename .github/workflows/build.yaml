@@ -60,7 +60,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: tls-manager-plugin
-          path: target/tls-manager.zip
+          path: target/tls-manager*.zip
 
   inttest:
     runs-on: ubuntu-latest
