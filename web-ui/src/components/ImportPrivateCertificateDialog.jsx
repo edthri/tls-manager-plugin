@@ -279,7 +279,7 @@ const ImportPrivateCertificateDialog = forwardRef(function ImportPrivateCertific
             onClick={handleSubmit} 
             disabled={isImportDisabled()}
           >
-            {loading ? 'Importing...' : 'Import Certificate'}
+            {loading ? 'Importing...' : 'Import Key Pair'}
           </Button>
         </Stack>
       )}

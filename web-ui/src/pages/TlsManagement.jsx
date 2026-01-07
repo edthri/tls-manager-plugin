@@ -125,7 +125,7 @@ export default function TlsManagement() {
       openDialog({ type: 'import-certificate-chain', title: 'Import Certificate Chain', props: { targetStore } })
     } else {
       // Use regular import for private store
-      openDialog({ type: 'import-certificate', title: 'Import Certificate (PEM)', props: { targetStore } })
+      openDialog({ type: 'import-certificate', title: 'Import Key Pair (PEM)', props: { targetStore } })
     }
   }
 
@@ -146,7 +146,7 @@ export default function TlsManagement() {
   const tabs = [
     { key: 'native', label: 'Native Java Certificate Store', count: counts.native, icon: <ShieldOutlinedIcon fontSize="small" /> },
     { key: 'trusted', label: 'Additional Trusted Certificates', count: counts.trusted, icon: <CheckCircleOutlineIcon fontSize="small" /> },
-    { key: 'private', label: 'Local Certificates', count: counts.private, icon: <VpnKeyIcon fontSize="small" /> },
+    { key: 'private', label: 'Local Key Pairs', count: counts.private, icon: <VpnKeyIcon fontSize="small" /> },
   ]
 
   const toolbarByTab = {
