@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2024 Kaur Palang
+# Copyright (c) 2026 NovaMap Health Limited <https://novamap.health>
 
-function main() {
+function buildPlugin() {
 
   echo "########################################"
   echo
@@ -16,7 +17,7 @@ function main() {
   echo "   Building jars..."
   echo
   echo "########################################"
-  local shortHash=$(git rev-parse --short HEAD)
+  shortHash=$(git rev-parse --short HEAD)
   mvn install package -DskipTests -Dgit.hash="$shortHash"
 
   PLUGIN_PATH=$(mvn exec:exec --non-recursive --quiet -Dexec.executable="echo" -Dexec.args='${mirth.plugin.path}')
@@ -53,7 +54,27 @@ function main() {
   echo
   echo "########################################"
   cp {client,server,shared}/target/*.jar "$STAGING_DIR/"
+}
 
+function buildWebUi() {
+  pushd web-ui
+
+  rm -rf tls-manager/
+
+  npm i
+  npm run build
+
+  mkdir tls-manager/WEB-INF
+  cp static/web.xml tls-manager/WEB-INF/
+
+  jar -cvf tls-manager.war -C tls-manager .
+
+  cp tls-manager.war ../"$STAGING_DIR"
+
+  popd
+}
+
+function package() {
   pushd target
   mv staging "$PLUGIN_PATH"
   zip -r "$PLUGIN_PATH-$shortHash" "$PLUGIN_PATH"
@@ -63,4 +84,7 @@ function main() {
 set -euxo pipefail
 
 STAGING_DIR=target/staging
-main
+
+buildPlugin
+buildWebUi
+package
