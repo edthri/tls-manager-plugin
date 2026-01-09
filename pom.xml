@@ -11,7 +11,7 @@
 
     <groupId>org.openintegrationengine</groupId>
     <artifactId>tlsmanager</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
 
     <licenses>
@@ -61,7 +61,7 @@
         <mirth.plugin.name>TLS Manager</mirth.plugin.name>
         <mirth.plugin.path>tls-manager</mirth.plugin.path>
         <mirth.plugin.url>https://novamap.health</mirth.plugin.url>
-        <mirth.plugin.version>${project.version}-${git.hash}</mirth.plugin.version>
+        <mirth.plugin.version>${project.version}</mirth.plugin.version>
     </properties>
 
     <repositories>
