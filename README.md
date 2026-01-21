@@ -36,7 +36,7 @@ In addition, the following global features have been implemented:
 
 We will be distributing the plugin as a ZIP file for importing in the usual manner. It will be signed by NovaMap Health Limited using a code signing cert issued by a common CA.
 
-A minimum of Java 17 is required.
+A minimum of Java 17 is required for both OIE and the Launcher.
 
 Once the plugin is installed, you will see additional options in the Connectors listed above, plus you will be able to access the web-based Certificate Manager at *\[base URL\]/tls-manager*, which most commonly is [*https://localhost:8443/tls-manager*](https://localhost:8443/tls-manager)
 
