@@ -34,7 +34,7 @@ In addition, the following global features have been implemented:
 
 # Installation notes
 
-We will be distributing the plugin as a ZIP file for importing in the usual manner. It will be signed by NovaMap Health Limited using a code signing cert issued by a common CA.
+We will be distributing the plugin as a ZIP file for importing in the usual manner. It will be signed by NovaMap Health Limited using a code signing cert issued by a common CA. [Here]([url](https://github.com/ssrowe/docs-website/blob/docs/plugin-guide/docs/engine/plugins.md)) is an excellent guide written by Sean Rowe on installing plugins into OIE.
 
 A minimum of Java 17 is required for both OIE and the Launcher.
 
