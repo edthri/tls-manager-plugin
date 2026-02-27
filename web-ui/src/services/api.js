@@ -1,8 +1,14 @@
 import axios from 'axios'
 
+const getBasename = () => {
+  const path = window.location.pathname;
+  const idx = path.indexOf('/tls-manager');
+  return idx !== -1 ? path.substring(0, idx) : '/';
+};
+
 export const api = axios.create({
   // Use same-origin '/api' in dev with Vite proxy; fallback to absolute BASE_URL when building
-  baseURL: '/',
+  baseURL: getBasename(),
   withCredentials: true,
   headers: {
     'X-Requested-With': 'XMLHttpRequest',

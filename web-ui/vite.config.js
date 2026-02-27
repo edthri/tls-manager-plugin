@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: '/tls-manager/',
+  base: './',
   server: {
     allowedHosts: ['localhost', '127.0.0.1', '0.0.0.0', '778ded44be8d.ngrok-free.app'],
     proxy: {
