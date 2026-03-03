@@ -150,7 +150,7 @@ public final class CertificateService {
 
             if (externalKeyStore.isKeyEntry(alias)) {
                 var certChain = externalKeyStore.getCertificateChain(alias);
-                var privateKey = externalKeyStore.getKey(alias, new char[0]);
+                var privateKey = externalKeyStore.getKey(alias, extraKeyStoreBackend.loadPassword());
 
                 keystore.setKeyEntry(
                     alias,
