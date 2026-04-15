@@ -69,7 +69,9 @@ api.interceptors.response.use(
       // Redirect to login page if not already there
       const currentPath = window.location.pathname
       if (!currentPath.includes('/login')) {
-        window.location.href = '/tls-manager/login'
+        const base = getBasename()
+        const prefix = base === '/' ? '' : base
+        window.location.href = `${prefix}/tls-manager/login`
       }
     }
     
